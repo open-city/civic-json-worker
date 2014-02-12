@@ -120,7 +120,7 @@ def update_project(project_url, project_main_branch=None):
         # (remember full_name is "owner/repos" already).
         url = '%s/repos/%s/branches/%s' \
               % (GITHUB, full_name, project_main_branch)
-    else
+    else:
         # Just assume the 'master' branch.
         url = '%s/repos/%s' % (GITHUB, full_name)
     headers = {'Authorization': 'token %s' % GITHUB_TOKEN}
