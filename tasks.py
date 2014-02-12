@@ -116,13 +116,9 @@ def update_issues(project_url):
 def update_project(project_url, project_main_branch=None):
     full_name = '/'.join(urlparse(project_url).path.split('/')[1:3])
     if project_main_branch:  # could be None, also could be ''
-        # TBD: The URL construction below is pure speculation -- I'm
-        # not sure that api.github.com uses the same kinds of paths as
-        # non-API github.com.  The comparison here is between, e.g.,
-        # "https://github.com/NYCComptroller/Checkbook", which defaults
-        # to 'master' branch, and the 'checkbook_nyc' branch found at
-        # "https://github.com/NYCComptroller/Checkbook/tree/checkbook_nyc".
-        url = '%s/repos/%s/tree/%s' \
+        # Based on http://developer.github.com/v3/repos/#get-branch
+        # (remember full_name is "owner/repos" already).
+        url = '%s/repos/%s/branches/%s' \
               % (GITHUB, full_name, project_main_branch)
     else
         # Just assume the 'master' branch.
