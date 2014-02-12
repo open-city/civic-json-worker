@@ -113,9 +113,16 @@ def update_issues(project_url):
     else:
         return []
 
-def update_project(project_url):
+def update_project(project_url, project_main_branch=None):
     full_name = '/'.join(urlparse(project_url).path.split('/')[1:3])
-    url = '%s/repos/%s' % (GITHUB, full_name)
+    if project_main_branch:  # could be None, also could be ''
+        # Based on http://developer.github.com/v3/repos/#get-branch
+        # (remember full_name is "owner/repos" already).
+        url = '%s/repos/%s/branches/%s' \
+              % (GITHUB, full_name, project_main_branch)
+    else:
+        # Just assume the 'master' branch.
+        url = '%s/repos/%s' % (GITHUB, full_name)
     headers = {'Authorization': 'token %s' % GITHUB_TOKEN}
     r = requests.get(url, headers=headers)
     if r.status_code == 200:
