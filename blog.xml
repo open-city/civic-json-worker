@@ -1,0 +1,309 @@
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wfw="http://wellformedweb.org/CommentAPI/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:slash="http://purl.org/rss/1.0/modules/slash/" version="2.0">
+<channel>
+<title>Code for America</title>
+<atom:link href="http://www.codeforamerica.org/blog/feed/" rel="self" type="application/rss+xml"/>
+<link>http://www.codeforamerica.org/blog</link>
+<description>A New Kind of Public Service</description>
+<lastBuildDate>Fri, 14 Mar 2014 19:40:42 +0000</lastBuildDate>
+<language>en-US</language>
+<sy:updatePeriod>hourly</sy:updatePeriod>
+<sy:updateFrequency>1</sy:updateFrequency>
+<generator>http://wordpress.org/?v=3.6</generator>
+<item>
+<title>Four Great Years</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/14/four-great-years/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/14/four-great-years/#comments
+</comments>
+<pubDate>Fri, 14 Mar 2014 19:40:42 +0000</pubDate>
+<dc:creator>Abhi Nemani</dc:creator>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30142</guid>
+<description>
+<![CDATA[
+It was nearly four years ago to the day that after having first heard about Code for America, I quickly dropped CfA’s Founder Jennifer Pahlka a note asking to be involved. Fascinated, I was hoping to volunteer for the summer... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/14/four-great-years/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p>It was nearly four years ago to the day that after having first heard about Code for America, I quickly dropped CfA’s Founder Jennifer Pahlka a note asking to be involved. Fascinated, I was hoping to volunteer for the summer after graduating before starting at Google that autumn. Needless to say, I never went to Google, and three months turned into nearly four years — it’s been a privilege.</p> <p>Back then, CfA was a bold idea, with a small team and tons of work to do. I remember first meeting Tim O’Reilly in our makeshift offices, when I was laying out <a href="http://mashable.com/2010/06/29/patriotic-quotations-in-binary/" target="_blank">recruitment flyers</a> and he was <a href="http://codeforamerica.org/blog/wp-content/uploads/2010/09/tim-screwdriver.png" target="_blank">hanging up whiteboards</a>. Code for America then was just like any young organization: a small and scrappy startup, made up of good people with grand ambitions.</p> <p>Four years later, that hasn’t changed. But the idea has truly taken on a life of its own: from a handful of cities to hundreds; from a few startups and hackers to hundreds and thousands; from theories of change to communities of practice; and from questions of “what if” to “what’s next.”</p> <p>It has been amazing to sit courtside and watch this movement of people who give a damn show up and get to work. Beyond the impact we have had in reinvigorating belief in our public institutions, are the deep and meaningful relationships we have forged as an organization, as friends, and as a movement.</p> <p>These relationships matter more than any single app or outcome, because they model the values that we have for our public institutions: networked and open; good humored; and biased towards action. Relationships and values that last.</p> <p>It’s time now from me to step back from my role at CfA and explore what I’m up for next in this space; to reflect on these long four years, to read, to write, and to try new things.</p> <p>I leave with a firm belief that the organization is in the most capable hands. Bob Sofman, my co-director and dear friend, has a team in place that is world class — and fun. To them, to the inspirational Jen, Tim, and board, and to all of you from whom I’ve learned so much these past four years: thank you.</p> <p>In the near term I’m off to the Midwest to spend some time with my family and travel a bit — something like that extended vacation I never took. More soon, and you can always find me @<a href="http://twitter.com/abhinemani" target="_blank">abhinemani</a>.</p> <p>In departing, I wanted to share what I’ve learned about coding for America. At the end of the day, it’s not merely about technology and cities; instead it is about the optimism technology confers and the meaning that cities make us crave. What defines this movement is an unyielding belief in the possible. A constant and a fervent desire to try new things, to push new boundaries, to do important work. That’s rare, and that’s special.</p> <p>With that — and all else — onwards.</p> <p>&nbsp;</p> <hr /> <p>&nbsp;</p> <p>Questions? Comments? Hit us up <a href="http://twitter.com/codeforamerica" target="_blank">@codeforamerica</a>.</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/14/four-great-years/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>Open, transparent Chattanooga</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/12/open-transparent-chattanooga/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/12/open-transparent-chattanooga/#comments
+</comments>
+<pubDate>Wed, 12 Mar 2014 21:30:51 +0000</pubDate>
+<dc:creator>Mayor Andy Berke</dc:creator>
+<category>
+<![CDATA[ News ]]>
+</category>
+<category>
+<![CDATA[ Open Data ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30137</guid>
+<description>
+<![CDATA[
+Open and transparent aren’t just campaign promises in Chattanooga. They are words symbolic of a new way of thinking and a new standard for our community. As we set out to draft a new Open Data Policy for Chattanooga City... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/12/open-transparent-chattanooga/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p>Open and transparent aren’t just campaign promises in Chattanooga. They are words symbolic of a new way of thinking and a new standard for our community. As we set out to draft a new Open Data Policy for Chattanooga City Government, we knew this policy should not only set the standard for what open data could and should be but it should also be written by the people who will come up with the best uses for our data — Chattanoogans themselves.</p> <p>Many know of Chattanooga, Tennessee as “Gig City.” It’s true, we are home to the fastest, most pervasive, and least expensive gigabit infrastructure in the Western Hemisphere. My phone is constantly ringing with reporters on the other end, asking about our high speed fiber optic infrastructure.  My response is always the same &#8211; we are in the Innovation Century and cities must be ready. Big infrastructure investments like the gig is one way cities can be ready. Another way is opening data to providing the best possible platform for innovation and community problem solving.</p> <p>On February 13, 2014 we joined the GitHub Government Community and opened our proposed Open Data policy for citizen feedback. Posting our <a href="https://github.com/cityofchattanooga/Chattanooga-Open-Data-Policy" target="_blank">Open Data policy</a> on GitHub gets us all one step closer to a policy that has considered the needs of technologists, researchers, non-profit organizations, entrepreneurs, journalists, and citizens alike.  The City of Chattanooga can only become a true model for government innovation by creating real and documented dialogue between City government and the citizens we serve.</p> <p>City Hall is not going it alone. In 2013, the Open Chattanooga Collaborative received a Knight Information Challenge matching grant. The grant will establish an open data portal and train key groups to utilize public data in a way that informs and addresses important community issues.</p> <p>My office along with our Public Library and <a href="http://openchattanooga.com/" target="_blank">our local Brigade</a> are working together to collaboratively to not only open our public data and make it accessible, but to build a community committed to using data as a solution to local issues.</p> <p>Cities learn from each other, and we have seen how open data can spur economic development and build community solutions to difficult problems. Chattanooga’s unique digital assets combined with a thriving community of entrepreneurs, developers, and hackers make us well positioned to become a model of how a Southern mid-sized City can become a model of government innovation. With the help of initiatives like Code for America and resources like GitHub, Chattanooga is well on its way.</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/12/open-transparent-chattanooga/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>Happy Birthday to the World Wide Web</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/12/happybirthday_www/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/12/happybirthday_www/#comments
+</comments>
+<pubDate>Wed, 12 Mar 2014 13:40:44 +0000</pubDate>
+<dc:creator>Dana Oshiro</dc:creator>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30092</guid>
+<description>
+<![CDATA[
+Dear World Wide Web, Happy 25th Birthday. We&#8217;ve had some amazing years together and if it weren&#8217;t for you, we&#8217;d never have grown from being a baby organization to a full-fledged movement. You&#8217;ve hosted some of our best efforts. From... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/12/happybirthday_www/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p>Dear World Wide Web,</p> <p>Happy 25th Birthday. We&#8217;ve had some amazing years together and if it weren&#8217;t for you, we&#8217;d never have grown from being a baby organization to a full-fledged movement. You&#8217;ve hosted some of our best efforts.</p> <p>From helping our 3000+ Brigade members organize, to being the town hall for our government network, to helping us redeploy and redistribute our Fellowship apps — you&#8217;ve helped us blossom from a bunch of earnest nerds to a team of geeky change-makers.</p> <p>World Wide Web — you&#8217;ve made us cool by association, and we&#8217;re so grateful for your friendship.</p> <p>If it weren&#8217;t for you, we might be distributing a paper zine and working in complete obscurity under the name &#8220;Type for America&#8221; or just &#8220;For America.&#8221; And while each of these are perfectly decent monickers, there&#8217;s something essential about that connection you bring that makes our work so much more meaningful.</p> <p>When your father Tim Berners Lee first unveiled you, only a few early-adopters took note. Today, we&#8217;re not surfing you or driving on your information super highways, we&#8217;re a part of you, and you are the machine-readable manifestation of our hopes, dreams, and in some cases, our well-archived follies.</p> <p>So, Happy Birthday World Wide Web. We&#8217;ve had some good times indeed. Here&#8217;s to 25 more years of cats, camaraderie, and code.</p> <p>Love,</p> <p>Code for America</p> <p><span style="font-size: 16px;">P.S.  If our hearts had a topic cloud, you would be huge.</span></p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/12/happybirthday_www/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>CodeAcross Goes International</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/11/codeacross-goes-international/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/11/codeacross-goes-international/#comments
+</comments>
+<pubDate>Tue, 11 Mar 2014 18:56:44 +0000</pubDate>
+<dc:creator>Lynn Fine</dc:creator>
+<category>
+<![CDATA[ Brigade ]]>
+</category>
+<category>
+<![CDATA[ Civic Hacking ]]>
+</category>
+<category>
+<![CDATA[ International ]]>
+</category>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30132</guid>
+<description>
+<![CDATA[
+For the first time, CodeAcross went international &#8212; we didn’t just Code Across America, we CodedAcross the World. Passionate citizens joined forces to use their skills for good and tackle their own community&#8217;s problems in 48 different places &#8212; 11... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/11/codeacross-goes-international/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p dir="ltr">For the first time, CodeAcross went international &mdash; we didn’t just Code Across America, we CodedAcross the World. Passionate citizens joined forces to use their skills for good and tackle their own community&#8217;s problems in 48 different places &mdash; 11 of them international events. They used CodeAcross as a springboard to convene their communities around a common commitment to advancing civic technology and as a platform for future action.</p> <p dir="ltr">I couldn’t be more impressed with the results.</p> <p dir="ltr"><strong>Here’s a taste of what happened:</strong></p> <p dir="ltr">Five international <a href="http://brigade.codeforamerica.org/">Brigades</a> launched: Monterrey, Mexico; Taipei, Taiwan; Zagreb, Croatia; Lahore, Pakistan, and cities throughout <a href="http://codefor.de/">Germany</a>.</p> <p dir="ltr">Local partners organized CodeAcross events in 10 different countries, spanning Croatia, Taiwan, <a href="http://www.codeforaustralia.org/">Australia</a>, <a href="http://code4japan.org/">Japan</a>, Mexico, Pakistan, <a href="http://epf.org.pl/kodujdlapolski/">Poland</a>, <a href="http://codefor.de/">Germany</a>, <a href="http://www.codeforall.ie/">Ireland</a>, and Brazil.</p> <p dir="ltr">That’s eight time zones, 10 different languages, some pre-Carnival spirit, a whole lot of Guinness, dozens of pizzas, and hundreds of community organizers and civic hackers all coming together to further the global civic hacking movement on <a href="http://opendataday.org/">International Open Data Day</a>.</p> <p dir="ltr">Everyday citizens volunteered their time all over the world to work with local government partners to try to figure out ways to use technology to make their communities better. They mobilized to improve the garbage pick-up alert system in Japan, opened up budgets in Zagreb, fostered the civic tech eco-system in Australia, mapped street art in Warsaw, advanced data journalism in Taipei, and passed an open data mayoral decree in Porto Alegre, Brazil, among others.</p> <p dir="ltr">This is only a small slice of everything our international partners accomplished at CodeAcross among a very long list of feats.</p> <p dir="ltr">I can’t wait to see what they’ll do next.</p> <p>&nbsp;</p> <hr /> <p>&nbsp;</p> <p dir="ltr">Questions? Comments? Hit us up <a href="http://twitter.com/codeforamerica" target="_blank">@codeforamerica</a>.</p> <div></div>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/11/codeacross-goes-international/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>Here’s what happened at CodeAcross 2014</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/11/heres-what-happened-at-codeacross-2014/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/11/heres-what-happened-at-codeacross-2014/#comments
+</comments>
+<pubDate>Tue, 11 Mar 2014 18:37:23 +0000</pubDate>
+<dc:creator>Hannah Young</dc:creator>
+<category>
+<![CDATA[ Brigade ]]>
+</category>
+<category>
+<![CDATA[ Civic Hacking ]]>
+</category>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30080</guid>
+<description>
+<![CDATA[
+In 48 communities around the world neighbors came together for CodeAcross 2014 (Feb. 21-23, 2014). During these 72 hours,  50+ event organizers and 2,500+ participants worked together to make a difference in the communities where they live and work. To everyone who... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/11/heres-what-happened-at-codeacross-2014/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<div id="attachment_30106" class="wp-caption alignleft" style="width: 422px"><a href="http://www.codeforamerica.org/blog/wp-content/uploads/2014/03/Screen-Shot-2014-03-10-at-3.50.50-PM.png"><img class="size-full wp-image-30106 " alt="Screen Shot 2014-03-10 at 3.50.50 PM" src="http://www.codeforamerica.org/blog/wp-content/uploads/2014/03/Screen-Shot-2014-03-10-at-3.50.50-PM.png" width="412" height="410" /></a><p class="wp-caption-text">Photo credit Kara Gomez</p></div> <p>In 48 communities around the world neighbors came together for <a href="http://www.codeforamerica.org/events/codeacross-2014/">CodeAcross 2014</a> (Feb. 21-23, 2014). During these 72 hours,  50+ event organizers and 2,500+ participants worked together to make a difference in the communities where they live and work.</p> <p>To everyone who participated in CodeAcross, thank you. These are your accomplishments.</p> <p>Thanks to Sunlight Foundation and Open Knowledge Foundation for co-hosting and to Microsoft and Esri for making CodeAcross possible.</p> <p><strong>Network Highlights</strong></p> <ul> <li>More than 2,500 people came out and participated in 48 events around the world for CodeAcross.</li> <li>Collectively, these 2, 500 participants spent more than 30,000 hours hacking, yaking, designing, writing, prototyping, opening data, and more. That&#8217;s an average of 11+ hours volunteered per participant.</li> </ul> <p><strong> CodeAcross by the Numbers</strong></p> <ul> <li>48 events</li> <li>11 international events</li> <li>2,591 participants*</li> <li>30, 226 volunteer hours*</li> <li>20 events opened data at CodeAcross*</li> <li>35 events collaborated with local government*</li> <li>9 events deployed an app at CodeAcross*</li> <li>2 events redeployed an app at CodeAcross*</li> <li>15 events launched a Brigade at CodeAcross</li> <li>21 events developed an app*</li> <li>21 events pushed code*</li> <li>21 events advanced open data policy*</li> <li>24 events participated in the CodeAcross Open Data Inventory*</li> <li>234 datasets inventoried*</li> <li>4 events used the Open Data Policy CodeAcross Challenge*</li> <li>2 events participated in the Scraper CodeAcross Challenge*</li> </ul> <p>*out of 46 events reporting</p> <p><strong>2013 vs. 2014</strong></p> <ul> <li>In 2014, we over doubled the number of CodeAcross events from 2013 &#8212; from 22 in 2013 to 48 in 2014.</li> <li>In, 2014, we over tripled the attendance at CodeAcross events from 2013 &#8212; from 780 participants in 2013 to 2,591 participants in 2014.</li> </ul> <p><strong>Stories and Press</strong><br /> To more deeply understand the impact of CodeAcross, we looked to organizers, participants,  and press outlets for stories of what happened at each of the local events. And we didn&#8217;t have to look far.</p> <p>Over CodeAcross weekend, the #codeacross activity on Twitter and Tumblr painted a vivid picture of the energy and accomplishments from the weekend. Check out <a href="http://www.codeforamerica.org/blog/2014/02/25/thanks-for-codingacross-the-world/">this Storify</a> for a summary of #codeacross.</p> <p>Event organizers were also excited to share their stories:</p> <ul> <li><a href="http://codeformiami.org/OpenDataJam/">Miami, FL</a>: “At Miami Open Data Jam, we brainstormed and mapped ideas for an open data policy and prioritizing open data in Miami-Dade County. Developers, journalists, activists, local elected officials, county staff, and a few open data experts showed up to think about these issues and work together on a roadmap for action.”</li> <li><a href="http://codeacrossgr.org/">Grand Rapids, MI</a>: &#8220;On Friday, the space was filled to capacity with around 75 people, including the city comptroller, a city commissioner, and the City&#8217;s director of IT&#8230;Jonathan Pichot&#8230; unveiled Grand Rapids Open Data, a City-supported community-powered data portal.”</li> <li><a href="http://www.eventbrite.com/e/code-across-2014-meetup-tickets-10663742541">St. Louis, MO</a>: &#8220;And we made some real progress on our data census for the City of St Louis, giving us some key information to bring back to city government!”</li> </ul> <p>And there was an abundance of local coverage. Check out the press, blogs, and recaps from CodeAcross events around the world.</p> <ul> <li>Asheville, NC: <a href="http://www.codeforamerica.org/blog/2014/03/11/brigade-spotlight-codeacross-asheville/">Brigade Spotlight: CodeAcross Asheville</a></li> <li>Austin, TX: <a href="http://www.open-austin.org/article/860">Geospatial Jam Features Skill Sharing, Data Awareness<br /> </a></li> <li>Berlin, Germany: <a href="https://vimeo.com/87885835">Open Data Day 2014</a></li> <li>Burlington, VT: <a href="http://digital.vpr.net/post/coders-interpret-burlingtons-open-data">Coders Interpret Burlington&#8217;s Open Data</a></li> <li>Dublin, Ireland: <a href="http://storify.com/OKFirl/open-data-day-2014?utm_content=storify-pingback&amp;utm_medium=sfy.co-twitter&amp;awesm=sfy.co_ab2T&amp;utm_campaign=&amp;utm_source=t.co">Open Data Day 2014<br /> </a></li> <li>Lahore, Pakistan: <a href="http://www.codeforpakistan.org/1/post/2014/02/lahore-brigade-meetup.html">Lahore Brigade Meetup</a></li> <li>Mesa, AZ: <a href="http://kjzz.org/content/20505/mesa-event-helps-residents-get-involved">Mesa Event Helps Residents Get Involved</a></li> <li>Miami, FL: <a href="http://miamiherald.typepad.com/the-starting-gate/2014/02/miami-open-data-jam-planned-for-saturday.html">Miami Open Data Jam Planned for Saturday<br /> </a></li> <li>New York, NY: <a href="http://blog.betanyc.org/post/77719033908/codeacrossnyc-2014-wrap-up">#CodeAcrossNYC 2014 wrap up</a></li> <li>Philadelphia, PA: <a href="http://technical.ly/philly/2014/02/26/philly-codefest-2014/">See the 10 Philly Codefest hackathon project finalists</a></li> <li>Providence, RI: <a href="http://pbn.com/Five-Questions-With-Ryan-Kelly,95311">Five Questions with Ryan Kelly</a></li> <li>Richmond, VA: <a href="http://www.timesdispatch.com/news/local/city-of-richmond/city-a-better-place-because-of-annual-hackathon/article_18d79683-688f-56b2-a6ca-b3d413f17da2.html">City a better place because of annual ‘Hackathon&#8217;<br /> </a></li> <li>Sacramento, CA: <a href="http://code4sac.org/codeacross-sacramento-2014-recap/">CodeAcross Sacramento 2014 recap<br /> </a></li> <li>San Antonio, TX: <a href="http://www.youtube.com/watch?v=KVqG1q9Nltk">Code for America San Antonio</a></li> <li>San Juan, Puerto Rico: <a href="http://www.elnuevodia.com/hackerstomanhoyelsenadodepuertorico-1717578.html">Hackers toman hoy el Senado de Puerto Rico<br /> </a></li> <li>Triangle Brigade, NC: <a href="http://technologytank.org/2014/03/04/triangle-open-data-day-recap/">Triangle Open Data Day Recap Brigade</a></li> <li>Tulsa, OK: <a href="http://www.tulsaworld.com/homepagelatest/saturday-hackathon-encourages-programmers-to-devise-apps-for-tulsa/article_4b570e1c-9c11-11e3-9634-0017a43b2370.html">Saturday &#8216;Hackathon&#8217; encourages programmers to devise apps for Tulsa</a></li> <li>Twin Cities, MN: <a href="http://capitolcode.mn.gov/2014/02/capitol-code-in-the-press/">Capitol Code in the Press</a></li> <li>Zagreb Croatia: <a href="http://www.netokracija.com/vise-od-transparentnosti-panel-otvorenost-podataka-68403">Više od transparentnosti: Nije dovoljna sama otvorenost javnih podataka, nego i način korištenja!<br /> </a></li> </ul> <p>Have a great blog or article about your CodeAcross event that&#8217;s not on this list? Let us know <a href="http://twitter.com/codeforamerica" target="_blank">@codeforamerica</a>.</p> <p><strong>Key Learnings and Next Steps</strong><br /> We asked CodeAcross event organizers to give their CodeAcross experience a letter grade: 76 percent of event organizers gave it an A; 17 percent gave it a B; and 7 percent gave it a C.</p> <p>The requests for improvement generally fell into three categories: more lead time and notice for CodeAcross; more templates and tools available earlier on; and more flexibility with the dates.</p> <p>Next up the Brigade is to help track and sustain the momentum out of CodeAcross. A few ways we&#8217;ll be doing this is by helping new Brigades continue to grow, inviting CodeAcross participants into the Brigade network, and tracking CodeAcross projects.</p> <p>Oh, yeah. And we&#8217;ll also be applying the lessons we learned from CodeAcross to National Day of Civic Hacking this June. Y&#8217;all ready to do this agin? We are!</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/11/heres-what-happened-at-codeacross-2014/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>March 12: Join Code for America in DC</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/11/march-12-join-code-for-america-in-dc/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/11/march-12-join-code-for-america-in-dc/#comments
+</comments>
+<pubDate>Tue, 11 Mar 2014 18:24:58 +0000</pubDate>
+<dc:creator>Dana Oshiro</dc:creator>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=29957</guid>
+<description>
+<![CDATA[
+One day before the Nonprofit Technology Conference, Code for America, TechSoup and Caravan Studios are teaming up to help solve community problems with the help of technology. On March 12 from 10:00 a.m. &#8211; 5:00 p.m. at the 1776 coworking... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/11/march-12-join-code-for-america-in-dc/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p>One day before the Nonprofit Technology Conference, <a href="http://codeforamerica.org">Code for America</a>, <a href="http://www.techsoup.org/">TechSoup</a> and <a href="http://www.caravanstudios.org/">Caravan Studios</a> are teaming up to help solve community problems with the help of technology. <img alt="" src="https://f.cloud.github.com/assets/3669313/2225081/283f1ba8-9a87-11e3-9564-a6053ab5bf62.jpg" /></p> <p>On March 12 from 10:00 a.m. &#8211; 5:00 p.m. at the <a href="http://1776dc.com/contact">1776 coworking space</a>, we&#8217;re welcoming community members, developers, designers, and researchers to collaborate on applications for social good. Our morning sessions will feature an idea generator where participants will brainstorm problem statements to inform the hack request process. In the afternoon we&#8217;ll switch gears and host an open demo session for those hackers who are ready for community feedback on their social good-related apps and products.</p> <p>Food and beverages and there&#8217;s no need to attend the entire day. To register visit <a href="http://www.eventbrite.com/e/dc-nonprofit-generator-accessing-ideas-for-social-benefit-technology-apps-tickets-10633518139">http://bit.ly/1bqfDJO</a>. For those interested in demoing, sponsoring or speaking contact Susan Tenby at Caravan Studios <a href="mailto:susan@caravanstudios.org">susan@caravanstudios.com</a>.</p> <p>&nbsp;</p> <hr /> <p>Questions? Comments? Hit us up <a href="http://twitter.com/codeforamerica" target="_blank">@codeforamerica</a>.</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/11/march-12-join-code-for-america-in-dc/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>Brigade Spotlight: CodeAcross Asheville</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/11/brigade-spotlight-codeacross-asheville/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/11/brigade-spotlight-codeacross-asheville/#comments
+</comments>
+<pubDate>Tue, 11 Mar 2014 18:15:24 +0000</pubDate>
+<dc:creator>Hannah Young</dc:creator>
+<category>
+<![CDATA[ Brigade ]]>
+</category>
+<category>
+<![CDATA[ Civic Hacking ]]>
+</category>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30098</guid>
+<description>
+<![CDATA[
+Code for Asheville held their CodeAcross event on Feb. 22, 2014. Following their event, Brigade Captains Scott Barnwell, Dave Michelson, and the Code for Asheville team shared this story about their event. CodeAcross Asheville had two primary goals around building collaboration... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/11/brigade-spotlight-codeacross-asheville/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p><em><a href="http://codeforasheville.org/">Code for Asheville</a> held their CodeAcross event on Feb. 22, 2014. Following their event, Brigade Captains <a href="http://www.codeforamerica.org/people/scott-barnwell/">Scott Barnwell</a>, <a href="http://www.codeforamerica.org/people/dave-michelson/">Dave Michelson</a>, and the Code for Asheville team shared this story about their event.</em></p> <p><a href="http://www.codeforamerica.org/blog/wp-content/uploads/2014/03/1890993_591172384308840_1632771665_n.jpg"><img class="alignleft wp-image-30110" alt="1890993_591172384308840_1632771665_n" src="http://www.codeforamerica.org/blog/wp-content/uploads/2014/03/1890993_591172384308840_1632771665_n.jpg" width="346" height="259" /></a></p> <p>CodeAcross Asheville had two primary goals around building collaboration between the community and local government. The first goal was to start developing an Open Data Policy to get adopted by the City of Asheville in 2014. To that end, the Asheville Brigade facilitated a workshop to go through the various components of an open data policy and to solicit feedback from the community. We used the Sunlight Foundation&#8217;s &#8220;Guidelines for Open Data Policies&#8221; as a framework for the discussion. Interestingly, two City Council members joined the workshop and agreed to being proactive rather than reactive in terms of opening up access to data. Also, several local media representatives discussed some of their difficulties in getting public records and that a strong and supportive policy would be welcomed. One outcome was the agreement to have the City and the Brigade work as partners to create a draft policy in the coming weeks/months.</p> <p>The other major goal was to address one of city government&#8217;s priorities for citizen engagement: understanding and contributing to the annual budget process. To that end, the Asheville Brigade facilitated a budget workshop. In attendance were Asheville&#8217;s Mayor, two City Council members, the City Manager, and the City Budget Director, as well as a strong showing of Brigade members and other interested community members. The workshop focused on both short term and long term opportunities to get the community engaged in the budget process. Short term goals include developing useful budget visualization techniques. Longer term goals include budget simulation tools and economic impact modeling. Upcoming Code for Asheville hack nights will now begin implementing solutions for the short term goals.</p> <p>CodeAcross helped bolster Code for Asheville&#8217;s credibility and professionalism in collaborating with the City of Asheville. There was one poignant moment towards the end of the day when Mayor Esther Manheimer asked the budget workshop facilitator, &#8220;And you are willing to do all of this work for free?&#8221; Eric Jackson responded &#8220;Yes&#8221;, and then a chorus of other Brigade voices in the audience added, &#8220;Yes, and me too.&#8221; Our elected officials realized that they have a Brigade of talented volunteers ready to lead the charge in citizen-government collaboration.</p> <p>&nbsp;</p> <hr /> <p>Questions? Comments? Hit us up <a href="http://twitter.com/codeforamerica">@codeforamerica</a>.</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/11/brigade-spotlight-codeacross-asheville/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>“You Talkin’ [about] Me?”</title>
+<link>
+http://www.codeforamerica.org/blog/2014/03/03/you-talkin-about-me/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/03/03/you-talkin-about-me/#comments
+</comments>
+<pubDate>Mon, 03 Mar 2014 21:45:34 +0000</pubDate>
+<dc:creator>Tom Steinberg</dc:creator>
+<category>
+<![CDATA[ Guest Post ]]>
+</category>
+<category>
+<![CDATA[ News ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=30059</guid>
+<description>
+<![CDATA[
+This is a guest post by Tom Steinberg, Director of mySociety, a not-for-profit social enterprise based in the United Kingdom. If the mayor of your city started talking about you in speeches, would you want to know? Or if the... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/03/03/you-talkin-about-me/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p><em>This is a guest post by Tom Steinberg, Director of mySociety, a not-for-profit social enterprise based in the United Kingdom.</em></p> <p>If the mayor of your city started talking about you in speeches, would you want to know?</p> <p>Or if the planning committee in your town started to talk quite a lot about your house, or your street, would you want to know that?</p> <p>Or if the people immediately responsible for funding your child’s school started to discuss whether or not to cut funding to it, would you have any interest in knowing what was being said?</p> <p>I don’t think it’s too radical to suggest that basically anyone with normal human curiosity would probably want to know these things. And yet as of today the internet really doesn’t help much with this problem at all. In the U.K., where I live, we run <a href="http://theyworkforyou.com">a service</a> that helps a little bit: we send about 30,000 custom mails a day telling people whether certain keywords were spoken in Parliament yesterday. But this sort of service basically doesn’t exist anywhere else.</p> <p>And that is why we’ve built <a href="http://sayit.mysociety.org">SayIt</a> — an open source <a href="http://poplus.org">Poplus component</a> that’s all about making, storing and sharing the words that powerful people say in ways that mean normal people will actually get to hear about it.</p> <p><a href="http://leveson.sayit.mysociety.org/hearing-24-november-2011/ms-joanne-rowling">Here’s a demo</a> of it featuring JK Rowling being interviewed about media intrusion.</p> <p>And here’s <a href="http://www.pa.org.za/hansard/60061">a version</a> that’s been built inside a new South African website for monitoring what goes on in their Parliament. SayIt is, basically, a modern way of handling transcripts — suitable for the era of sharing, searching, alerting and other normal web activities.</p> <p>Code for America has very kindly let me blog today because we’re looking for people and organizations in the U.S. that would be interested in setting up some demonstration deployments of SayIt, either within existing websites, or as new services.</p> <p>We’re looking to collaborate with people who think that a service that would let citizens find out what certain kinds of powerful people had been talking about would be a really positive contribution to life in their city or state &#8212; something they’d be genuinely excited to be part of. And thanks to the ever-generous Knight Foundation, we even have some funds to help things run smoothly.</p> <p>We’re very happy to talk to people working for governments, who we very much hope will become users of (and contributors to) SayIt over time.  But the easiest place to get started is actually collaborations with citizens outside governments, who aren’t so constrained by officialdom. If that sounds like you, or you’re interested in any way, then <a href="http://sayit.mysociety.org/about/community">please do drop us a line</a>. We look forward to hearing from you, and to helping you get cool new services online in your city or state.</p> <p>&nbsp;</p> <hr /> <p>Questions? Comments? Hit us up <a href="http://twitter.com/codeforamerica">@codeforamerica</a>.</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/03/03/you-talkin-about-me/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+<item>
+<title>
+Peer Network Spotlight: Brett Lord-Castillo, St. Louis County
+</title>
+<link>
+http://www.codeforamerica.org/blog/2014/02/27/peer-network-spotlight-brett-lord-castillo-st-louis-county/
+</link>
+<comments>
+http://www.codeforamerica.org/blog/2014/02/27/peer-network-spotlight-brett-lord-castillo-st-louis-county/#comments
+</comments>
+<pubDate>Thu, 27 Feb 2014 18:49:42 +0000</pubDate>
+<dc:creator>Lauren Dyson</dc:creator>
+<category>
+<![CDATA[ Cities ]]>
+</category>
+<category>
+<![CDATA[ News ]]>
+</category>
+<category>
+<![CDATA[ Open Data ]]>
+</category>
+<guid isPermaLink="false">http://www.codeforamerica.org/blog/?p=29995</guid>
+<description>
+<![CDATA[
+Brett Lord-Castillo (@blordcastillo) is the GIS Programmer for St. Louis County Emergency Management, part of the St. Louis County Police in Missouri — and a passionate mapmaker. He also helps organize a local civic hacking meetup group, Open Data STL,... <a class="moretag" href="http://www.codeforamerica.org/blog/2014/02/27/peer-network-spotlight-brett-lord-castillo-st-louis-county/">Continue reading</a>
+]]>
+</description>
+<content:encoded>
+<![CDATA[
+<p><img style="float: left; padding-right: 15px;" alt="brettlordcastillo-circle" src="http://www.codeforamerica.org/blog/wp-content/uploads/2014/02/brettlordcastillo-circle.png" width="200" />Brett Lord-Castillo (<a href="https://twitter.com/blordcastillo">@blordcastillo</a>) is the GIS Programmer for St. Louis County Emergency Management, part of the St. Louis County Police in Missouri — and a passionate mapmaker. He also helps organize a local civic hacking meetup group, <a href="http://www.meetup.com/Open-Data-STL/">Open Data STL</a>, and recently led St. Louis&#8217; first-ever <a href="http://www.codeforamerica.org/events/codeacross-2014/">CodeAcross</a> event, bringing together community advocates, representatives of the startup community, and local government to work towards making open data the norm in their city and county. Here&#8217;s what he has to say about what&#8217;s in store for civic innovation in the St. Louis metropolitan region:</p> <h4>How did you come to work in public service and what is your current role?</h4> <p>I stumbled onto geography in college and fell in love with this amazing field. While geography now opens up opportunities in many industries, its role in geographic information systems has created a tight link to local government. I actually did not find this opportunity, it found me. After I graduated from college in Oregon, one of my now co-workers convinced me to take a chance on Missouri, and six years later I am still the GIS programmer for St Louis County Emergency Management. I get to code, do outreach, respond to disasters, and, the most important part, make maps!</p> <h4>In the last year, we&#8217;ve seen a <a href="http://opendatastl.org/">growing civic hacking community</a> and momentum around open data in the St. Louis region. What are the upcoming civic innovation priorities for the St Louis metropolitan area? What challenges do you face?</h4> <p>Jack Dorsey&#8217;s [St. Louis native and co-founder of Twitter and Square]  <a href="http://news.stlpublicradio.org/post/twitter-square-co-founder-jack-dorsey-kicks-lets-talk-series-small-businesses">&#8220;Let&#8217;s Talk&#8221; event</a> in 2013 had a lasting effect on this region. I think we will see a focus on how government can use technology to make it easier to do business in St Louis. I think we will see improvements in business permitting, as well as wider availability of information critical to locating and running your business in the St. Louis metropolitan area. Public safety is another priority that always stirs lots of interest here. However, opening government will continue to remain a challenge for this region. Our public data are still frequently in inaccessible formats, and we need to work on the policies and infrastructure to open these up.</p> <h4>You just organized a<a href="http://www.codeforamerica.org/events/codeacross-2014/"> CodeAcross event</a> in St. Louis. What are the outcomes you&#8217;re most excited about from that event? What do you hope the growing civic hacker community in St Louis will accomplish?</h4> <p>In addition to our in-person CodeAcross event, we also did a Hangout on Air. We were hoping that an online event on a Friday afternoon would create an easy avenue for people in government and at NGOs to participate, even if it was just streaming the Hangout in the background as they work. And it worked. Local non-profits, in particular, reached out to us via Twitter to provide feedback, ask for our help in improving their transparency, and particularly to ask what they can do to help us.</p> <p>Right now, we are tackling the issues of beginning to open up our government. With our local talent pipelines to Missouri S&amp;T and Washington University, I expect to see our civic hacker community step forward in innovation and become a leader in producing new civic applications.</p> <h4>What’s your favorite part of your job?</h4> <p>While I enjoy many aspects of my job, including the opportunity I now have to get involved in civic hacking, I am still a geographer and my favorite part will always be the sheer joy of making a map.</p> <hr /> <p>&nbsp;</p> <p>Questions? Comments? Hit us up <a href="http://twitter.com/codeforamerica" target="_blank">@codeforamerica</a>.</p>
+]]>
+</content:encoded>
+<wfw:commentRss>
+http://www.codeforamerica.org/blog/2014/02/27/peer-network-spotlight-brett-lord-castillo-st-louis-county/feed/
+</wfw:commentRss>
+<slash:comments>0</slash:comments>
+</item>
+</channel>
+</rss>
