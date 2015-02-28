@@ -94,6 +94,7 @@ class TSVectorType(types.TypeDecorator):
 def compile_tsvector(element, compiler, **kw):
     return 'tsvector'
 
+
 # -------------------
 # Models
 # -------------------
