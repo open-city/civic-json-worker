@@ -35,7 +35,6 @@ from werkzeug.contrib.fixers import ProxyFix
 # -------------------
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres@localhost/cfapi'
 heroku = Heroku(app)
 db = SQLAlchemy(app)
 
@@ -571,7 +570,7 @@ def paged_results(query, page, per_page, querystring=''):
         model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
     else:
         model_dicts = [o.asdict(True) for o in query.limit(per_page).offset(offset)]
-        
+
 
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
