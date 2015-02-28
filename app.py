@@ -113,7 +113,7 @@ class Organization(db.Model):
     city = db.Column(db.Unicode())
     latitude = db.Column(db.Float())
     longitude = db.Column(db.Float())
-    last_updated = db.Column(db.DateTime())
+    last_updated = db.Column(db.Integer())
     started_on = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
@@ -122,7 +122,7 @@ class Organization(db.Model):
     # can contain events, stories, projects (these relationships are defined in the child objects)
 
     def __init__(self, name, website=None, events_url=None,
-                 rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None, last_updated=None):
+                 rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None, last_updated=time.time()):
         self.name = name
         self.website = website
         self.events_url = events_url
@@ -133,7 +133,7 @@ class Organization(db.Model):
         self.latitude = latitude
         self.longitude = longitude
         self.keep = True
-        self.last_updated = datetime.now()
+        self.last_updated = last_updated
         self.started_on = unicode(date.today())
 
     def current_events(self):
@@ -233,6 +233,19 @@ class Organization(db.Model):
                 organization_dict[key] = getattr(self, key)()
 
         return organization_dict
+
+
+tbl = Organization.__table__
+# Index the tsvector column
+db.Index('index_org_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
+
+# Trigger to populate the search index column
+trig_ddl = DDL("""
+    CREATE TRIGGER tsvupdate_orgs_trigger BEFORE INSERT OR UPDATE ON organization FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name);
+""")
+# Initialize the trigger after table is created
+event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
+
 
 class Story(db.Model):
     '''
@@ -603,6 +616,7 @@ def get_query_params(args):
     return filters, urlencode(filters)
 
 @app.route('/api/organizations')
+@app.route('/api/search/organizations')
 @app.route('/api/organizations/<name>')
 def get_organizations(name=None):
     ''' Regular response option for organizations.
@@ -623,10 +637,17 @@ def get_organizations(name=None):
 
     # Get a bunch of organizations.
     query = db.session.query(Organization)
+    # Default ordering of results
+    ordering = desc(Organization.last_updated)
 
     for attr, value in filters.iteritems():
-        query = query.filter(getattr(Organization, attr).ilike('%%%s%%' % value))
+        if 'q' in attr:
+            query = query.filter("organization.tsv_body @@ plainto_tsquery('%s')" % value)
+            ordering = desc(func.ts_rank(Organization.tsv_body,func.plainto_tsquery('%s'%value)))
+        else:
+            query = query.filter(getattr(Organization, attr).ilike('%%%s%%' % value))
 
+    query = query.order_by(ordering)
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
 
     return jsonify(response)

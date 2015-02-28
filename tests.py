@@ -5,6 +5,7 @@ import unittest
 import json
 from datetime import datetime, timedelta
 from urlparse import urlparse
+import time
 
 from sqlalchemy.exc import IntegrityError
 
@@ -524,6 +525,82 @@ class ApiTest(unittest.TestCase):
         assert response['objects'][1]['id'] == 2
         assert response['objects'][2]['id'] == 1
 
+    def test_org_search_nonexisting_text(self):
+        OrganizationFactory(
+            name=u'BetaNYC'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/organizations?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 0)
+        self.assertEqual(len(response['objects']), 0)
+
+    def test_org_search_existing_text(self):
+        OrganizationFactory(
+            name=u'BetaNYC'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/organizations?q=BetaNYC')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_org_search_existing_phrase(self):
+        OrganizationFactory(
+            name=u'Code for San Francisco',
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/organizations?q=Code for San Francisco')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_org_search_existing_part_of_phrase(self):
+        OrganizationFactory(
+            name=u'Code for San Francisco',
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/organizations?q=Code for')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_org_search_nonexisting_phrase(self):
+        OrganizationFactory(
+            name=u'BetaNYC'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/organizations?q=joomla')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 0)
+        self.assertEqual(len(response['objects']), 0)
+
+    def test_org_search_order_by_relevance(self):
+        OrganizationFactory(
+            name=u'Code for San Francisco',
+            last_updated=time.time() - 10
+        )
+        OrganizationFactory(
+            name=u'Code for Binghampton',
+            last_updated=time.time() - 1
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/organizations?q=San Francisco')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['name'], 'Code for San Francisco')
+        
     def test_events(self):
         '''
         Return all events past/future ordered by oldest to newest
