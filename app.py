@@ -18,20 +18,23 @@ import requests
 from flask.ext.heroku import Heroku
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import backref
+from sqlalchemy import event, DDL
+from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-
 
 # -------------------
 # Init
 # -------------------
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres@localhost/cfapi'
 heroku = Heroku(app)
 db = SQLAlchemy(app)
 
@@ -77,6 +80,17 @@ class JsonType(Mutable, types.TypeDecorator):
             # default can also be a list
             return {}
 
+class TSVectorType(types.TypeDecorator):
+    ''' TSVECTOR wrapper type for database storage.
+
+        References:
+        http://stackoverflow.com/questions/13837111/tsvector-in-sqlalchemy
+    '''
+    impl = types.UnicodeText
+
+@compiles(TSVectorType, 'postgresql')
+def compile_tsvector(element, compiler, **kw):
+    return 'tsvector'
 
 # -------------------
 # Models
@@ -274,6 +288,8 @@ class Project(db.Model):
     last_updated = db.Column(db.DateTime())
     last_updated_issues = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
+    tsv_body = db.Column(TSVectorType())
+
 
     # Relationships
     organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("projects", cascade="save-update, delete")) #child
@@ -297,6 +313,8 @@ class Project(db.Model):
         self.organization_name = organization_name
         self.keep = True
 
+
+
     def api_url(self):
         ''' API link to itself
         '''
@@ -319,6 +337,18 @@ class Project(db.Model):
             project_dict['issues'] = [o.asdict() for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
 
         return project_dict
+
+tbl = Project.__table__
+# Index the tsvector column
+db.Index('index_project_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
+
+# Trigger to populate the search index column
+trig_ddl = DDL("""
+    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories);
+""")
+# Initialize the trigger after table is created
+event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
+
 
 class Issue(db.Model):
     '''
@@ -751,12 +781,16 @@ def get_projects(id=None):
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
             query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+        elif 'q' in attr:
+            query = query.filter(Project.tsv_body.match('%s' % value, postgresql_regconfig='english'))
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
     query = query.order_by(desc(Project.last_updated))
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
+
+
 
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
