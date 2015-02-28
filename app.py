@@ -564,7 +564,11 @@ def paged_results(query, page, per_page, querystring=''):
     '''
     total = query.count()
     last, offset = page_info(query, page, per_page)
-    model_dicts = [o.asdict(True) for o in query.limit(per_page).offset(offset)]
+    if(querystring.find("only_ids") != -1):
+        model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
+    else:
+        model_dicts = [o.asdict(True) for o in query.limit(per_page).offset(offset)]
+        
 
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
@@ -757,6 +761,7 @@ def get_orgs_issues(organization_name, labels=None):
     return jsonify(response)
 
 @app.route('/api/projects')
+@app.route('/api/search/projects')
 @app.route('/api/projects/<int:id>')
 def get_projects(id=None):
     ''' Regular response option for projects.
@@ -776,17 +781,22 @@ def get_projects(id=None):
 
     # Get a bunch of projects.
     query = db.session.query(Project)
+    # Default ordering of results
+    ordering = desc(Project.last_updated)
 
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
             query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
         elif 'q' in attr:
-            query = query.filter(Project.tsv_body.match('%s' % value, postgresql_regconfig='english'))
+            query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
+            ordering = desc(func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value)))
+        elif 'only_ids' in attr:
+            query = query.with_entities(Project.id)
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
-    query = query.order_by(desc(Project.last_updated))
+    query = query.order_by(ordering)
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 
