@@ -103,6 +103,7 @@ class Organization(db.Model):
         Brigades and other civic tech organizations
     '''
     #Columns
+    id = db.Column(db.Integer())
     name = db.Column(db.Unicode(), primary_key=True)
     website = db.Column(db.Unicode())
     events_url = db.Column(db.Unicode())
@@ -112,15 +113,16 @@ class Organization(db.Model):
     city = db.Column(db.Unicode())
     latitude = db.Column(db.Float())
     longitude = db.Column(db.Float())
-    last_updated = db.Column(db.Integer())
+    last_updated = db.Column(db.DateTime())
     started_on = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
+    tsv_body = db.Column(TSVectorType())
 
     # Relationships
     # can contain events, stories, projects (these relationships are defined in the child objects)
 
     def __init__(self, name, website=None, events_url=None,
-                 rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None):
+                 rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None, last_updated=None):
         self.name = name
         self.website = website
         self.events_url = events_url
@@ -131,7 +133,7 @@ class Organization(db.Model):
         self.latitude = latitude
         self.longitude = longitude
         self.keep = True
-        self.last_updated = time.time()
+        self.last_updated = datetime.now()
         self.started_on = unicode(date.today())
 
     def current_events(self):
