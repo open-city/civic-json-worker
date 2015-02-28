@@ -104,7 +104,6 @@ class Organization(db.Model):
         Brigades and other civic tech organizations
     '''
     #Columns
-    id = db.Column(db.Integer())
     name = db.Column(db.Unicode(), primary_key=True)
     website = db.Column(db.Unicode())
     events_url = db.Column(db.Unicode())
