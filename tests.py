@@ -339,6 +339,17 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['type'], unicode)
 
+    def test_project_search_one_query_param(self):
+        ProjectFactory(
+            description=u'Coder'
+        )
+        db.session.commit()
+
+        response = self.app.get('/api/projects?q=ruby')
+        response = json.loads(response.data)
+        self.assertEqual(len(response['objects']), 0)
+
+
     def test_pagination(self):
         ProjectFactory()
         ProjectFactory()
