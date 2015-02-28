@@ -18,9 +18,12 @@ import requests
 from flask.ext.heroku import Heroku
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import backref
+from sqlalchemy import event, DDL
+from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager
@@ -76,6 +79,18 @@ class JsonType(Mutable, types.TypeDecorator):
         else:
             # default can also be a list
             return {}
+
+class TSVectorType(types.TypeDecorator):
+    ''' TSVECTOR wrapper type for database storage.
+
+        References:
+        http://stackoverflow.com/questions/13837111/tsvector-in-sqlalchemy
+    '''
+    impl = types.UnicodeText
+
+@compiles(TSVectorType, 'postgresql')
+def compile_tsvector(element, compiler, **kw):
+    return 'tsvector'
 
 
 # -------------------
