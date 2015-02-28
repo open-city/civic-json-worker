@@ -339,16 +339,95 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['type'], unicode)
 
-    def test_project_search_one_query_param(self):
+    def test_project_search_nonexisting_text(self):
         ProjectFactory(
             description=u'Coder'
         )
         db.session.commit()
-
-        response = self.app.get('/api/projects?q=ruby')
+        response = self.app.get('/api/search/projects?q=ruby')
         response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 0)
         self.assertEqual(len(response['objects']), 0)
 
+    def test_project_search_existing_text(self):
+        ProjectFactory(
+            description=u'ruby'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_existing_phrase(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/projects?q=ruby on rails')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_existing_part_of_phrase(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_nonexisting_phrase(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/projects?q=joomla')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 0)
+        self.assertEqual(len(response['objects']), 0)
+
+    def test_project_search_order_by_relevance(self):
+        ProjectFactory(
+            description=u'ruby on rails',
+            last_updated=datetime.now() - timedelta(10)
+        )
+        ProjectFactory(
+            description=u'joomla',
+            last_updated=datetime.now() - timedelta(1)
+        )
+        db.session.commit()
+        response = self.app.get('/api/search/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['description'], 'ruby on rails')
+
+    def test_project_return_only_ids(self):
+        project = ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        project_id = project.id
+
+        response = self.app.get('/api/search/projects?q=ruby&only_ids=true')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        assert isinstance(response['objects'][0], int)
+        self.assertEqual(response['objects'][0], project_id)
 
     def test_pagination(self):
         ProjectFactory()
