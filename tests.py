@@ -440,7 +440,7 @@ class ApiTest(unittest.TestCase):
             name=u'BetaNYC'
         )
         db.session.commit()
-        response = self.app.get('/api/search/organizations?q=ruby')
+        response = self.app.get('/api/organizations?q=ruby')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -452,7 +452,7 @@ class ApiTest(unittest.TestCase):
             name=u'BetaNYC'
         )
         db.session.commit()
-        response = self.app.get('/api/search/organizations?q=BetaNYC')
+        response = self.app.get('/api/organizations?q=BetaNYC')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -464,7 +464,7 @@ class ApiTest(unittest.TestCase):
             name=u'Code for San Francisco',
         )
         db.session.commit()
-        response = self.app.get('/api/search/organizations?q=Code for San Francisco')
+        response = self.app.get('/api/organizations?q=Code for San Francisco')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -476,7 +476,7 @@ class ApiTest(unittest.TestCase):
             name=u'Code for San Francisco',
         )
         db.session.commit()
-        response = self.app.get('/api/search/organizations?q=Code for')
+        response = self.app.get('/api/organizations?q=Code for')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -488,7 +488,7 @@ class ApiTest(unittest.TestCase):
             name=u'BetaNYC'
         )
         db.session.commit()
-        response = self.app.get('/api/search/organizations?q=joomla')
+        response = self.app.get('/api/organizations?q=joomla')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -505,12 +505,12 @@ class ApiTest(unittest.TestCase):
             last_updated=time.time() - 1
         )
         db.session.commit()
-        response = self.app.get('/api/search/organizations?q=San Francisco')
+        response = self.app.get('/api/organizations?q=San Francisco')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
         self.assertEqual(response['objects'][0]['name'], 'Code for San Francisco')
-        
+
     def test_events(self):
         '''
         Return all events past/future ordered by oldest to newest

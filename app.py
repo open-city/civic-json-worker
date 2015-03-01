@@ -594,7 +594,6 @@ def get_query_params(args):
     return filters, urlencode(filters)
 
 @app.route('/api/organizations')
-@app.route('/api/search/organizations')
 @app.route('/api/organizations/<name>')
 def get_organizations(name=None):
     ''' Regular response option for organizations.
