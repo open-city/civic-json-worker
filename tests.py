@@ -344,7 +344,7 @@ class ApiTest(unittest.TestCase):
             description=u'Coder'
         )
         db.session.commit()
-        response = self.app.get('/api/search/projects?q=ruby')
+        response = self.app.get('/api/projects?q=ruby')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -356,7 +356,7 @@ class ApiTest(unittest.TestCase):
             description=u'ruby'
         )
         db.session.commit()
-        response = self.app.get('/api/search/projects?q=ruby')
+        response = self.app.get('/api/projects?q=ruby')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -368,7 +368,7 @@ class ApiTest(unittest.TestCase):
             description=u'ruby on rails'
         )
         db.session.commit()
-        response = self.app.get('/api/search/projects?q=ruby on rails')
+        response = self.app.get('/api/projects?q=ruby on rails')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -380,7 +380,7 @@ class ApiTest(unittest.TestCase):
             description=u'ruby on rails'
         )
         db.session.commit()
-        response = self.app.get('/api/search/projects?q=ruby')
+        response = self.app.get('/api/projects?q=ruby')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -392,7 +392,7 @@ class ApiTest(unittest.TestCase):
             description=u'ruby on rails'
         )
         db.session.commit()
-        response = self.app.get('/api/search/projects?q=joomla')
+        response = self.app.get('/api/projects?q=joomla')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -409,7 +409,7 @@ class ApiTest(unittest.TestCase):
             last_updated=datetime.now() - timedelta(1)
         )
         db.session.commit()
-        response = self.app.get('/api/search/projects?q=ruby')
+        response = self.app.get('/api/projects?q=ruby')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
@@ -422,7 +422,7 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
         project_id = project.id
 
-        response = self.app.get('/api/search/projects?q=ruby&only_ids=true')
+        response = self.app.get('/api/projects?q=ruby&only_ids=true')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
