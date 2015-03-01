@@ -405,11 +405,43 @@ class ApiTest(unittest.TestCase):
             last_updated=datetime.now() - timedelta(10)
         )
         ProjectFactory(
-            description=u'joomla',
+            description=u'ruby on grails',
             last_updated=datetime.now() - timedelta(1)
         )
         db.session.commit()
         response = self.app.get('/api/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['description'], 'ruby on rails')
+
+    def test_project_search_order_by_last_updated(self):
+        ProjectFactory(
+            description=u'ruby on rails',
+            last_updated=datetime.now() - timedelta(10)
+        )
+        ProjectFactory(
+            description=u'ruby on grails',
+            last_updated=datetime.now() - timedelta(1)
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby&sort_by=last_updated')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['description'], 'ruby on grails')
+
+    def test_project_search_order_by_last_updated_sort_asc(self):
+        ProjectFactory(
+            description=u'ruby on rails',
+            last_updated=datetime.now() - timedelta(10)
+        )
+        ProjectFactory(
+            description=u'ruby on grails',
+            last_updated=datetime.now() - timedelta(1)
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby&sort_by=last_updated&sort_dir=asc')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
