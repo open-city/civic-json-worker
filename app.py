@@ -786,14 +786,13 @@ def get_orgs_issues(organization_name, labels=None):
     return jsonify(response)
 
 @app.route('/api/projects')
-@app.route('/api/search/projects')
 @app.route('/api/projects/<int:id>')
 def get_projects(id=None):
     ''' Regular response option for projects.
     '''
 
     filters, querystring = get_query_params(request.args)
-
+    
     if id:
         # Get one named project.
         filter = Project.id == id
