@@ -791,7 +791,7 @@ def get_projects(id=None):
     '''
 
     filters, querystring = get_query_params(request.args)
-    
+
     if id:
         # Get one named project.
         filter = Project.id == id
@@ -805,7 +805,12 @@ def get_projects(id=None):
     # Get a bunch of projects.
     query = db.session.query(Project)
     # Default ordering of results
-    ordering = desc(Project.last_updated)
+    last_updated_ordering_filter = Project.last_updated
+    relevance_ordering_filter = None
+    ordering_filter_name = 'last_updated'
+    ordering_filter = last_updated_ordering_filter
+    ordering_dir = 'desc'
+    ordering = None
 
     for attr, value in filters.iteritems():
         if 'organization' in attr:
@@ -813,12 +818,32 @@ def get_projects(id=None):
             query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
         elif 'q' in attr:
             query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
-            ordering = desc(func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value)))
+            relevance_ordering_filter = func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value))
+            ordering_filter_name = 'relevance'
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
+        elif 'sort_by' in attr:
+            if(value == 'relevance'):
+                ordering_filter_name = 'relevance'
+            else:
+                ordering_filter_name = 'last_updated'
+        elif 'sort_dir' in attr:
+            if(value == 'asc'):
+                ordering_dir = 'asc'
+            else:
+                ordering_dir = 'desc'
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
+    if(ordering_filter_name == 'last_updated'):
+        ordering_filter = last_updated_ordering_filter
+    elif(ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None)):
+        ordering_filter = relevance_ordering_filter
+
+    if(ordering_dir == 'desc'):
+        ordering = ordering_filter.desc()
+    else:
+        ordering = ordering_filter.asc()
     query = query.order_by(ordering)
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
