@@ -66,7 +66,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''name,description,link_url,code_url,type,categories''', ''',,,https://github.com/codeforamerica/cityvoice,,''',''',,,https://github.com/codeforamerica/bizfriendly-web,,''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories''', ''',,,https://github.com/codeforamerica/cityvoice,,''',''',,,https://github.com/codeforamerica/bizfriendly-web,,''']
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]))
             elif self.results_state == 'after':
@@ -895,14 +895,6 @@ class RunUpdateTestCase(unittest.TestCase):
             # verify only one organization was returned
             organizations = self.db.session.query(Organization).all()
             self.assertTrue(len(organizations) is 1)
-
-            # get the raw project data and verify that no names are set there
-            from requests import get
-            from csv import DictReader
-            raw_project_list = get(organizations[0].projects_list_url)
-            project_list = list(DictReader(raw_project_list.text.splitlines(), dialect='excel'))
-            for project in project_list:
-                self.assertTrue(project['name'] in [u'', None])
 
         # now get the projects from the database
         projects = self.db.session.query(Project).all()
