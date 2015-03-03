@@ -21,7 +21,7 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import backref, class_mapper, defer
 from sqlalchemy import event, DDL
 from sqlalchemy import types
 from dictalchemy import make_class_dictable
@@ -567,8 +567,6 @@ def paged_results(query, page, per_page, querystring=''):
         model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
     else:
         model_dicts = [o.asdict(True) for o in query.limit(per_page).offset(offset)]
-
-
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
 def is_safe_name(name):
@@ -778,7 +776,7 @@ def get_projects(id=None):
             return jsonify({"status":"Resource Not Found"}), 404
 
     # Get a bunch of projects.
-    query = db.session.query(Project)
+    query = db.session.query(Project).options(defer('tsv_body'))
     # Default ordering of results
     last_updated_ordering_filter = Project.last_updated
     relevance_ordering_filter = None
@@ -822,6 +820,7 @@ def get_projects(id=None):
     else:
         ordering = ordering_filter.asc()
     query = query.order_by(ordering)
+
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 

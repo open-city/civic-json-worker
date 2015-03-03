@@ -473,6 +473,16 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response['total'], 1)
         self.assertEqual(len(response['objects']), 1)
 
+    def test_project_search_tsv_body_not_in_response(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=')
+        response = json.loads(response.data)
+        self.assertEqual(len(response['objects']), 1)
+        self.assertEqual(response['objects'][0]['tsv_body'], None)
+
     def test_pagination(self):
         ProjectFactory()
         ProjectFactory()
