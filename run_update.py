@@ -236,6 +236,8 @@ def get_projects(organization):
                 # convert all the values to unicode
                 for project in projects:
                     for project_key, project_value in project.items():
+                        if project_key:
+                            project_key = project_key.lower()
                         # some values might be lists
                         if type(project_value) is list:
                             project_value = [unicode(item.decode('utf8')) for item in project_value]
