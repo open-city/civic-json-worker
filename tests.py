@@ -462,6 +462,18 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'][0], int)
         self.assertEqual(response['objects'][0], project_id)
 
+    def test_project_search_empty_string(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
     def test_pagination(self):
         ProjectFactory()
         ProjectFactory()

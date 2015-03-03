@@ -817,9 +817,11 @@ def get_projects(id=None):
             org_attr = attr.split('_')[1]
             query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
         elif 'q' in attr:
-            query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
-            relevance_ordering_filter = func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value))
-            ordering_filter_name = 'relevance'
+            # Returns all results if the value is empty
+            if value:
+                query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
+                relevance_ordering_filter = func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value))
+                ordering_filter_name = 'relevance'
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
         elif 'sort_by' in attr:
