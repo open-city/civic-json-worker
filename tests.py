@@ -482,7 +482,7 @@ class ApiTest(unittest.TestCase):
         response = self.app.get('/api/projects?q=')
         response = json.loads(response.data)
         self.assertEqual(len(response['objects']), 1)
-        self.assertEqual(response['objects'][0]['tsv_body'], None)
+        self.assertFalse( 'tsv_body' in response['objects'][0])
 
     def test_pagination(self):
         ProjectFactory()

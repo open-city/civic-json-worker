@@ -584,7 +584,12 @@ def paged_results(query, page, per_page, querystring=''):
     if(querystring.find("only_ids") != -1):
         model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
     else:
-        model_dicts = [o.asdict(True) for o in query.limit(per_page).offset(offset)]
+        model_dicts = []
+        for o in query.limit(per_page).offset(offset):
+            obj = o.asdict(True)
+            # Remove some fields from the API
+            obj.pop('tsv_body', None)
+            model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
 def is_safe_name(name):
