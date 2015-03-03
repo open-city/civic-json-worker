@@ -585,7 +585,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         from app import Label
         import run_update
-        
+
         self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):

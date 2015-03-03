@@ -21,14 +21,13 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import backref, class_mapper, defer
 from sqlalchemy import event, DDL
 from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-
 
 # -------------------
 # Init
@@ -221,6 +220,7 @@ class Organization(db.Model):
         organization_dict = db.Model.asdict(self)
 
         del organization_dict['keep']
+        del organization_dict['tsv_body']
 
         for key in ('all_events', 'all_projects', 'all_stories', 'all_issues',
                     'upcoming_events', 'past_events', 'api_url'):
@@ -303,6 +303,8 @@ class Project(db.Model):
     last_updated = db.Column(db.DateTime())
     last_updated_issues = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
+    tsv_body = db.Column(TSVectorType())
+
 
     # Relationships
     organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("projects", cascade="save-update, delete")) #child
@@ -326,6 +328,8 @@ class Project(db.Model):
         self.organization_name = organization_name
         self.keep = True
 
+
+
     def api_url(self):
         ''' API link to itself
         '''
@@ -339,6 +343,8 @@ class Project(db.Model):
         project_dict = db.Model.asdict(self)
 
         del project_dict['keep']
+        del project_dict['tsv_body']
+
         project_dict['api_url'] = self.api_url()
 
         if include_organization:
@@ -348,6 +354,18 @@ class Project(db.Model):
             project_dict['issues'] = [o.asdict() for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
 
         return project_dict
+
+tbl = Project.__table__
+# Index the tsvector column
+db.Index('index_project_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
+
+# Trigger to populate the search index column
+trig_ddl = DDL("""
+    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories);
+""")
+# Initialize the trigger after table is created
+event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
+
 
 class Issue(db.Model):
     '''
@@ -563,8 +581,15 @@ def paged_results(query, page, per_page, querystring=''):
     '''
     total = query.count()
     last, offset = page_info(query, page, per_page)
-    model_dicts = [o.asdict(True) for o in query.limit(per_page).offset(offset)]
-
+    if(querystring.find("only_ids") != -1):
+        model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
+    else:
+        model_dicts = []
+        for o in query.limit(per_page).offset(offset):
+            obj = o.asdict(True)
+            # Remove some fields from the API
+            obj.pop('tsv_body', None)
+            model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
 def is_safe_name(name):
@@ -607,6 +632,7 @@ def get_organizations(name=None):
         filter = Organization.name == raw_name(name)
         org = db.session.query(Organization).filter(filter).first()
         if org:
+            # del org.tsv_body
             return jsonify(org.asdict(True))
         else:
             # If no org found
@@ -781,18 +807,55 @@ def get_projects(id=None):
             return jsonify({"status":"Resource Not Found"}), 404
 
     # Get a bunch of projects.
-    query = db.session.query(Project)
+    query = db.session.query(Project).options(defer('tsv_body'))
+    # Default ordering of results
+    last_updated_ordering_filter = Project.last_updated
+    relevance_ordering_filter = None
+    ordering_filter_name = 'last_updated'
+    ordering_filter = last_updated_ordering_filter
+    ordering_dir = 'desc'
+    ordering = None
 
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
             query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+        elif 'q' in attr:
+            # Returns all results if the value is empty
+            if value:
+                query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
+                relevance_ordering_filter = func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value))
+                ordering_filter_name = 'relevance'
+        elif 'only_ids' in attr:
+            query = query.with_entities(Project.id)
+        elif 'sort_by' in attr:
+            if(value == 'relevance'):
+                ordering_filter_name = 'relevance'
+            else:
+                ordering_filter_name = 'last_updated'
+        elif 'sort_dir' in attr:
+            if(value == 'asc'):
+                ordering_dir = 'asc'
+            else:
+                ordering_dir = 'desc'
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
-    query = query.order_by(desc(Project.last_updated))
+    if(ordering_filter_name == 'last_updated'):
+        ordering_filter = last_updated_ordering_filter
+    elif(ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None)):
+        ordering_filter = relevance_ordering_filter
+
+    if(ordering_dir == 'desc'):
+        ordering = ordering_filter.desc()
+    else:
+        ordering = ordering_filter.asc()
+    query = query.order_by(ordering)
+
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
+
+
 
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
@@ -1066,4 +1129,5 @@ def internal_error(error):
     return jsonify({"status":"Resource Not Found"}), 500
 
 if __name__ == "__main__":
-    manager.run()
+    app.run(debug=True)
+    # manager.run()

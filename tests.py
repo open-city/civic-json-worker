@@ -340,6 +340,166 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['type'], unicode)
 
+    def test_project_search_nonexisting_text(self):
+        ProjectFactory(
+            description=u'Coder'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 0)
+        self.assertEqual(len(response['objects']), 0)
+
+    def test_project_search_existing_text(self):
+        ProjectFactory(
+            description=u'ruby'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_existing_phrase(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby on rails')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_existing_part_of_phrase(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_nonexisting_phrase(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=joomla')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 0)
+        self.assertEqual(len(response['objects']), 0)
+
+    def test_project_search_order_by_relevance(self):
+        ProjectFactory(
+            description=u'ruby on rails',
+            last_updated=datetime.now() - timedelta(10)
+        )
+        ProjectFactory(
+            description=u'ruby on grails',
+            last_updated=datetime.now() - timedelta(1)
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['description'], 'ruby on rails')
+
+    def test_project_search_order_by_last_updated(self):
+        ProjectFactory(
+            description=u'ruby on rails',
+            last_updated=datetime.now() - timedelta(10)
+        )
+        ProjectFactory(
+            description=u'ruby on grails',
+            last_updated=datetime.now() - timedelta(1)
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby&sort_by=last_updated')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['description'], 'ruby on grails')
+
+    def test_project_search_order_by_last_updated_sort_asc(self):
+        ProjectFactory(
+            description=u'ruby on rails',
+            last_updated=datetime.now() - timedelta(10)
+        )
+        ProjectFactory(
+            description=u'ruby on grails',
+            last_updated=datetime.now() - timedelta(1)
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=ruby&sort_by=last_updated&sort_dir=asc')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['objects'][0]['description'], 'ruby on rails')
+
+    def test_project_return_only_ids(self):
+        project = ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        project_id = project.id
+
+        response = self.app.get('/api/projects?q=ruby&only_ids=true')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        assert isinstance(response['objects'][0], int)
+        self.assertEqual(response['objects'][0], project_id)
+
+    def test_project_search_empty_string(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_project_search_tsv_body_not_in_response(self):
+        ProjectFactory(
+            description=u'ruby on rails'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=')
+        response = json.loads(response.data)
+        self.assertEqual(len(response['objects']), 1)
+        self.assertFalse( 'tsv_body' in response['objects'][0])
+
+    def test_org_projects_dont_include_tsv(self):
+        OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=u"Code for San Francisco")
+        db.session.commit()
+        response = self.app.get('/api/organizations/Code-for-San-Francisco')
+        response = json.loads(response.data)
+        self.assertFalse( 'tsv_body' in response['current_projects'][0])
+
+    def test_project_orgs_dont_include_tsv(self):
+        OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=u"Code for San Francisco")
+        db.session.commit()
+        response = self.app.get('/api/projects')
+        response = json.loads(response.data)
+        self.assertFalse( 'tsv_body' in response['objects'][0]['organization'])
+
     def test_pagination(self):
         ProjectFactory()
         ProjectFactory()
