@@ -15,9 +15,7 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('project', 
-	sa.Column('status', sa.String())
-    )
+    op.add_column('project', sa.Column('status', sa.Unicode(), nullable=True))
 
 def downgrade():
     op.drop_column('project', 'status')
