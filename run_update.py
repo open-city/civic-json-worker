@@ -271,7 +271,7 @@ def get_projects(organization):
             if "html_url" in project:
                 project["code_url"] = project["html_url"]
             for key in project.keys():
-                if key not in ['name','description','link_url','code_url','type','categories','organization_name']:
+                if key not in ['name','description','link_url','code_url','type','categories','organization_name','status']:
                     del project[key]
 
     # Get any updates on the projects
@@ -322,6 +322,9 @@ def update_project_info(project):
                     project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
             if 'link_url' in project:
                 if project['link_url'] != existing_project.link_url:
+                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+            if 'status' in project:
+                if project['status'] != existing_project.status:
                     project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
 
         else:

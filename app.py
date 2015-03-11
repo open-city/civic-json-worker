@@ -304,7 +304,7 @@ class Project(db.Model):
     last_updated_issues = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
-
+    status = db.Column(db.Unicode())
 
     # Relationships
     organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("projects", cascade="save-update, delete")) #child
@@ -315,7 +315,7 @@ class Project(db.Model):
     def __init__(self, name, code_url=None, link_url=None,
                  description=None, type=None, categories=None,
                  github_details=None, last_updated=None, last_updated_issues=None,
-                 organization_name=None, keep=None):
+                 organization_name=None, keep=None, status=None):
         self.name = name
         self.code_url = code_url
         self.link_url = link_url
@@ -327,6 +327,7 @@ class Project(db.Model):
         self.last_updated_issues = last_updated_issues
         self.organization_name = organization_name
         self.keep = True
+        self.status = status
 
 
 
