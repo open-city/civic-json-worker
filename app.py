@@ -26,7 +26,7 @@ from sqlalchemy import event, DDL
 from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
-from flask.ext.script import Manager
+from flask.ext.script import Manager, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
 
 # -------------------
@@ -40,6 +40,15 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
+
+@manager.command
+def dropdb():
+    if prompt_bool("Are you sure you want to lose all your data?"):
+        db.drop_all()
+
+@manager.command
+def createdb():
+    db.create_all()
 
 make_class_dictable(db.Model)
 
