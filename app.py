@@ -26,7 +26,7 @@ from sqlalchemy import event, DDL
 from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
-from flask.ext.script import Manager
+from flask.ext.script import Manager, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
 
 # -------------------
@@ -40,6 +40,15 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
+
+@manager.command
+def dropdb():
+    if prompt_bool("Are you sure you want to lose all your data?"):
+        db.drop_all()
+
+@manager.command
+def createdb():
+    db.create_all()
 
 make_class_dictable(db.Model)
 
@@ -304,7 +313,7 @@ class Project(db.Model):
     last_updated_issues = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
-
+    status = db.Column(db.Unicode())
 
     # Relationships
     organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("projects", cascade="save-update, delete")) #child
@@ -315,7 +324,7 @@ class Project(db.Model):
     def __init__(self, name, code_url=None, link_url=None,
                  description=None, type=None, categories=None,
                  github_details=None, last_updated=None, last_updated_issues=None,
-                 organization_name=None, keep=None):
+                 organization_name=None, keep=None, status=None):
         self.name = name
         self.code_url = code_url
         self.link_url = link_url
@@ -327,6 +336,7 @@ class Project(db.Model):
         self.last_updated_issues = last_updated_issues
         self.organization_name = organization_name
         self.keep = True
+        self.status = status
 
 
 
@@ -1129,5 +1139,4 @@ def internal_error(error):
     return jsonify({"status":"Resource Not Found"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
-    # manager.run()
+    manager.run()

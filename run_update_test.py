@@ -25,7 +25,8 @@ class RunUpdateTestCase(unittest.TestCase):
     results_state = 'before'
 
     def setUp(self):
-        os.environ['DATABASE_URL'] = 'postgres://postgres@localhost/civic_json_worker_test'
+        #os.environ['DATABASE_URL'] = 'postgres://postgres@localhost/civic_json_worker_test'
+        os.environ['DATABASE_URL'] = 'postgres:///civic_json_worker_test'
         os.environ['SECRET_KEY'] = '123456'
         os.environ['MEETUP_KEY'] = 'abcdef'
 
@@ -193,6 +194,12 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.name,u'bizfriendly-web')
+
+        # check for the one project status
+        filter = Project.name == u'bizfriendly-web'
+        project = self.db.session.query(Project).filter(filter).first()
+        self.assertIsNotNone(project)
+        self.assertIsNone(project.status)
 
         # check for the other project
         filter = Project.name == u'cityvoice'

@@ -17,7 +17,8 @@ class ApiTest(unittest.TestCase):
 
     def setUp(self):
         # Set up the database settings
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres@localhost/civic_json_worker_test'
+        #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres@localhost/civic_json_worker_test'
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres:///civic_json_worker_test'
         db.create_all()
         self.app = app.test_client()
 
@@ -339,6 +340,7 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'][0]['organization'], dict)
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['type'], unicode)
+        assert isinstance(response['objects'][0]['status'], unicode)
 
     def test_project_search_nonexisting_text(self):
         ProjectFactory(
