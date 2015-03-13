@@ -21,9 +21,8 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
-from sqlalchemy.orm import backref, class_mapper, defer
+from sqlalchemy.orm import backref, defer
 from sqlalchemy import event, DDL
-from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager, prompt_bool
@@ -109,7 +108,7 @@ class Organization(db.Model):
     '''
         Brigades and other civic tech organizations
     '''
-    #Columns
+    # Columns
     name = db.Column(db.Unicode(), primary_key=True)
     website = db.Column(db.Unicode())
     events_url = db.Column(db.Unicode())
@@ -266,7 +265,8 @@ class Story(db.Model):
     keep = db.Column(db.Boolean())
 
     # Relationships
-    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("stories", cascade="save-update, delete")) #child
+    # child
+    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("stories", cascade="save-update, delete"))
     organization_name = db.Column(db.Unicode(), db.ForeignKey('organization.name', ondelete='CASCADE'), nullable=False)
 
     def __init__(self, title=None, link=None, type=None, organization_name=None):
@@ -316,7 +316,8 @@ class Project(db.Model):
     status = db.Column(db.Unicode())
 
     # Relationships
-    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("projects", cascade="save-update, delete")) #child
+    # child
+    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("projects", cascade="save-update, delete"))
     organization_name = db.Column(db.Unicode(), db.ForeignKey('organization.name', ondelete='CASCADE'), nullable=False)
 
     # can contain issues (this relationship is defined in the child object)
@@ -337,8 +338,6 @@ class Project(db.Model):
         self.organization_name = organization_name
         self.keep = True
         self.status = status
-
-
 
     def api_url(self):
         ''' API link to itself
@@ -389,7 +388,8 @@ class Issue(db.Model):
     keep = db.Column(db.Boolean())
 
     # Relationships
-    project = db.relationship('Project', single_parent=True, cascade='all, delete-orphan', backref=backref("issues", cascade="save-update, delete")) #child
+    # child
+    project = db.relationship('Project', single_parent=True, cascade='all, delete-orphan', backref=backref("issues", cascade="save-update, delete"))
     project_id = db.Column(db.Integer(), db.ForeignKey('project.id', ondelete='CASCADE'), nullable=False, index=True)
 
     # can contain labels (this relationship is defined in the child object)
@@ -435,7 +435,8 @@ class Label(db.Model):
     url = db.Column(db.Unicode())
 
     # Relationships
-    issue = db.relationship('Issue', single_parent=True, cascade='all, delete-orphan', backref=backref("labels", cascade="save-update, delete")) #child
+    # child
+    issue = db.relationship('Issue', single_parent=True, cascade='all, delete-orphan', backref=backref("labels", cascade="save-update, delete"))
     issue_id = db.Column(db.Integer, db.ForeignKey('issue.id', ondelete='CASCADE'), nullable=False, index=True)
 
     def __init__(self, name, color, url, issue_id=None):
@@ -460,7 +461,7 @@ class Event(db.Model):
         Organizations events from Meetup
     '''
     # Columns
-    id  = db.Column(db.Integer(), primary_key=True)
+    id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.Unicode())
     description = db.Column(db.Unicode())
     event_url = db.Column(db.Unicode())
@@ -472,7 +473,8 @@ class Event(db.Model):
     keep = db.Column(db.Boolean())
 
     # Relationships
-    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("events", cascade="save-update, delete")) #child
+    # child
+    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("events", cascade="save-update, delete"))
     organization_name = db.Column(db.Unicode(), db.ForeignKey('organization.name', ondelete='CASCADE'), nullable=False)
 
     def __init__(self, name, event_url, start_time_notz, created_at, utc_offset,
@@ -536,7 +538,7 @@ class Error(db.Model):
         Errors from run_update.py
     '''
     # Columns
-    id  = db.Column(db.Integer(), primary_key=True)
+    id = db.Column(db.Integer(), primary_key=True)
     error = db.Column(db.Unicode())
     time = db.Column(db.DateTime(False))
 
@@ -612,7 +614,7 @@ def safe_name(name):
 
         Slashes will be removed, which is incompatible with raw_name().
     '''
-    return name.replace(' ', '-').replace('/', '-').replace('?','-').replace('#','-')
+    return name.replace(' ', '-').replace('/', '-').replace('?', '-').replace('#', '-')
 
 def raw_name(name):
     ''' Return raw organization name with dashes replaced by spaces.
@@ -623,7 +625,7 @@ def raw_name(name):
 
 def get_query_params(args):
     filters = {}
-    for key,value in args.iteritems():
+    for key, value in args.iteritems():
         if 'page' not in key:
             filters[key] = value
     return filters, urlencode(filters)
@@ -646,7 +648,7 @@ def get_organizations(name=None):
             return jsonify(org.asdict(True))
         else:
             # If no org found
-            return jsonify({"status":"Resource Not Found"}), 404
+            return jsonify({"status": "Resource Not Found"}), 404
 
     # Get a bunch of organizations.
     query = db.session.query(Organization)
@@ -656,7 +658,7 @@ def get_organizations(name=None):
     for attr, value in filters.iteritems():
         if 'q' in attr:
             query = query.filter("organization.tsv_body @@ plainto_tsquery('%s')" % value)
-            ordering = desc(func.ts_rank(Organization.tsv_body,func.plainto_tsquery('%s'%value)))
+            ordering = desc(func.ts_rank(Organization.tsv_body, func.plainto_tsquery('%s' % value)))
         else:
             query = query.filter(getattr(Organization, attr).ilike('%%%s%%' % value))
 
@@ -727,7 +729,7 @@ def get_past_events(organization_name):
         return "Organization not found", 404
     # Get past event objects
     query = Event.query.filter(Event.organization_name == organization.name, Event.start_time_notz < datetime.utcnow()).\
-            order_by(desc(Event.start_time_notz))
+        order_by(desc(Event.start_time_notz))
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
     return jsonify(response)
 
@@ -814,7 +816,7 @@ def get_projects(id=None):
             return jsonify(proj.asdict(True))
         else:
             # If no project found
-            return jsonify({"status":"Resource Not Found"}), 404
+            return jsonify({"status": "Resource Not Found"}), 404
 
     # Get a bunch of projects.
     query = db.session.query(Project).options(defer('tsv_body'))
@@ -834,7 +836,7 @@ def get_projects(id=None):
             # Returns all results if the value is empty
             if value:
                 query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
-                relevance_ordering_filter = func.ts_rank(Project.tsv_body,func.plainto_tsquery('%s'%value))
+                relevance_ordering_filter = func.ts_rank(Project.tsv_body, func.plainto_tsquery('%s' % value))
                 ordering_filter_name = 'relevance'
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
@@ -865,8 +867,6 @@ def get_projects(id=None):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 
-
-
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
 def get_issues(id=None):
@@ -884,7 +884,7 @@ def get_issues(id=None):
             return jsonify(issue.asdict(True))
         else:
             # If no issue found
-            return jsonify({"status":"Resource Not Found"}), 404
+            return jsonify({"status": "Resource Not Found"}), 404
 
     # Get a bunch of issues
     query = db.session.query(Issue).order_by(func.random())
@@ -957,7 +957,7 @@ def get_events(id=None):
             return jsonify(event.asdict(True))
         else:
             # If no event found
-            return jsonify({"status":"Resource Not Found"}), 404
+            return jsonify({"status": "Resource Not Found"}), 404
 
     # Get a bunch of events.
     query = db.session.query(Event)
@@ -1030,7 +1030,7 @@ def get_stories(id=None):
             return jsonify(story.asdict(True))
         else:
             # If no story found
-            return jsonify({"status":"Resource Not Found"}), 404
+            return jsonify({"status": "Resource Not Found"}), 404
 
     # Get a bunch of stories.
     query = db.session.query(Story).order_by(desc(Story.id))
@@ -1074,7 +1074,7 @@ def well_known_status():
 
         meetup_status = "No Meetup key set"
         if meetup_key:
-            meetup_url = 'https://api.meetup.com/status?format=json&key='+meetup_key
+            meetup_url = 'https://api.meetup.com/status?format=json&key=' + meetup_key
             meetup_status = requests.get(meetup_url).json().get('status')
 
         time_since_updated = time.time() - getattr(org, 'last_updated', -1)
@@ -1132,11 +1132,11 @@ def api_static_file(path):
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return jsonify({"status":"Resource Not Found"}), 404
+    return jsonify({"status": "Resource Not Found"}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    return jsonify({"status":"Resource Not Found"}), 500
+    return jsonify({"status": "Resource Not Found"}), 500
 
 if __name__ == "__main__":
     manager.run()
