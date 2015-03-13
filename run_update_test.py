@@ -25,7 +25,6 @@ class RunUpdateTestCase(unittest.TestCase):
     results_state = 'before'
 
     def setUp(self):
-        #os.environ['DATABASE_URL'] = 'postgres://postgres@localhost/civic_json_worker_test'
         os.environ['DATABASE_URL'] = 'postgres:///civic_json_worker_test'
         os.environ['SECRET_KEY'] = '123456'
         os.environ['MEETUP_KEY'] = 'abcdef'
@@ -50,7 +49,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         import urllib2
 
-        rss_file=open('blog.xml')
+        rss_file = open('blog.xml')
         rss_content = rss_file.read()
         rss_file.close()
         urllib2.urlopen = Mock()
@@ -83,11 +82,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # json of project description (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
-            return response(200, '''{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37 }''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT',"%a, %d %b %Y %H:%M:%S GMT")})
+            return response(200, '''{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37 }''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
 
         # json of project description (bizfriendly-web)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/bizfriendly-web':
-            return response(200, ''' { "id": 11137392, "name": "bizfriendly-web", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792?v=3", "html_url": "https://github.com/codeforamerica", "type": "Organization" }, "html_url": "https://github.com/codeforamerica/bizfriendly-web", "description": "An online service that teaches small business owners how to use the internet to better run their businesses.", "url": "https://api.github.com/repos/codeforamerica/bizfriendly-web", "contributors_url": "https://api.github.com/repos/codeforamerica/bizfriendly-web/contributors", "created_at": "2013-07-02T23:14:10Z", "updated_at": "2014-11-02T18:55:33Z", "pushed_at": "2014-10-14T21:55:04Z", "homepage": "http://bizfriend.ly", "stargazers_count": 17, "watchers_count": 17, "language": "JavaScript", "forks_count": 21, "open_issues": 31 } ''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT',"%a, %d %b %Y %H:%M:%S GMT")})
+            return response(200, ''' { "id": 11137392, "name": "bizfriendly-web", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792?v=3", "html_url": "https://github.com/codeforamerica", "type": "Organization" }, "html_url": "https://github.com/codeforamerica/bizfriendly-web", "description": "An online service that teaches small business owners how to use the internet to better run their businesses.", "url": "https://api.github.com/repos/codeforamerica/bizfriendly-web", "contributors_url": "https://api.github.com/repos/codeforamerica/bizfriendly-web/contributors", "created_at": "2013-07-02T23:14:10Z", "updated_at": "2014-11-02T18:55:33Z", "pushed_at": "2014-10-14T21:55:04Z", "homepage": "http://bizfriend.ly", "stargazers_count": 17, "watchers_count": 17, "language": "JavaScript", "forks_count": 21, "open_issues": 31 } ''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
 
         # json of project contributors (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/contributors' or url.geturl() == 'https://api.github.com/repos/codeforamerica/bizfriendly-web/contributors':
@@ -105,9 +104,6 @@ class RunUpdateTestCase(unittest.TestCase):
             issue_lines_before = [sub('xxx', ','.join(label_lines[0:2]), issue_lines[0]), sub('xxx', ','.join(label_lines[0:2]), issue_lines[1])]
             issue_lines_after = [sub('xxx', ','.join(label_lines[0:1]), issue_lines[0])]
             response_etag = {'ETag': '8456bc53d4cf6b78779ded3408886f82'}
-
-            response_before = ''' [ ''' + ', '.join(issue_lines_before) + ''' ] '''
-            response_after = ''' [ ''' + ', '.join(issue_lines_after) + ''' ] '''
 
             if self.results_state == 'before':
                 return response(200, ''' [ ''' + ', '.join(issue_lines_before) + ''' ] ''', response_etag)
@@ -128,14 +124,14 @@ class RunUpdateTestCase(unittest.TestCase):
             if self.results_state == 'after':
                 events_filename = 'meetup_events_fewer.json'
 
-            events_file=open(events_filename)
+            events_file = open(events_filename)
             events_content = events_file.read()
             events_file.close()
             return response(200, events_content)
 
         # json of alternate meetup events
         elif 'meetup.com' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
-            events_file=open('meetup_events_another.json')
+            events_file = open('meetup_events_another.json')
             events_content = events_file.read()
             events_file.close()
             return response(200, events_content)
@@ -146,14 +142,14 @@ class RunUpdateTestCase(unittest.TestCase):
             if self.results_state == 'after':
                 stories_filename = 'blog_fewer.xml'
 
-            stories_file=open(stories_filename)
+            stories_file = open(stories_filename)
             stories_content = stories_file.read()
             stories_file.close()
             return response(200, stories_content)
 
         # xml of alternate blog feed (stories)
         elif url.geturl() == 'http://www.codeforamerica.org/blog/another/feed/':
-            stories_file=open('blog_another.xml')
+            stories_file = open('blog_another.xml')
             stories_content = stories_file.read()
             stories_file.close()
             return response(200, stories_content)
@@ -187,31 +183,31 @@ class RunUpdateTestCase(unittest.TestCase):
         filter = Organization.name == u'Cöde for Ameriça'
         organization = self.db.session.query(Organization).filter(filter).first()
         self.assertIsNotNone(organization)
-        self.assertEqual(organization.name,u'Cöde for Ameriça')
+        self.assertEqual(organization.name, u'Cöde for Ameriça')
 
         # check for the one project
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.name,u'bizfriendly-web')
+        self.assertEqual(project.name, u'bizfriendly-web')
 
         # check for the one project status
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.status,u'')
+        self.assertEqual(project.status, u'')
 
         # check for the other project
         filter = Project.name == u'cityvoice'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.name,u'cityvoice')
+        self.assertEqual(project.name, u'cityvoice')
 
         # check for cityvoice project's issues
         filter = Issue.project_id == project.id
         issue = self.db.session.query(Issue).filter(filter).first()
         self.assertIsNotNone(issue)
-        self.assertEqual(issue.title,u'More important cityvoice issue')
+        self.assertEqual(issue.title, u'More important cityvoice issue')
 
     def test_main_with_good_new_data(self):
         ''' When current organization data is not the same set as existing, saved organization data,
@@ -256,7 +252,6 @@ class RunUpdateTestCase(unittest.TestCase):
         event = self.db.session.query(Event).filter(filter).first()
         self.assertIsNone(event)
 
-
         # check for the one organization
         filter = Organization.name == u'Cöde for Ameriça'
         organization = self.db.session.query(Organization).filter(filter).first()
@@ -265,12 +260,12 @@ class RunUpdateTestCase(unittest.TestCase):
         # check for the one project
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
-        self.assertEqual(project.name,u'bizfriendly-web')
+        self.assertEqual(project.name, u'bizfriendly-web')
 
         # check for the one issue
         filter = Issue.title == u'Important cityvoice issue'
         issue = self.db.session.query(Issue).filter(filter).first()
-        self.assertEqual(issue.title,u'Important cityvoice issue')
+        self.assertEqual(issue.title, u'Important cityvoice issue')
 
         # check for events
         filter = Event.name.in_([u'Organizational meeting',
@@ -288,13 +283,13 @@ class RunUpdateTestCase(unittest.TestCase):
         # Thu, 20 Feb 2014 18:30:00 -05:00
         self.assertEqual(first_event.utc_offset, -5 * 3600)
         self.assertEqual(second_event.start_time_notz, datetime.datetime(2014, 2, 20, 18, 30, 0))
-        self.assertEqual(second_event.name,u'Code Across: Launch event')
+        self.assertEqual(second_event.name, u'Code Across: Launch event')
 
         third_event = events.pop(0)
         # Wed, 05 Mar 2014 17:30:00 -05:00
         self.assertEqual(first_event.utc_offset, -5 * 3600)
         self.assertEqual(third_event.start_time_notz, datetime.datetime(2014, 3, 5, 17, 30, 0))
-        self.assertEqual(third_event.name,u'Brigade Ideation (Brainstorm and Prototyping) Session.')
+        self.assertEqual(third_event.name, u'Brigade Ideation (Brainstorm and Prototyping) Session.')
 
     def test_main_with_missing_projects(self):
         ''' When github returns a 404 when trying to retrieve project data,
@@ -347,7 +342,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 errors = self.db.session.query(Error).all()
                 for error in errors:
                     self.assertTrue("ValueError" in error.error)
-                self.assertEqual(self.db.session.query(Error).count(),1)
+                self.assertEqual(self.db.session.query(Error).count(), 1)
 
         from app import Organization
 
@@ -356,26 +351,26 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(orgs_count, 0)
 
     def test_main_with_bad_organization_name(self):
-      ''' When an org has a invalid name, test that it gets skipped and an error is added to the db
-      '''
+        ''' When an org has a invalid name, test that it gets skipped and an error is added to the db
+        '''
 
-      def overwrite_response_content(url, request):
-          return response(200, '''name\nCode#America\nCode?America\nCode/America\nCode for America''')
+        def overwrite_response_content(url, request):
+            return response(200, '''name\nCode#America\nCode?America\nCode/America\nCode for America''')
 
-      with HTTMock(self.response_content):
-          with HTTMock(overwrite_response_content):
-              import run_update
-              run_update.main(org_sources="test_org_sources.csv")
-              from app import Error
-              errors = self.db.session.query(Error).all()
-              for error in errors:
-                  self.assertTrue("ValueError" in error.error)
-              self.assertEqual(self.db.session.query(Error).count(),3)
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                import run_update
+                run_update.main(org_sources="test_org_sources.csv")
+                from app import Error
+                errors = self.db.session.query(Error).all()
+                for error in errors:
+                    self.assertTrue("ValueError" in error.error)
+                self.assertEqual(self.db.session.query(Error).count(), 3)
 
-      # Make sure one good organization exists
-      from app import Organization
-      orgs_count = self.db.session.query(Organization).count()
-      self.assertEqual(orgs_count, 1)
+        # Make sure one good organization exists
+        from app import Organization
+        orgs_count = self.db.session.query(Organization).count()
+        self.assertEqual(orgs_count, 1)
 
     def test_main_with_bad_events_url(self):
         ''' When an organization has a badly formed events url is passed, no events are saved
@@ -442,7 +437,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(stories_count, 2)
 
         stories = self.db.session.query(Story).all()
-        self.assertEqual(stories[0].title,u'Four Great Years')
+        self.assertEqual(stories[0].title, u'Four Great Years')
         self.assertEqual(stories[1].title, u'Open, transparent Chattanooga')
 
     def test_github_throttling(self):
@@ -451,7 +446,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         def overwrite_response_content(url, request):
             if url.netloc == 'api.github.com':
-                return response(403, "", {"x-ratelimit-remaining" : 0})
+                return response(403, "", {"x-ratelimit-remaining": 0})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -539,7 +534,7 @@ class RunUpdateTestCase(unittest.TestCase):
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues':
                 content = '''[{"number": 2,"title": "TEST TITLE 2","body": "TEST BODY 2","labels": [], "html_url":""}]'''
-                headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"','ETag':'TEST ETAG'}
+                headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"', 'ETag': 'TEST ETAG'}
                 return response(200, content, headers)
 
             elif url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2':
@@ -581,7 +576,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
-            self.db.session.query(Project).update({"last_updated":None})
+            self.db.session.query(Project).update({"last_updated": None})
             run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
 
         # :TODO: no assertion?
@@ -841,7 +836,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_same_projects_different_organizations(self):
         ''' Verify that the same project can be associated with two different organizations
         '''
-        from app import Organization, Project, Event, Story, Issue, Label
+        from app import Project
         import run_update
 
         test_sources = "test_org_sources.csv"
@@ -885,7 +880,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_repo_name_used_for_missing_project_name(self):
         ''' Verify that a repo name will be used when no project name is available
         '''
-        from app import Organization, Project, Event, Story, Issue, Label
+        from app import Organization, Project
         import run_update
 
         test_sources = 'test_org_sources.csv'
@@ -936,7 +931,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_unmodified_projects_stay_in_database(self):
         ''' Verify that unmodified projects are not deleted from the database
         '''
-        from app import Organization, Project, Event, Story, Issue, Label
+        from app import Project
         import run_update
 
         test_sources = "test_org_sources.csv"
