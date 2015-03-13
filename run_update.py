@@ -12,7 +12,6 @@ from argparse import ArgumentParser
 from time import time
 from re import match
 
-import yaml
 from requests import get, exceptions
 from dateutil.tz import tzoffset
 import feedparser
@@ -28,8 +27,8 @@ requests_log = logging.getLogger("requests")
 requests_log.setLevel(logging.WARNING)
 
 # :NOTE: debug
-#import warnings
-#warnings.filterwarnings('error')
+# import warnings
+# warnings.filterwarnings('error')
 
 # Org sources can be csv or yaml
 # They should be lists of organizations you want included at /organizations
@@ -62,8 +61,8 @@ def format_date(time_in_milliseconds, utc_offset_msec):
     '''
         Create a datetime object from a time in milliseconds from the epoch
     '''
-    tz = tzoffset(None, utc_offset_msec/1000.0)
-    dt = datetime.fromtimestamp(time_in_milliseconds/1000.0, tz)
+    tz = tzoffset(None, utc_offset_msec / 1000.0)
+    dt = datetime.fromtimestamp(time_in_milliseconds / 1000.0, tz)
     return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
 
 def format_location(venue):
@@ -72,11 +71,9 @@ def format_location(venue):
         address = address + ', ' + venue['address_2']
 
     if 'state' in venue:
-        return "{address}, {city}, {state}, {country}".format(address=address,
-                city=venue['city'], state=venue['state'], country=venue['country'])
+        return "{address}, {city}, {state}, {country}".format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
     else:
-        return "{address}, {city}, {country}".format(address=address,
-                city=venue['city'], country=venue['country'])
+        return "{address}, {city}, {country}".format(address=address, city=venue['city'], country=venue['country'])
 
 def get_meetup_events(organization, group_urlname):
     '''
@@ -97,11 +94,7 @@ def get_meetup_events(organization, group_urlname):
                              event_url=event['event_url'],
                              start_time_notz=format_date(event['time'], event['utc_offset']),
                              created_at=format_date(event['created'], event['utc_offset']),
-                             utc_offset=event['utc_offset']/1000.0)
-
-                # Some events don't have descriptions
-                if 'description' in event:
-                    description=event['description']
+                             utc_offset=event['utc_offset'] / 1000.0)
 
                 # Some events don't have locations.
                 if 'venue' in event:
@@ -253,7 +246,7 @@ def get_projects(organization):
                     # Not a json file.
                     return []
 
-        except exceptions.RequestException as e:
+        except exceptions.RequestException:
             # Something has gone wrong, probably a bad URL or site is down.
             return []
 
@@ -271,7 +264,7 @@ def get_projects(organization):
             if "html_url" in project:
                 project["code_url"] = project["html_url"]
             for key in project.keys():
-                if key not in ['name','description','link_url','code_url','type','categories','organization_name','status']:
+                if key not in ['name', 'description', 'link_url', 'code_url', 'type', 'categories', 'organization_name', 'status']:
                     del project[key]
 
     # Get any updates on the projects
@@ -347,7 +340,6 @@ def update_project_info(project):
     if host == 'github.com':
         repo_url = 'https://api.github.com/repos' + path
 
-
         # If we've hit the GitHub rate limit, skip updating projects.
         global github_throttling
         if github_throttling:
@@ -378,8 +370,8 @@ def update_project_info(project):
             elif got.status_code == 403:
                 logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
                 error_dict = {
-                  "error" : u'IOError: We done got throttled by GitHub',
-                  "time" : datetime.now()
+                    "error": u'IOError: We done got throttled by GitHub',
+                    "time": datetime.now()
                 }
                 new_error = Error(**error_dict)
                 db.session.add(new_error)
@@ -389,7 +381,7 @@ def update_project_info(project):
                 return project
 
             else:
-              raise IOError
+                raise IOError
 
         # If project has not been modified, return
         elif got.status_code == 304:
@@ -410,8 +402,7 @@ def update_project_info(project):
         github_details = {}
         for field in ('contributors_url', 'created_at', 'forks_count', 'homepage',
                       'html_url', 'id', 'language', 'open_issues', 'pushed_at',
-                      'updated_at', 'watchers_count','name', 'description', 'stargazers_count'
-                     ):
+                      'updated_at', 'watchers_count', 'name', 'description', 'stargazers_count'):
             github_details[field] = all_github_attributes[field]
 
         github_details['owner'] = dict()
@@ -477,12 +468,12 @@ def get_issues_for_project(project):
 
     # Ping github's api for project issues
     got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
-    
+
     # Save each issue in response
     responses = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
     for issue in responses:
         # Type check the issue, we are expecting a dictionary
-        if type(issue) == type({}):
+        if isinstance(issue, dict):
             # Pull requests are returned along with issues. Skip them.
             if "/pull/" in issue['html_url']:
                 continue
@@ -521,14 +512,14 @@ def get_issues(org_name):
         # Ping github's api for project issues
         # :TODO: non-github projects are hitting here and shouldn't be!
         got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
-        
+
         # Verify if content has not been modified since last run
         if got.status_code == 304:
             # :::here (issue/true)
             db.session.execute(db.update(Issue, values={'keep': True}).where(Issue.project_id == project.id))
             logging.info('Issues %s have not changed since last update', issues_url)
 
-        elif not got.status_code in range(400,499):
+        elif got.status_code not in range(400, 499):
             # Update project's last_updated_issue field
             project.last_updated_issues = unicode(got.headers['ETag'])
             db.session.add(project)
@@ -538,7 +529,7 @@ def get_issues(org_name):
             # Save each issue in response
             for issue in responses:
                 # Type check the issue, we are expecting a dictionary
-                if type(issue) == type({}):
+                if isinstance(issue, dict):
                     # Pull requests are returned along with issues. Skip them.
                     if "/pull/" in issue['html_url']:
                         continue
@@ -587,15 +578,13 @@ def count_people_totals(all_projects):
 
             for field in (
                     'login', 'avatar_url', 'html_url',
-                    'blog', 'company', 'location'
-                    ):
+                    'blog', 'company', 'location'):
                 user[field] = contributor.get(field, None)
 
         users.append(user)
 
     return users
 
-# :::here
 def save_organization_info(session, org_dict):
     ''' Save a dictionary of organization info to the datastore session.
 
@@ -661,9 +650,8 @@ def save_issue(session, issue):
     if not existing_issue:
         new_issue = Issue(**issue)
         session.add(new_issue)
-    
     else:
-        # Preserve the existing issue. 
+        # Preserve the existing issue.
         # :::here (issue/true)
         existing_issue.keep = True
         # Update existing issue details
@@ -705,7 +693,7 @@ def save_event_info(session, event_dict):
     '''
     # Select the current event, filtering on event_url and organization name.
     filter = Event.event_url == event_dict['event_url'], \
-             Event.organization_name == event_dict['organization_name']
+        Event.organization_name == event_dict['organization_name']
     existing_event = session.query(Event).filter(*filter).first()
 
     # If this is a new event, save and return it.
@@ -729,7 +717,7 @@ def save_story_info(session, story_dict):
     '''
     # Select the current story, filtering on link and organization name.
     filter = Story.organization_name == story_dict['organization_name'], \
-             Story.link == story_dict['link']
+        Story.link == story_dict['link']
 
     existing_story = session.query(Story).filter(*filter).first()
 
@@ -776,8 +764,8 @@ def main(org_name=None, org_sources=None):
 
         if not is_safe_name(org_info['name']):
             error_dict = {
-                "error" : unicode('ValueError: Bad organization name: "%s"' % org_info['name']),
-                "time" : datetime.now()
+                "error": unicode('ValueError: Bad organization name: "%s"' % org_info['name']),
+                "time": datetime.now()
             }
             new_error = Error(**error_dict)
             db.session.add(new_error)
