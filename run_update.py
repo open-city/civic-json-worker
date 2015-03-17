@@ -389,13 +389,31 @@ def update_project_info(project):
         elif got.status_code == 304:
             logging.info('Project %s has not been modified since last update', repo_url)
             if existing_project:
-                # make sure we keep the project
-                # :::here (project/true)
-                existing_project.keep = True
-                db.session.add(existing_project)
-                # commit the project
-                db.session.commit()
-                return None
+                # check whether any of the org spreadsheet values for the project have changed
+                is_modified = False
+                for project_key in project:
+                    check_value = project[project_key]
+                    existing_value = existing_project.__dict__[project_key]
+                    if check_value and check_value != existing_value:
+                        is_modified = True
+                    elif not check_value and existing_value:
+                        project[project_key] = existing_value
+
+                # if spreadsheet values have changed, copy untouched values from the existing
+                # project object and return it
+                if is_modified:
+                    logging.info('Project %s has been modified in the organization\'s Google spreadsheet', repo_url)
+                    project['last_updated'] = existing_project.last_updated
+                    project['github_details'] = existing_project.github_details
+                    return project
+                else:
+                    # make sure we keep the project
+                    # :::here (project/true)
+                    existing_project.keep = True
+                    db.session.add(existing_project)
+                    # commit the project
+                    db.session.commit()
+                    return None
 
         # Save last_updated time header for future requests
         project['last_updated'] = got.headers['Last-Modified']
