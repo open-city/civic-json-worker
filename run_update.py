@@ -208,7 +208,7 @@ def get_projects(organization):
 
             projects = get_adjoined_json_lists(response)
 
-        except exceptions.RequestException as e:
+        except exceptions.RequestException:
             # Something has gone wrong, probably a bad URL or site is down.
             return []
 
@@ -281,6 +281,41 @@ def get_projects(organization):
 
     return projects
 
+def non_github_project_update_time(project):
+    ''' If its a non-github project, we should check if any of the fields
+        have been updated, such as the description.
+
+        Set the last_updated timestamp.
+    '''
+    existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
+
+    if existing_project:
+        # project gets existing last_updated
+        project['last_updated'] = existing_project.last_updated
+
+        # unless one of the fields has been updated
+        if 'description' in project:
+            if project['description'] != existing_project.description:
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        if 'categories' in project:
+            if project['categories'] != existing_project.categories:
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        if 'type' in project:
+            if project['type'] != existing_project.type:
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        if 'link_url' in project:
+            if project['link_url'] != existing_project.link_url:
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        if 'status' in project:
+            if project['status'] != existing_project.status:
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+
+    else:
+        # Set a date when we first see a non-github project
+        project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+
+    return project
+
 def update_project_info(project):
     ''' Update info from Github, if it's missing.
 
@@ -292,41 +327,6 @@ def update_project_info(project):
         Github_details is specifically expected to be used on this page:
         http://opengovhacknight.org/projects.html
     '''
-
-    def non_github_project_update_time(project):
-        ''' If its a non-github project, we should check if any of the fields
-            have been updated, such as the description.
-
-            Set the last_updated timestamp.
-        '''
-        existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
-
-        if existing_project:
-            # project gets existing last_updated
-            project['last_updated'] = existing_project.last_updated
-
-            # unless one of the fields has been updated
-            if 'description' in project:
-                if project['description'] != existing_project.description:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'categories' in project:
-                if project['categories'] != existing_project.categories:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'type' in project:
-                if project['type'] != existing_project.type:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'link_url' in project:
-                if project['link_url'] != existing_project.link_url:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'status' in project:
-                if project['status'] != existing_project.status:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-
-        else:
-            # Set a date when we first see a non-github project
-            project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-
-        return project
 
     if 'code_url' not in project:
         project = non_github_project_update_time(project)
