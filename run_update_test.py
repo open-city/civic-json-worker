@@ -564,6 +564,59 @@ class RunUpdateTestCase(unittest.TestCase):
                 projects = run_update.get_projects(organization)
                 assert len(projects) == 2
 
+    def test_new_value_in_csv_project_list(self):
+        ''' A value that has changed in the CSV project list should be saved, even if the
+            related GitHub project hasn't been updated
+        '''
+        from app import Project
+        import run_update
+
+        self.setup_mock_rss_response()
+
+        org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://organization.org/projects.csv'''
+
+        def status_one_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            elif url.geturl() == 'http://organization.org/projects.csv':
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,in progress''', {'content-type': 'text/csv; charset=UTF-8'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_one_response_content):
+                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
+
+        self.db.session.flush()
+
+        check_project = self.db.session.query(Project).first()
+        self.assertEqual(check_project.status, u'in progress')
+
+        # save the default response for the cityvoice project
+        cv_body_text = None
+        cv_headers_dict = None
+        with HTTMock(self.response_content):
+            from requests import get
+            got = get('https://api.github.com/repos/codeforamerica/cityvoice')
+            cv_body_text = str(got.text)
+            cv_headers_dict = got.headers
+
+        # overwrite to return a 304 (not modified) instead of a 200 for the cityvoice project
+        def status_two_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            elif url.geturl() == 'http://organization.org/projects.csv':
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,released''', {'content-type': 'text/csv; charset=UTF-8'})
+            elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
+                return response(304, cv_body_text, cv_headers_dict)
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_two_response_content):
+                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
+
+        self.db.session.flush()
+
+        check_project = self.db.session.query(Project).first()
+        self.assertEqual(check_project.status, u'released')
+
     def test_html_returned_for_csv_project_list(self):
         ''' We requested a CSV project list and got HTML instead
         '''
