@@ -68,9 +68,9 @@ class RunUpdateTestCase(unittest.TestCase):
         if url.geturl() == 'http://example.com/cfa-projects.csv':
             project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,''']
             if self.results_state == 'before':
-                return response(200, '''\n'''.join(project_lines[0:3]))
+                return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
             elif self.results_state == 'after':
-                return response(200, '''\n'''.join(project_lines[0:2]))
+                return response(200, '''\n'''.join(project_lines[0:2]), {'content-type': 'text/csv; charset=UTF-8'})
 
         # json of project descriptions
         elif url.geturl() == 'https://api.github.com/users/codeforamerica/repos':
@@ -156,11 +156,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # csv of projects (philly)
         elif url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''')
+                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # csv of projects (austin)
         elif url.geturl() == 'http://openaustin.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",In Progress''')
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         else:
             raise Exception('Asked for unknown URL ' + url.geturl())
@@ -514,7 +514,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","In Progress"''')
+                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","In Progress"''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -556,7 +556,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url\n,,http://fakeprojectone.com\n,,,http://whatever.com/testproject''')
+                return response(200, '''name,description,link_url\n,,http://fakeprojectone.com\n,,,http://whatever.com/testproject''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
