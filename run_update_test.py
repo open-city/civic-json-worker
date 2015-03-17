@@ -578,6 +578,7 @@ class RunUpdateTestCase(unittest.TestCase):
         def status_one_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return a status of 'in progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
                 return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,in progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
@@ -587,10 +588,13 @@ class RunUpdateTestCase(unittest.TestCase):
 
         self.db.session.flush()
 
-        check_project = self.db.session.query(Project).first()
-        self.assertEqual(check_project.status, u'in progress')
+        project_v1 = self.db.session.query(Project).first()
+        # the project status was correctly set
+        self.assertEqual(project_v1.status, u'in progress')
+        v1_last_updated = project_v1.last_updated
+        v1_github_details = project_v1.github_details
 
-        # save the default response for the cityvoice project
+        # save the default github response so we can send it with a 304 status below
         cv_body_text = None
         cv_headers_dict = None
         with HTTMock(self.response_content):
@@ -599,12 +603,13 @@ class RunUpdateTestCase(unittest.TestCase):
             cv_body_text = str(got.text)
             cv_headers_dict = got.headers
 
-        # overwrite to return a 304 (not modified) instead of a 200 for the cityvoice project
         def status_two_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return a status of 'released' instead of 'in progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
                 return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,released''', {'content-type': 'text/csv; charset=UTF-8'})
+            # return a 304 (not modified) instead of a 200
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)
 
@@ -614,8 +619,12 @@ class RunUpdateTestCase(unittest.TestCase):
 
         self.db.session.flush()
 
-        check_project = self.db.session.query(Project).first()
-        self.assertEqual(check_project.status, u'released')
+        project_v2 = self.db.session.query(Project).first()
+        # the new project status was correctly set
+        self.assertEqual(project_v2.status, u'released')
+        # the untouched details from the GitHub project weren't changed
+        self.assertEqual(project_v2.last_updated, v1_last_updated)
+        self.assertEqual(project_v2.github_details, v1_github_details)
 
     def test_html_returned_for_csv_project_list(self):
         ''' We requested a CSV project list and got HTML instead
