@@ -551,7 +551,6 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' Get a project list that doesn't have all the columns.
             Don't die.
         '''
-        # from app import Project
         from factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
@@ -564,6 +563,25 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 projects = run_update.get_projects(organization)
                 assert len(projects) == 2
+
+    def test_html_returned_for_csv_project_list(self):
+        ''' We requested a CSV project list and got HTML instead
+        '''
+        from factories import OrganizationFactory
+        organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
+
+        def overwrite_response_content(url, request):
+            if url.geturl() == 'http://organization.org/projects.csv':
+                return response(200, ''''\n<!DOCTYPE html>\n<html lang="en">\n</html>\n''', {'content-type': 'text/html; charset=UTF-8'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                import run_update
+                try:
+                    projects = run_update.get_projects(organization)
+                except KeyError:
+                    raise Exception('Tried to parse HTML as CSV')
+                self.assertEqual(len(projects), 0)
 
     def test_missing_last_updated(self):
         ''' In rare cases, a project will be in the db without a last_updated date

@@ -225,7 +225,7 @@ def get_projects(organization):
                 return []
 
             # If its a csv
-            if "csv" in organization.projects_list_url:
+            if "csv" in organization.projects_list_url and ('content-type' in response.headers and 'text/csv' in response.headers['content-type']):
                 data = response.content.splitlines()
                 projects = list(DictReader(data, dialect='excel'))
                 # convert all the values to unicode
@@ -456,6 +456,7 @@ def update_project_info(project):
             project['github_details']['participation'] = got.json()['all']
         except:
             project['github_details']['participation'] = [0] * 50
+
     return project
 
 def get_issues_for_project(project):
