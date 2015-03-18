@@ -34,7 +34,7 @@ requests_log.setLevel(logging.WARNING)
 # They should be lists of organizations you want included at /organizations
 # columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
 # set use_test to True to use test_org_sources.csv instead of org_sources.csv
-use_test = True
+use_test = False
 ORG_SOURCES = u'{}org_sources.csv'.format(u'test_' if use_test else u'')
 
 if 'GITHUB_TOKEN' in os.environ:
