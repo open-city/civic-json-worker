@@ -33,7 +33,9 @@ requests_log.setLevel(logging.WARNING)
 # Org sources can be csv or yaml
 # They should be lists of organizations you want included at /organizations
 # columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
-ORG_SOURCES = 'org_sources.csv'
+# set use_test to True to use test_org_sources.csv instead of org_sources.csv
+use_test = False
+ORG_SOURCES = u'{}org_sources.csv'.format(u'test_' if use_test else u'')
 
 if 'GITHUB_TOKEN' in os.environ:
     github_auth = (os.environ['GITHUB_TOKEN'], '')
@@ -223,7 +225,7 @@ def get_projects(organization):
                 return []
 
             # If its a csv
-            if "csv" in organization.projects_list_url:
+            if "csv" in organization.projects_list_url and (('content-type' in response.headers and 'text/csv' in response.headers['content-type']) or 'content-type' not in response.headers):
                 data = response.content.splitlines()
                 projects = list(DictReader(data, dialect='excel'))
                 # convert all the values to unicode
@@ -279,6 +281,32 @@ def get_projects(organization):
 
     return projects
 
+def non_github_project_update_time(project):
+    ''' If its a non-github project, we should check if any of the fields
+        have been updated, such as the description.
+
+        Set the last_updated timestamp.
+    '''
+    def get_updated_timestamp():
+        return datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+
+    existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
+
+    if existing_project:
+        # project gets existing last_updated
+        project['last_updated'] = existing_project.last_updated
+
+        # unless one of the fields has been updated
+        for key, value in project.iteritems():
+            if project[key] != existing_project.__dict__[key]:
+                project['last_updated'] = get_updated_timestamp()
+
+    else:
+        # Set a date when we first see a non-github project
+        project['last_updated'] = get_updated_timestamp()
+
+    return project
+
 def update_project_info(project):
     ''' Update info from Github, if it's missing.
 
@@ -290,41 +318,6 @@ def update_project_info(project):
         Github_details is specifically expected to be used on this page:
         http://opengovhacknight.org/projects.html
     '''
-
-    def non_github_project_update_time(project):
-        ''' If its a non-github project, we should check if any of the fields
-            have been updated, such as the description.
-
-            Set the last_updated timestamp.
-        '''
-        existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
-
-        if existing_project:
-            # project gets existing last_updated
-            project['last_updated'] = existing_project.last_updated
-
-            # unless one of the fields has been updated
-            if 'description' in project:
-                if project['description'] != existing_project.description:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'categories' in project:
-                if project['categories'] != existing_project.categories:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'type' in project:
-                if project['type'] != existing_project.type:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'link_url' in project:
-                if project['link_url'] != existing_project.link_url:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-            if 'status' in project:
-                if project['status'] != existing_project.status:
-                    project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-
-        else:
-            # Set a date when we first see a non-github project
-            project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-
-        return project
 
     if 'code_url' not in project:
         project = non_github_project_update_time(project)
@@ -387,13 +380,31 @@ def update_project_info(project):
         elif got.status_code == 304:
             logging.info('Project %s has not been modified since last update', repo_url)
             if existing_project:
-                # make sure we keep the project
-                # :::here (project/true)
-                existing_project.keep = True
-                db.session.add(existing_project)
-                # commit the project
-                db.session.commit()
-                return None
+                # check whether any of the org spreadsheet values for the project have changed
+                is_modified = False
+                for project_key in project:
+                    check_value = project[project_key]
+                    existing_value = existing_project.__dict__[project_key]
+                    if check_value and check_value != existing_value:
+                        is_modified = True
+                    elif not check_value and existing_value:
+                        project[project_key] = existing_value
+
+                # if spreadsheet values have changed, copy untouched values from the existing
+                # project object and return it
+                if is_modified:
+                    logging.info('Project %s has been modified in the organization\'s Google spreadsheet', repo_url)
+                    project['last_updated'] = existing_project.last_updated
+                    project['github_details'] = existing_project.github_details
+                    return project
+                else:
+                    # make sure we keep the project
+                    # :::here (project/true)
+                    existing_project.keep = True
+                    db.session.add(existing_project)
+                    # commit the project
+                    db.session.commit()
+                    return None
 
         # Save last_updated time header for future requests
         project['last_updated'] = got.headers['Last-Modified']
@@ -454,6 +465,7 @@ def update_project_info(project):
             project['github_details']['participation'] = got.json()['all']
         except:
             project['github_details']['participation'] = [0] * 50
+
     return project
 
 def get_issues_for_project(project):
