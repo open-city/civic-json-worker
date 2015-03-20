@@ -287,6 +287,9 @@ def non_github_project_update_time(project):
 
         Set the last_updated timestamp.
     '''
+    def updated_project_timestamp():
+        project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+
     existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
 
     if existing_project:
@@ -294,25 +297,13 @@ def non_github_project_update_time(project):
         project['last_updated'] = existing_project.last_updated
 
         # unless one of the fields has been updated
-        if 'description' in project:
-            if project['description'] != existing_project.description:
-                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-        if 'categories' in project:
-            if project['categories'] != existing_project.categories:
-                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-        if 'type' in project:
-            if project['type'] != existing_project.type:
-                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-        if 'link_url' in project:
-            if project['link_url'] != existing_project.link_url:
-                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-        if 'status' in project:
-            if project['status'] != existing_project.status:
-                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        for key, value in project.iteritems():
+            if project[key] != existing_project.__dict__[key]:
+                updated_project_timestamp()
 
     else:
         # Set a date when we first see a non-github project
-        project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+        updated_project_timestamp()
 
     return project
 

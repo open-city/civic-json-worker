@@ -4,6 +4,7 @@ import os
 import unittest
 import datetime
 import logging
+import time
 from re import match, sub
 
 from httmock import response, HTTMock
@@ -496,6 +497,49 @@ class RunUpdateTestCase(unittest.TestCase):
             projects = run_update.get_projects(austin)
             self.assertEqual(projects[0]['name'], "Hack Task Aggregator")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+
+
+    def test_non_github_projects_updates(self):
+        ''' Test that non github projects update their timestamp when something in the sheet changes.
+        '''
+        from factories import OrganizationFactory
+        philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
+
+        # Get a Philly project into the db
+        with HTTMock(self.response_content):
+            import run_update
+            projects = run_update.get_projects(philly)
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+        time.sleep(1)
+
+        def updated_description(url, request):
+            if url.geturl() == 'http://codeforphilly.org/projects.csv':
+                    return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+
+        # Test that a different description gives a new timestamp
+        with HTTMock(updated_description):
+            projects = run_update.get_projects(philly)
+            self.assertEqual(projects[0]['description'], "UPDATED DESCRIPTION")
+            self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+        time.sleep(1)
+
+        def updated_status(url, request):
+            if url.geturl() == 'http://codeforphilly.org/projects.csv':
+                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","active"''', {'content-type': 'text/csv; charset=UTF-8'})
+
+        # Test that a different status gives a new timestamp
+        with HTTMock(updated_status):
+            projects = run_update.get_projects(philly)
+            self.assertEqual(projects[0]['status'], "active")
+            self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+
 
     def test_org_sources_csv(self):
         '''Test that there is a csv file with links to lists of organizations
