@@ -287,8 +287,8 @@ def non_github_project_update_time(project):
 
         Set the last_updated timestamp.
     '''
-    def updated_project_timestamp():
-        project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+    def get_updated_timestamp():
+        return datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
 
     existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
 
@@ -299,11 +299,11 @@ def non_github_project_update_time(project):
         # unless one of the fields has been updated
         for key, value in project.iteritems():
             if project[key] != existing_project.__dict__[key]:
-                updated_project_timestamp()
+                project['last_updated'] = get_updated_timestamp()
 
     else:
         # Set a date when we first see a non-github project
-        updated_project_timestamp()
+        project['last_updated'] = get_updated_timestamp()
 
     return project
 
