@@ -812,8 +812,8 @@ def main(org_name=None, org_sources=None):
             if organization.projects_list_url:
                 logging.info("Gathering all of %s's projects." % organization.name)
                 projects = get_projects(organization)
-                for proj_info in projects:
-                    save_project_info(db.session, proj_info)
+                for proj_dict in projects:
+                    save_project_info(db.session, proj_dict)
                 # flush the projects
                 db.session.flush()
 
