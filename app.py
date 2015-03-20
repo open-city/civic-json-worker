@@ -227,6 +227,7 @@ class Organization(db.Model):
         '''
         organization_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del organization_dict['keep']
         del organization_dict['tsv_body']
 
@@ -288,7 +289,9 @@ class Story(db.Model):
         '''
         story_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del story_dict['keep']
+
         story_dict['api_url'] = self.api_url()
 
         if include_organization:
@@ -351,8 +354,10 @@ class Project(db.Model):
         '''
         project_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del project_dict['keep']
         del project_dict['tsv_body']
+        del project_dict['last_updated_issues']
 
         project_dict['api_url'] = self.api_url()
 
@@ -418,7 +423,9 @@ class Issue(db.Model):
             del issue_dict['project']['issues']
             del issue_dict['project_id']
 
+        # remove fields that don't need to be public
         del issue_dict['keep']
+
         issue_dict['api_url'] = self.api_url()
         issue_dict['labels'] = [l.asdict() for l in self.labels]
 
@@ -451,6 +458,7 @@ class Label(db.Model):
         '''
         label_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del label_dict['id']
         del label_dict['issue_id']
 
@@ -522,6 +530,7 @@ class Event(db.Model):
         '''
         event_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         for key in ('keep', 'start_time_notz', 'end_time_notz', 'utc_offset'):
             del event_dict[key]
 

@@ -70,7 +70,6 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
       id: 122,
       issues: [ ... ],
       last_updated: "Thu, 24 Jul 2014 22:01:17 GMT",
-      last_updated_issues: ""78589d3f95ad8fb4694d5e3c30550449"",
       link_url: null,
       name: "localfreeweb.org",
       organization: {},
