@@ -4,6 +4,7 @@ import os
 import unittest
 import datetime
 import logging
+import time
 from re import match, sub
 
 from httmock import response, HTTMock
@@ -68,9 +69,9 @@ class RunUpdateTestCase(unittest.TestCase):
         if url.geturl() == 'http://example.com/cfa-projects.csv':
             project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,''']
             if self.results_state == 'before':
-                return response(200, '''\n'''.join(project_lines[0:3]))
+                return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
             elif self.results_state == 'after':
-                return response(200, '''\n'''.join(project_lines[0:2]))
+                return response(200, '''\n'''.join(project_lines[0:2]), {'content-type': 'text/csv; charset=UTF-8'})
 
         # json of project descriptions
         elif url.geturl() == 'https://api.github.com/users/codeforamerica/repos':
@@ -156,11 +157,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # csv of projects (philly)
         elif url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''')
+                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # csv of projects (austin)
         elif url.geturl() == 'http://openaustin.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",In Progress''')
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         else:
             raise Exception('Asked for unknown URL ' + url.geturl())
@@ -497,6 +498,49 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['name'], "Hack Task Aggregator")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
+
+    def test_non_github_projects_updates(self):
+        ''' Test that non github projects update their timestamp when something in the sheet changes.
+        '''
+        from factories import OrganizationFactory
+        philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
+
+        # Get a Philly project into the db
+        with HTTMock(self.response_content):
+            import run_update
+            projects = run_update.get_projects(philly)
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+        time.sleep(1)
+
+        def updated_description(url, request):
+            if url.geturl() == 'http://codeforphilly.org/projects.csv':
+                    return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+
+        # Test that a different description gives a new timestamp
+        with HTTMock(updated_description):
+            projects = run_update.get_projects(philly)
+            self.assertEqual(projects[0]['description'], "UPDATED DESCRIPTION")
+            self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+        time.sleep(1)
+
+        def updated_status(url, request):
+            if url.geturl() == 'http://codeforphilly.org/projects.csv':
+                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","active"''', {'content-type': 'text/csv; charset=UTF-8'})
+
+        # Test that a different status gives a new timestamp
+        with HTTMock(updated_status):
+            projects = run_update.get_projects(philly)
+            self.assertEqual(projects[0]['status'], "active")
+            self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+
+
     def test_org_sources_csv(self):
         '''Test that there is a csv file with links to lists of organizations
         '''
@@ -509,12 +553,12 @@ class RunUpdateTestCase(unittest.TestCase):
         from factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
-        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', type=u'', link_url=u'http://phillymapofshame.org', status=u'In Progress')
+        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', type=u'', link_url=u'http://phillymapofshame.org', code_url=u'', status=u'In Progress')
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","In Progress"''')
+                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","In Progress"''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -551,19 +595,99 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' Get a project list that doesn't have all the columns.
             Don't die.
         '''
-        # from app import Project
         from factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url\n,,http://fakeprojectone.com\n,,,http://whatever.com/testproject''')
+                return response(200, '''name,description,link_url\n,,http://fakeprojectone.com\n,,,http://whatever.com/testproject''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
                 projects = run_update.get_projects(organization)
                 assert len(projects) == 2
+
+    def test_new_value_in_csv_project_list(self):
+        ''' A value that has changed in the CSV project list should be saved, even if the
+            related GitHub project hasn't been updated
+        '''
+        from app import Project
+        import run_update
+
+        self.setup_mock_rss_response()
+
+        org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://organization.org/projects.csv'''
+
+        def status_one_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return a status of 'in progress'
+            elif url.geturl() == 'http://organization.org/projects.csv':
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,in progress''', {'content-type': 'text/csv; charset=UTF-8'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_one_response_content):
+                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
+
+        self.db.session.flush()
+
+        project_v1 = self.db.session.query(Project).first()
+        # the project status was correctly set
+        self.assertEqual(project_v1.status, u'in progress')
+        v1_last_updated = project_v1.last_updated
+        v1_github_details = project_v1.github_details
+
+        # save the default github response so we can send it with a 304 status below
+        cv_body_text = None
+        cv_headers_dict = None
+        with HTTMock(self.response_content):
+            from requests import get
+            got = get('https://api.github.com/repos/codeforamerica/cityvoice')
+            cv_body_text = str(got.text)
+            cv_headers_dict = got.headers
+
+        def status_two_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return a status of 'released' instead of 'in progress'
+            elif url.geturl() == 'http://organization.org/projects.csv':
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,released''', {'content-type': 'text/csv; charset=UTF-8'})
+            # return a 304 (not modified) instead of a 200
+            elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
+                return response(304, cv_body_text, cv_headers_dict)
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_two_response_content):
+                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
+
+        self.db.session.flush()
+
+        project_v2 = self.db.session.query(Project).first()
+        # the new project status was correctly set
+        self.assertEqual(project_v2.status, u'released')
+        # the untouched details from the GitHub project weren't changed
+        self.assertEqual(project_v2.last_updated, v1_last_updated)
+        self.assertEqual(project_v2.github_details, v1_github_details)
+
+    def test_html_returned_for_csv_project_list(self):
+        ''' We requested a CSV project list and got HTML instead
+        '''
+        from factories import OrganizationFactory
+        organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
+
+        def overwrite_response_content(url, request):
+            if url.geturl() == 'http://organization.org/projects.csv':
+                return response(200, ''''\n<!DOCTYPE html>\n<html lang="en">\n</html>\n''', {'content-type': 'text/html; charset=UTF-8'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                import run_update
+                try:
+                    projects = run_update.get_projects(organization)
+                except KeyError:
+                    raise Exception('Tried to parse HTML as CSV')
+                self.assertEqual(len(projects), 0)
 
     def test_missing_last_updated(self):
         ''' In rare cases, a project will be in the db without a last_updated date
