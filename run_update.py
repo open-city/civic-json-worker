@@ -30,6 +30,12 @@ requests_log.setLevel(logging.WARNING)
 # import warnings
 # warnings.filterwarnings('error')
 
+# API URL templates
+MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}"
+GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
+GITHUB_REPOS_API_URL = 'https://api.github.com/repos{path}'
+GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{path}/issues'
+
 # Org sources can be csv or yaml
 # They should be lists of organizations you want included at /organizations
 # columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
@@ -81,7 +87,8 @@ def get_meetup_events(organization, group_urlname):
     '''
         Get events associated with a group
     '''
-    meetup_url = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={0}&key={1}".format(group_urlname, meetup_key)
+    meetup_url = MEETUP_API_URL.format(group_urlname=group_urlname, key=meetup_key)
+
     got = get(meetup_url)
     if got.status_code in range(400, 499):
         logging.error("%s's meetup page cannot be found" % organization.name)
@@ -197,7 +204,7 @@ def get_projects(organization):
     _, host, path, _, _, _ = urlparse(organization.projects_list_url)
     matched = match(r'(/orgs)?/(?P<name>[^/]+)/?$', path)
     if host in ('www.github.com', 'github.com') and matched:
-        projects_url = 'https://api.github.com/users/%s/repos' % matched.group('name')
+        projects_url = GITHUB_USER_REPOS_API_URL.format(username=matched.group('name'))
 
         try:
             response = get_github_api(projects_url)
@@ -331,7 +338,7 @@ def update_project_info(project):
 
     # Get the Github attributes
     if host == 'github.com':
-        repo_url = 'https://api.github.com/repos' + path
+        repo_url = GITHUB_REPOS_API_URL.format(path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
         global github_throttling
@@ -476,7 +483,7 @@ def get_issues_for_project(project):
 
     # Get github issues api url
     _, host, path, _, _, _ = urlparse(project.code_url)
-    issues_url = 'https://api.github.com/repos' + path + '/issues'
+    issues_url = GITHUB_ISSUES_API_URL.format(path=path)
 
     # Ping github's api for project issues
     got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
@@ -519,7 +526,7 @@ def get_issues(org_name):
         if host != 'github.com':
             continue
 
-        issues_url = 'https://api.github.com/repos' + path + '/issues'
+        issues_url = GITHUB_ISSUES_API_URL.format(path=path)
 
         # Ping github's api for project issues
         # :TODO: non-github projects are hitting here and shouldn't be!
