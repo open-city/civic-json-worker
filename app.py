@@ -314,6 +314,7 @@ class Project(db.Model):
     github_details = db.Column(JsonType())
     last_updated = db.Column(db.DateTime())
     last_updated_issues = db.Column(db.Unicode())
+    last_updated_civic_json = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
     status = db.Column(db.Unicode())
@@ -328,7 +329,8 @@ class Project(db.Model):
     def __init__(self, name, code_url=None, link_url=None,
                  description=None, type=None, categories=None,
                  github_details=None, last_updated=None, last_updated_issues=None,
-                 organization_name=None, keep=None, status=None):
+                 last_updated_civic_json=None, organization_name=None,
+                 keep=None, status=None):
         self.name = name
         self.code_url = code_url
         self.link_url = link_url
@@ -338,6 +340,7 @@ class Project(db.Model):
         self.github_details = github_details
         self.last_updated = last_updated
         self.last_updated_issues = last_updated_issues
+        self.last_updated_civic_json = last_updated_civic_json
         self.organization_name = organization_name
         self.keep = True
         self.status = status
@@ -358,6 +361,7 @@ class Project(db.Model):
         del project_dict['keep']
         del project_dict['tsv_body']
         del project_dict['last_updated_issues']
+        del project_dict['last_updated_civic_json']
 
         project_dict['api_url'] = self.api_url()
 

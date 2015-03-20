@@ -206,7 +206,7 @@ def get_projects(organization):
 
             projects = get_adjoined_json_lists(response)
 
-        except exceptions.RequestException as e:
+        except exceptions.RequestException:
             # Something has gone wrong, probably a bad URL or site is down.
             return []
 
