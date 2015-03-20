@@ -608,8 +608,6 @@ def paged_results(query, page, per_page, querystring=''):
         model_dicts = []
         for o in query.limit(per_page).offset(offset):
             obj = o.asdict(True)
-            # Remove some fields from the API
-            obj.pop('tsv_body', None)
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
@@ -653,7 +651,6 @@ def get_organizations(name=None):
         filter = Organization.name == raw_name(name)
         org = db.session.query(Organization).filter(filter).first()
         if org:
-            # del org.tsv_body
             return jsonify(org.asdict(True))
         else:
             # If no org found
