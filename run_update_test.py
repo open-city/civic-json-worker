@@ -1026,7 +1026,7 @@ class RunUpdateTestCase(unittest.TestCase):
         projects = self.db.session.query(Project).all()
         for project in projects:
             # verify that the project name isn't empty
-            self.assertTrue(project.name not in [u'', None])
+            self.assertTrue(project.name)
             # verify that the project name is the same as the repo name
             self.assertTrue(project.name == project.github_details['name'])
 

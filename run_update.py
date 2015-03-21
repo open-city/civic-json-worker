@@ -75,7 +75,7 @@ def format_date(time_in_milliseconds, utc_offset_msec):
 
 def format_location(venue):
     address = venue['address_1']
-    if('address_2' in venue.keys() and venue['address_2'] != ''):
+    if('address_2' in venue and venue['address_2'] != ''):
         address = address + ', ' + venue['address_2']
 
     if 'state' in venue:
@@ -347,7 +347,7 @@ def update_project_info(project):
 
         # find an existing project, filtering on code_url, organization_name, and project name (if we know it)
         existing_filter = [Project.code_url == project['code_url'], Project.organization_name == project['organization_name']]
-        if 'name' in project.keys() and project['name'] not in [u'', None]:
+        if 'name' in project and project['name']:
             existing_filter.append(Project.name == project['name'])
 
         existing_project = db.session.query(Project).filter(*existing_filter).first()
