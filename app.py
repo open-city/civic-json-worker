@@ -21,12 +21,14 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
-from sqlalchemy.orm import backref, defer
+from sqlalchemy.orm import backref, class_mapper, defer
 from sqlalchemy import event, DDL
+from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
+from werkzeug.contrib.fixers import ProxyFix
 
 # -------------------
 # Init
@@ -50,6 +52,8 @@ def createdb():
     db.create_all()
 
 make_class_dictable(db.Model)
+
+app.wsgi_app = ProxyFix(app.wsgi_app)
 
 # -------------------
 # Settings
@@ -338,6 +342,8 @@ class Project(db.Model):
         self.organization_name = organization_name
         self.keep = True
         self.status = status
+
+
 
     def api_url(self):
         ''' API link to itself
@@ -867,6 +873,8 @@ def get_projects(id=None):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 
+
+
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
 def get_issues(id=None):
@@ -1120,6 +1128,18 @@ def index():
 @app.route("/api")
 @app.route("/api/")
 def api_index():
+    try:
+        print "-> %s: %s" % ('request.base_url', request.base_url)
+        print "-> %s: %s" % ('request.environ', request.environ)
+        print "-> %s: %s" % ('request.headers', request.headers)
+        print "-> %s: %s" % ('request.host_url', request.host_url)
+        print "-> %s: %s" % ('request.is_secure', request.is_secure)
+        print "-> %s: %s" % ('request.scheme', request.scheme)
+        print "-> %s: %s" % ('request.url', request.url)
+        print "-> %s: %s" % ('request.url_root', request.url_root)
+    except:
+        pass
+
     return render_template('index.html', api_base='%s://%s' % (request.scheme, request.host))
 
 @app.route("/api/static/<path:path>")

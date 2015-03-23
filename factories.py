@@ -37,6 +37,7 @@ class ProjectFactory(SQLAlchemyModelFactory):
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
     status = u'Project status'
 
+
 class EventFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Event
     FACTORY_SESSION = db.session
