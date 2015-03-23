@@ -386,7 +386,7 @@ def update_project_info(project):
 
         # If project has not been modified, return
         elif got.status_code == 304:
-            logging.info('Project %s has not been modified since last update', repo_url)
+            logging.info('Project {} has not been modified since last update'.format(repo_url))
             if existing_project:
                 # check whether any of the org spreadsheet values for the project have changed
                 is_modified = False
@@ -473,6 +473,14 @@ def update_project_info(project):
             project['github_details']['participation'] = got.json()['all']
         except:
             project['github_details']['participation'] = [0] * 50
+
+        #
+        # Populate values from the civic.json if it exists
+        #
+        civic_json = get_civic_json_for_project(project)
+
+        if 'status' in civic_json:
+            project['status'] = civic_json['status']
 
     return project
 
@@ -561,11 +569,11 @@ def get_issues(org_name):
     return issues
 
 # ;;;
-def get_civic_json_for_project(project):
+def get_civic_json_for_project(project_dict):
     ''' get the contents of the civic.json at the project's root, if it exists.
     '''
     # Get the API URL
-    _, host, path, _, _, _ = urlparse(project.code_url)
+    _, host, path, _, _, _ = urlparse(project_dict['code_url'])
     civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
 
     civic = {}
@@ -573,7 +581,10 @@ def get_civic_json_for_project(project):
     # Request the contents of the civic.json file
     # without the 'Accept' header we'd get information about the
     # file rather than the contents of the file
-    got = get_github_api(civic_url, headers={'If-None-Match': project.last_updated_civic_json, 'Accept': 'application/vnd.github.v3.raw'})
+    request_headers = {'Accept': 'application/vnd.github.v3.raw'}
+    if 'last_updated_civic_json' in project_dict:
+        request_headers['If-None-Match'] = project_dict['last_updated_civic_json']
+    got = get_github_api(civic_url, headers=request_headers)
 
     # Verify if content has not been modified since last run
     if got.status_code == 304:
@@ -582,15 +593,13 @@ def get_civic_json_for_project(project):
     elif got.status_code not in range(400, 499):
         logging.info('NEW civic.json found at {}'.format(civic_url))
         # Update the project's last_updated_civic_json field
-        project.last_updated_civic_json = unicode(got.headers['ETag'])
-        db.session.add(project)
+        project_dict['last_updated_civic_json'] = unicode(got.headers['ETag'])
         # get the contents of the file
         civic = got.json()
 
     else:
         logging.info('NO civic.json found at {}'.format(civic_url))
 
-    print got.headers
     return civic
 
 def count_people_totals(all_projects):
