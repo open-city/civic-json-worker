@@ -33,14 +33,15 @@ requests_log.setLevel(logging.WARNING)
 # API URL templates
 MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}"
 GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
-GITHUB_REPOS_API_URL = 'https://api.github.com/repos{path}'
-GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{path}/issues'
+GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
+GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{repo_path}/issues'
+GITHUB_CONTENT_API_URL = 'https://api.github.com/repos{repo_path}/contents/{file_path}'
 
 # Org sources can be csv or yaml
 # They should be lists of organizations you want included at /organizations
 # columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
 # set use_test to True to use test_org_sources.csv instead of org_sources.csv
-use_test = False
+use_test = True
 ORG_SOURCES = u'{}org_sources.csv'.format(u'test_' if use_test else u'')
 
 if 'GITHUB_TOKEN' in os.environ:
@@ -338,7 +339,7 @@ def update_project_info(project):
 
     # Get the Github attributes
     if host == 'github.com':
-        repo_url = GITHUB_REPOS_API_URL.format(path=path)
+        repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
         global github_throttling
@@ -483,7 +484,7 @@ def get_issues_for_project(project):
 
     # Get github issues api url
     _, host, path, _, _, _ = urlparse(project.code_url)
-    issues_url = GITHUB_ISSUES_API_URL.format(path=path)
+    issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
     # Ping github's api for project issues
     got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
@@ -526,7 +527,7 @@ def get_issues(org_name):
         if host != 'github.com':
             continue
 
-        issues_url = GITHUB_ISSUES_API_URL.format(path=path)
+        issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
         # Ping github's api for project issues
         # :TODO: non-github projects are hitting here and shouldn't be!
@@ -558,6 +559,39 @@ def get_issues(org_name):
                 else:
                     logging.error('Issue for project %s is not a dictionary', project.name)
     return issues
+
+# ;;;
+def get_civic_json_for_project(project):
+    ''' get the contents of the civic.json at the project's root, if it exists.
+    '''
+    # Get the API URL
+    _, host, path, _, _, _ = urlparse(project.code_url)
+    civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
+
+    civic = {}
+
+    # Request the contents of the civic.json file
+    # without the 'Accept' header we'd get information about the
+    # file rather than the contents of the file
+    got = get_github_api(civic_url, headers={'If-None-Match': project.last_updated_civic_json, 'Accept': 'application/vnd.github.v3.raw'})
+
+    # Verify if content has not been modified since last run
+    if got.status_code == 304:
+        logging.info('civic.json has not changed since last update at {}'.format(civic_url))
+
+    elif got.status_code not in range(400, 499):
+        logging.info('NEW civic.json found at {}'.format(civic_url))
+        # Update the project's last_updated_civic_json field
+        project.last_updated_civic_json = unicode(got.headers['ETag'])
+        db.session.add(project)
+        # get the contents of the file
+        civic = got.json()
+
+    else:
+        logging.info('NO civic.json found at {}'.format(civic_url))
+
+    print got.headers
+    return civic
 
 def count_people_totals(all_projects):
     ''' Create a list of people details based on project details.
