@@ -64,7 +64,6 @@ class RunUpdateTestCase(unittest.TestCase):
         return '\n'.join(lines[0:count + 1])
 
     def response_content(self, url, request):
-
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
             project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,''']
@@ -80,6 +79,11 @@ class RunUpdateTestCase(unittest.TestCase):
         # csv file of organization descriptions
         elif "docs.google.com" in url:
             return response(200, self.get_raw_organization_list(self.organization_count))
+
+        # json of github directory contents
+        # ;;;
+        elif "/contents/" in url.geturl():
+            return response(200, '''[{"name": "civic.json", "path": "civic.json", "sha": "01a16ec5902e04c170c648c0ff65cb0210468e96", "size": 82, "url": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "html_url": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json", "git_url": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "download_url": "https://raw.githubusercontent.com/codeforamerica/cityvoice/master/civic.json", "type": "file", "_links": {"self": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "git": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "html": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json"}}]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
 
         # json of project description (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
@@ -169,7 +173,6 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_import(self):
         ''' Add one sample organization with two projects and issues, verify that it comes back.
         '''
-
         self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
@@ -215,6 +218,8 @@ class RunUpdateTestCase(unittest.TestCase):
             the new organization, its project, and events should be saved. The out of date
             organization, its project and event should be deleted.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory, ProjectFactory, EventFactory, IssueFactory
 
         old_organization = OrganizationFactory(name=u'Old Organization')
@@ -222,8 +227,6 @@ class RunUpdateTestCase(unittest.TestCase):
         old_event = EventFactory(name=u'Old Event', organization_name=u'Old Organization')
         old_issue = IssueFactory(title=u'Old Issue', project_id=1)
         self.db.session.flush()
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             import run_update
@@ -296,6 +299,8 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' When github returns a 404 when trying to retrieve project data,
             an error message should be logged.
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(404, '''Not Found!''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
@@ -315,6 +320,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_main_with_github_errors(self):
         ''' When github returns a non-404 error code, an IOError should be raised.
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(422, '''Unprocessable Entity''')
@@ -329,11 +336,11 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_main_with_weird_organization_name(self):
         ''' When an organization has a weird name, ...
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if "docs.google.com" in url:
                 return response(200, '''name\nCode_for-America''')
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -354,6 +361,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_main_with_bad_organization_name(self):
         ''' When an org has a invalid name, test that it gets skipped and an error is added to the db
         '''
+        self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
             return response(200, '''name\nCode#America\nCode?America\nCode/America\nCode for America''')
@@ -376,6 +384,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_main_with_bad_events_url(self):
         ''' When an organization has a badly formed events url is passed, no events are saved
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if "docs.google.com" in url:
                 return response(200, '''name,events_url\nCode for America,http://www.meetup.com/events/foo-%%%''')
@@ -399,6 +409,8 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' When meetup returns a 404 for an organization's events url, an error
             message should be logged
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if "docs.google.com" in url:
                 return response(200, '''name,events_url\nCode for America,http://www.meetup.com/events/Code-For-Charlotte''')
@@ -407,8 +419,6 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(404, '''Not Found!''')
 
         logging.error = Mock()
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
@@ -445,6 +455,8 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         Test that when GitHub throttles us, we skip updating projects and record an error.
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if url.netloc == 'api.github.com':
                 return response(403, "", {"x-ratelimit-remaining": 0})
@@ -467,6 +479,8 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         Testing weird csv dialects we've encountered
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         austin = OrganizationFactory(name=u'Open Austin', projects_list_url=u'http://openaustin.org/projects.csv')
@@ -484,6 +498,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_non_github_projects(self):
         ''' Test that non github and non code projects get last_updated timestamps.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         austin = OrganizationFactory(name=u'Open Austin', projects_list_url=u'http://openaustin.org/projects.csv')
@@ -498,10 +514,11 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['name'], "Hack Task Aggregator")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
-
     def test_non_github_projects_updates(self):
         ''' Test that non github projects update their timestamp when something in the sheet changes.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
 
@@ -550,6 +567,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
@@ -569,6 +588,8 @@ class RunUpdateTestCase(unittest.TestCase):
 
     def test_issue_paging(self):
         ''' test that issues are following page links '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory, ProjectFactory
 
         organization = OrganizationFactory(name=u'Code for America', projects_list_url=u'http://codeforamerica.org/projects.csv')
@@ -578,7 +599,7 @@ class RunUpdateTestCase(unittest.TestCase):
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues':
                 content = '''[{"number": 2,"title": "TEST TITLE 2","body": "TEST BODY 2","labels": [], "html_url":""}]'''
-                headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"', 'ETag': 'TEST ETAG'}
+                headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"', 'ETag': '8456bc53d4cf6b78779ded3408886f82'}
                 return response(200, content, headers)
 
             elif url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2':
@@ -595,6 +616,8 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' Get a project list that doesn't have all the columns.
             Don't die.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
@@ -612,10 +635,10 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' A value that has changed in the CSV project list should be saved, even if the
             related GitHub project hasn't been updated
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
-
-        self.setup_mock_rss_response()
 
         org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://organization.org/projects.csv'''
 
@@ -673,6 +696,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_html_returned_for_csv_project_list(self):
         ''' We requested a CSV project list and got HTML instead
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
@@ -693,10 +718,10 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' In rare cases, a project will be in the db without a last_updated date
             Remove a project's last_updated and try and update it.
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
@@ -709,10 +734,10 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' We keep getting orphan labels,
             run_update twice and check for orphan labels.
         '''
+        self.setup_mock_rss_response()
+
         from app import Label
         import run_update
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             run_update.main(org_sources="test_org_sources.csv")
@@ -725,10 +750,10 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_duplicate_labels(self):
         ''' Getting many duplicate labels on issues.
         '''
+        self.setup_mock_rss_response()
+
         from app import Label
         import run_update
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             run_update.main(org_sources="test_org_sources.csv")
@@ -744,12 +769,12 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_unicode_warning(self):
         ''' Testing for the postgres unicode warning
         '''
+        self.setup_mock_rss_response()
+
         import run_update
         import warnings
 
         warnings.filterwarnings('error')
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             run_update.main(org_sources="test_org_sources.csv")
@@ -758,14 +783,14 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' Make sure that an organization and all its children are deleted when
             the organization is no longer included in the returned csv
         '''
+        self.setup_mock_rss_response()
+
         from app import Organization, Project, Event, Story, Issue, Label
         import run_update
 
         test_sources = "test_org_sources.csv"
         self.organization_count = 3
         full_orgs_list = []
-
-        self.setup_mock_rss_response()
 
         with HTTMock(self.response_content):
             # get the orgs list for comparison
@@ -841,12 +866,12 @@ class RunUpdateTestCase(unittest.TestCase):
     def check_database_against_input(self):
         ''' verify that what's in the database matches the input
         '''
+        self.setup_mock_rss_response()
+
         from app import Organization, Project, Event, Story, Issue, Label
         import run_update
 
         test_sources = 'test_org_sources.csv'
-
-        self.setup_mock_rss_response()
 
         # for checking data from the source against what's in the database
         check_orgs = []
@@ -960,12 +985,12 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_same_projects_different_organizations(self):
         ''' Verify that the same project can be associated with two different organizations
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
 
         test_sources = "test_org_sources.csv"
-
-        self.setup_mock_rss_response()
 
         # save the default response for the cityvoice project
         body_text = None
@@ -975,6 +1000,10 @@ class RunUpdateTestCase(unittest.TestCase):
             got = get('https://api.github.com/repos/codeforamerica/cityvoice')
             body_text = str(got.text)
             headers_dict = got.headers
+
+        with HTTMock(self.response_content):
+            # run the update
+            run_update.main(org_sources=test_sources)
 
         # overwrite to return a 304 (not modified) instead of a 200 for the cityvoice project
         def overwrite_response_content(url, request):
@@ -1004,12 +1033,12 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_repo_name_used_for_missing_project_name(self):
         ''' Verify that a repo name will be used when no project name is available
         '''
+        self.setup_mock_rss_response()
+
         from app import Organization, Project
         import run_update
 
         test_sources = 'test_org_sources.csv'
-
-        self.setup_mock_rss_response()
 
         # only get one organization
         self.organization_count = 1
@@ -1036,6 +1065,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_bad_events_json(self):
         ''' Verify that a call for event data that returns bad or no json is handled
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
                 return response(200, 'no json object can be decoded from me')
@@ -1055,12 +1086,12 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_unmodified_projects_stay_in_database(self):
         ''' Verify that unmodified projects are not deleted from the database
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
 
         test_sources = "test_org_sources.csv"
-
-        self.setup_mock_rss_response()
 
         # run a standard run_update
         with HTTMock(self.response_content):
