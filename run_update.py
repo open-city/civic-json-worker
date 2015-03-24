@@ -60,7 +60,7 @@ def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
     '''
-    logging.info('Asking Github for ' + url)
+    logging.info('Asking Github for {} :: {}'.format(url, headers))
 
     got = get(url, auth=github_auth, headers=headers)
 
@@ -353,11 +353,19 @@ def update_project_info(project):
 
         existing_project = db.session.query(Project).filter(*existing_filter).first()
         if existing_project:
+            # copy 'last_updated' values from the existing project to the project dict
+            project['last_updated'] = existing_project.last_updated
+            project['last_updated_issues'] = existing_project.last_updated_issues
+            project['last_updated_civic_json'] = existing_project.last_updated_civic_json
+            project['last_updated_root_files'] = existing_project.last_updated_root_files
+
+            # request project info from GitHub with the If-Modified-Since header
             if existing_project.last_updated:
                 last_updated = datetime.strftime(existing_project.last_updated, "%a, %d %b %Y %H:%M:%S GMT")
                 got = get_github_api(repo_url, headers={"If-Modified-Since": last_updated})
+
+            # In rare cases, a project can be saved without a last_updated.
             else:
-                # In rare cases, a project can be saved without a last_updated.
                 got = get_github_api(repo_url)
 
         else:
@@ -384,35 +392,37 @@ def update_project_info(project):
             else:
                 raise IOError
 
-        # If project has not been modified, return
+        # If the project has not been modified...
         elif got.status_code == 304:
             logging.info('Project {} has not been modified since last update'.format(repo_url))
-            if existing_project:
-                # check whether any of the org spreadsheet values for the project have changed
-                is_modified = False
-                for project_key in project:
-                    check_value = project[project_key]
-                    existing_value = existing_project.__dict__[project_key]
-                    if check_value and check_value != existing_value:
-                        is_modified = True
-                    elif not check_value and existing_value:
-                        project[project_key] = existing_value
 
-                # if spreadsheet values have changed, copy untouched values from the existing
-                # project object and return it
-                if is_modified:
-                    logging.info('Project %s has been modified in the organization\'s Google spreadsheet', repo_url)
-                    project['last_updated'] = existing_project.last_updated
-                    project['github_details'] = existing_project.github_details
-                    return project
-                else:
-                    # make sure we keep the project
-                    # :::here (project/true)
-                    existing_project.keep = True
-                    db.session.add(existing_project)
-                    # commit the project
-                    db.session.commit()
-                    return None
+            # check whether any of the org spreadsheet values for the project have changed
+            spreadsheet_is_updated = False
+            for project_key in project:
+                check_value = project[project_key]
+                existing_value = existing_project.__dict__[project_key]
+                if check_value and check_value != existing_value:
+                    spreadsheet_is_updated = True
+                elif not check_value and existing_value:
+                    project[project_key] = existing_value
+
+            # Populate values from the civic.json if it exists/is updated
+            project, civic_json_is_updated = update_project_from_civic_json(project)
+
+            # if values have changed, copy untouched values from the existing project object and return it
+            if spreadsheet_is_updated or civic_json_is_updated:
+                logging.info('Project %s has been modified via spreadsheet or civic.json.', repo_url)
+                project['last_updated'] = existing_project.last_updated
+                project['github_details'] = existing_project.github_details
+                return project
+
+            # nothing was updated, but make sure we keep the project
+            # :::here (project/true)
+            existing_project.keep = True
+            db.session.add(existing_project)
+            # commit the project
+            db.session.commit()
+            return None
 
         # Save last_updated time header for future requests
         project['last_updated'] = got.headers['Last-Modified']
@@ -475,14 +485,23 @@ def update_project_info(project):
             project['github_details']['participation'] = [0] * 50
 
         #
-        # Populate values from the civic.json if it exists
+        # Populate values from the civic.json if it exists/is updated
         #
-        civic_json = get_civic_json_for_project(project)
-
-        if 'status' in civic_json:
-            project['status'] = civic_json['status']
+        project, is_updated = update_project_from_civic_json(project)
 
     return project
+
+def update_project_from_civic_json(project_dict, force=False):
+    ''' Update and return the passed project dict with values from civic.json
+    '''
+    civic_json = get_civic_json_for_project(project_dict, force)
+
+    is_updated = False
+    if 'status' in civic_json and project_dict['status'] != civic_json['status']:
+        project_dict['status'] = civic_json['status']
+        is_updated = True
+
+    return project_dict, is_updated
 
 def get_issues_for_project(project):
     ''' get the issues for a single project in dict format
@@ -541,7 +560,7 @@ def get_issues(org_name):
         # :TODO: non-github projects are hitting here and shouldn't be!
         got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
 
-        # Verify if content has not been modified since last run
+        # Verify that content has not been modified since last run
         if got.status_code == 304:
             # :::here (issue/true)
             db.session.execute(db.update(Issue, values={'keep': True}).where(Issue.project_id == project.id))
@@ -569,14 +588,58 @@ def get_issues(org_name):
     return issues
 
 # ;;;
-def get_civic_json_for_project(project_dict):
-    ''' get the contents of the civic.json at the project's root, if it exists.
+def get_root_directory_listing_for_project(project_dict, force=False):
+    ''' Get a listing of the project's github repo root directory. Will return
+        an empty list if the listing hasn't changed since the last time we asked
+        unless force is True.
     '''
     # Get the API URL
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
-    civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
+    directory_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='')
 
+    listing = []
+
+    # Request the directory listing
+    request_headers = {}
+    if 'last_updated_root_files' in project_dict and not force:
+        request_headers['If-None-Match'] = project_dict['last_updated_root_files']
+    got = get_github_api(directory_url, headers=request_headers)
+
+    # Verify that content has not been modified since last run
+    if got.status_code == 304:
+        logging.info('root directory listing has not changed since last update for {}'.format(directory_url))
+
+    elif got.status_code not in range(400, 499):
+        logging.info('root directory listing has changed for {}'.format(directory_url))
+        # Update the project's last_updated_root_files field
+        project_dict['last_updated_root_files'] = unicode(got.headers['ETag'])
+        # get the contents of the file
+        listing = got.json()
+
+    else:
+        logging.info('NO root directory listing found for {}'.format(directory_url))
+
+    return listing
+
+def get_civic_json_exists_for_project(project_dict, force=False):
+    ''' Return True if the passed project has a civic.json file in its root directory.
+    '''
+    directory_listing = get_root_directory_listing_for_project(project_dict, force)
+    exists = 'civic.json' in [item['name'] for item in directory_listing]
+    return exists
+
+def get_civic_json_for_project(project_dict, force=False):
+    ''' Get the contents of the civic.json at the project's github repo root, if it exists.
+    '''
     civic = {}
+
+    # return an empty dict if civic.json doesn't exist (or hasn't been updated)
+    if not get_civic_json_exists_for_project(project_dict, force):
+        return civic
+
+    # Get the API URL
+    _, host, path, _, _, _ = urlparse(project_dict['code_url'])
+    civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
 
     # Request the contents of the civic.json file
     # without the 'Accept' header we'd get information about the
@@ -586,7 +649,7 @@ def get_civic_json_for_project(project_dict):
         request_headers['If-None-Match'] = project_dict['last_updated_civic_json']
     got = get_github_api(civic_url, headers=request_headers)
 
-    # Verify if content has not been modified since last run
+    # Verify that content has not been modified since last run
     if got.status_code == 304:
         logging.info('civic.json has not changed since last update at {}'.format(civic_url))
 
