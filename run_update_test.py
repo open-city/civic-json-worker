@@ -66,7 +66,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,In Progress''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -81,12 +81,13 @@ class RunUpdateTestCase(unittest.TestCase):
         elif "docs.google.com" in url:
             return response(200, self.get_raw_organization_list(self.organization_count))
 
-        # json of github directory contents
         # ;;;
+        # contents of civic.json file in root directory
         elif "/contents/civic.json" in url.geturl():
-            return response(200, '''{"status": "In Progress"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            return response(200, '''{"status": "Beta"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
 
-        elif "/contents/" in url.geturl():
+        # json of github directory contents
+        elif search(r'\/contents\/$', url.geturl()):
             return response(200, '''[{"name": "civic.json", "path": "civic.json", "sha": "01a16ec5902e04c170c648c0ff65cb0210468e96", "size": 82, "url": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "html_url": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json", "git_url": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "download_url": "https://raw.githubusercontent.com/codeforamerica/cityvoice/master/civic.json", "type": "file", "_links": {"self": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "git": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "html": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json"}}]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
 
         # json of project description (cityvoice)
@@ -179,9 +180,15 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
+        # ;;;
+        def overwrite_response_content(url, request):
+            if "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
         with HTTMock(self.response_content):
-            import run_update
-            run_update.main(testing=True)
+            with HTTMock(overwrite_response_content):
+                import run_update
+                run_update.main(testing=True)
 
         self.db.session.flush()
 
@@ -199,7 +206,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertIsNotNone(project)
         self.assertEqual(project.name, u'bizfriendly-web')
 
-        # check for the one project status (this value comes from civic.json)
+        # check for the one project status
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
