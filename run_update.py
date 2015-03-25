@@ -295,9 +295,6 @@ def non_github_project_update_time(project):
 
         Set the last_updated timestamp.
     '''
-    def get_updated_timestamp():
-        return datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
-
     existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
 
     if existing_project:
@@ -307,11 +304,11 @@ def non_github_project_update_time(project):
         # unless one of the fields has been updated
         for key, value in project.iteritems():
             if project[key] != existing_project.__dict__[key]:
-                project['last_updated'] = get_updated_timestamp()
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
 
     else:
         # Set a date when we first see a non-github project
-        project['last_updated'] = get_updated_timestamp()
+        project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
 
     return project
 
@@ -412,7 +409,7 @@ def update_project_info(project):
             # if values have changed, copy untouched values from the existing project object and return it
             if spreadsheet_is_updated or civic_json_is_updated:
                 logging.info('Project %s has been modified via spreadsheet or civic.json.', repo_url)
-                project['last_updated'] = existing_project.last_updated
+                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
                 project['github_details'] = existing_project.github_details
                 return project
 
