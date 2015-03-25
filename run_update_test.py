@@ -66,7 +66,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,In Progress''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,In Progress''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -661,12 +661,9 @@ class RunUpdateTestCase(unittest.TestCase):
             with HTTMock(status_one_response_content):
                 run_update.main(org_name=u"Organization Name", testing=True)
 
-        self.db.session.flush()
-
         project_v1 = self.db.session.query(Project).first()
         # the project status was correctly set
         self.assertEqual(project_v1.status, u'In Progress')
-        v1_last_updated = project_v1.last_updated
         v1_github_details = project_v1.github_details
 
         # save the default github response so we can send it with a 304 status below
@@ -687,15 +684,13 @@ class RunUpdateTestCase(unittest.TestCase):
             # return a status of 'Released' instead of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
                 return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
-            # return a 304 (not modified) instead of a 200
+            # return a 304 (not modified) instead of a 200 for the project
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)
 
         with HTTMock(self.response_content):
             with HTTMock(status_two_response_content):
                 run_update.main(org_name=u"Organization Name", testing=True)
-
-        self.db.session.flush()
 
         project_v2 = self.db.session.query(Project).first()
         # the new project status was correctly set
@@ -1132,7 +1127,9 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(project_count, self.db.session.query(Project).count())
 
     def test_status_set_from_civic_json(self):
-        ''' Verify that the status value from a civic.json file is read and stored in the database
+        ''' Verify that the status value from a civic.json file is read and stored in the database.
+            Also tests that value of 'status' in civic.json overwrites the value of 'status' in the
+            project spreadsheet.
         '''
         self.setup_mock_rss_response()
 
@@ -1147,6 +1144,64 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Beta')
+
+    def test_new_value_in_civic_json(self):
+        ''' A value that has changed in civic.json should be saved, even if the
+            related GitHub project reports that it hasn't been updated
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://example.com/cfa-projects.csv'''
+
+        # set results_state to 'after' so we'll only get one project
+        self.results_state = 'after'
+
+        def status_one_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_one_response_content):
+                run_update.main(org_name=u"Organization Name", testing=True)
+
+        project_v1 = self.db.session.query(Project).first()
+        # the project status was correctly set
+        self.assertEqual(project_v1.status, u'Beta')
+        v1_github_details = project_v1.github_details
+
+        # save the default github response so we can send it with a 304 status below
+        cv_body_text = None
+        cv_headers_dict = None
+        with HTTMock(self.response_content):
+            from requests import get
+            got = get('https://api.github.com/repos/codeforamerica/cityvoice')
+            cv_body_text = str(got.text)
+            cv_headers_dict = got.headers
+
+        def status_two_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return a civic.json with a new status value
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{"status": "Cromulent"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            # return a 304 (not modified) instead of a 200 for the project
+            elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
+                return response(304, cv_body_text, cv_headers_dict)
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_two_response_content):
+                run_update.main(org_name=u"Organization Name", testing=True)
+
+        project_v2 = self.db.session.query(Project).first()
+        # the new project status was correctly set
+        self.assertEqual(project_v2.status, u'Cromulent')
+        # the untouched details from the GitHub project weren't changed
+        self.assertEqual(project_v2.github_details, v1_github_details)
+
+        self.results_state = 'before'
 
 if __name__ == '__main__':
     unittest.main()
