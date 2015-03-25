@@ -487,7 +487,7 @@ def update_project_from_civic_json(project_dict, force=False):
     civic_json = get_civic_json_for_project(project_dict, force)
 
     is_updated = False
-    if 'status' in civic_json and project_dict['status'] != civic_json['status']:
+    if 'status' in civic_json and 'status' in project_dict and project_dict['status'] != civic_json['status']:
         project_dict['status'] = civic_json['status']
         is_updated = True
 

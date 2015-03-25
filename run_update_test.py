@@ -83,6 +83,9 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # json of github directory contents
         # ;;;
+        elif "/contents/civic.json" in url.geturl():
+            return response(200, '''{"status": "In Progress"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
         elif "/contents/" in url.geturl():
             return response(200, '''[{"name": "civic.json", "path": "civic.json", "sha": "01a16ec5902e04c170c648c0ff65cb0210468e96", "size": 82, "url": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "html_url": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json", "git_url": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "download_url": "https://raw.githubusercontent.com/codeforamerica/cityvoice/master/civic.json", "type": "file", "_links": {"self": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "git": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "html": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json"}}]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
 
@@ -196,11 +199,11 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertIsNotNone(project)
         self.assertEqual(project.name, u'bizfriendly-web')
 
-        # check for the one project status
+        # check for the one project status (this value comes from civic.json)
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.status, u'')
+        self.assertEqual(project.status, u'In Progress')
 
         # check for the other project
         filter = Project.name == u'cityvoice'
@@ -634,7 +637,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
     def test_new_value_in_csv_project_list(self):
         ''' A value that has changed in the CSV project list should be saved, even if the
-            related GitHub project hasn't been updated
+            related GitHub project reports that it hasn't been updated
         '''
         self.setup_mock_rss_response()
 
@@ -646,9 +649,12 @@ class RunUpdateTestCase(unittest.TestCase):
         def status_one_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
-            # return a status of 'in progress'
+            # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            # return a status of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,in progress''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(status_one_response_content):
@@ -658,7 +664,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         project_v1 = self.db.session.query(Project).first()
         # the project status was correctly set
-        self.assertEqual(project_v1.status, u'in progress')
+        self.assertEqual(project_v1.status, u'In Progress')
         v1_last_updated = project_v1.last_updated
         v1_github_details = project_v1.github_details
 
@@ -674,9 +680,12 @@ class RunUpdateTestCase(unittest.TestCase):
         def status_two_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
-            # return a status of 'released' instead of 'in progress'
+            # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            # return a status of 'Released' instead of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,released''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
             # return a 304 (not modified) instead of a 200
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)
@@ -689,9 +698,8 @@ class RunUpdateTestCase(unittest.TestCase):
 
         project_v2 = self.db.session.query(Project).first()
         # the new project status was correctly set
-        self.assertEqual(project_v2.status, u'released')
+        self.assertEqual(project_v2.status, u'Released')
         # the untouched details from the GitHub project weren't changed
-        self.assertEqual(project_v2.last_updated, v1_last_updated)
         self.assertEqual(project_v2.github_details, v1_github_details)
 
     def test_html_returned_for_csv_project_list(self):
