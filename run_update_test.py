@@ -67,6 +67,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
             project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,''']
+
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
             elif self.results_state == 'after':
