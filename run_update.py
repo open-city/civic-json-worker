@@ -650,8 +650,11 @@ def get_civic_json_for_project(project_dict, force=False):
         logging.info('NEW civic.json found at {}'.format(civic_url))
         # Update the project's last_updated_civic_json field
         project_dict['last_updated_civic_json'] = unicode(got.headers['ETag'])
-        # get the contents of the file
-        civic = got.json()
+        try:
+            # get the contents of the file
+            civic = got.json()
+        except ValueError:
+            pass
 
     else:
         logging.info('NO civic.json found at {}'.format(civic_url))
