@@ -1,4 +1,4 @@
-"""empty message
+"""Adds needed timestamps for civic.json updates.
 
 Revision ID: c7bcf8d5e6e
 Revises: 2e30a731a0e3
