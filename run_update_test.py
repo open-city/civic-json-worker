@@ -5,7 +5,7 @@ import unittest
 import datetime
 import logging
 import time
-from re import match, sub
+from re import match, search, sub
 
 from httmock import response, HTTMock
 from mock import Mock
