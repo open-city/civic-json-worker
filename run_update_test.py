@@ -181,7 +181,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             import run_update
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(testing=True)
 
         self.db.session.flush()
 
@@ -234,7 +234,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             import run_update
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(testing=True)
 
         self.db.session.flush()
 
@@ -317,7 +317,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
 
         logging.error.assert_called_with('https://api.github.com/repos/codeforamerica/cityvoice doesn\'t exist.')
 
@@ -335,7 +335,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 self.assertFalse(run_update.github_throttling)
                 with self.assertRaises(IOError):
-                    run_update.main(org_sources="test_org_sources.csv")
+                    run_update.main(testing=True)
 
     def test_main_with_weird_organization_name(self):
         ''' When an organization has a weird name, ...
@@ -349,7 +349,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
                 from app import Error
                 errors = self.db.session.query(Error).all()
                 for error in errors:
@@ -373,7 +373,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
                 from app import Error
                 errors = self.db.session.query(Error).all()
                 for error in errors:
@@ -399,7 +399,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
 
         logging.error.assert_called_with('Code for America does not have a valid events url')
 
@@ -426,7 +426,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
 
         logging.error.assert_called_with('Code for America\'s meetup page cannot be found')
 
@@ -468,7 +468,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
 
         from app import Project
         projects = self.db.session.query(Project).all()
@@ -562,12 +562,6 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
 
-    def test_org_sources_csv(self):
-        '''Test that there is a csv file with links to lists of organizations
-        '''
-        import run_update
-        self.assertTrue(os.path.exists(run_update.ORG_SOURCES))
-
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
         '''
@@ -658,7 +652,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             with HTTMock(status_one_response_content):
-                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
+                run_update.main(org_name=u"Organization Name", testing=True)
 
         self.db.session.flush()
 
@@ -692,7 +686,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             with HTTMock(status_two_response_content):
-                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
+                run_update.main(org_name=u"Organization Name", testing=True)
 
         self.db.session.flush()
 
@@ -733,9 +727,9 @@ class RunUpdateTestCase(unittest.TestCase):
         import run_update
 
         with HTTMock(self.response_content):
-            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
+            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", testing=True)
             self.db.session.query(Project).update({"last_updated": None})
-            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
+            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", testing=True)
 
         # :TODO: no assertion?
 
@@ -749,8 +743,8 @@ class RunUpdateTestCase(unittest.TestCase):
         import run_update
 
         with HTTMock(self.response_content):
-            run_update.main(org_sources="test_org_sources.csv")
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(testing=True)
+            run_update.main(testing=True)
 
         labels = self.db.session.query(Label).all()
         for label in labels:
@@ -765,8 +759,8 @@ class RunUpdateTestCase(unittest.TestCase):
         import run_update
 
         with HTTMock(self.response_content):
-            run_update.main(org_sources="test_org_sources.csv")
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(testing=True)
+            run_update.main(testing=True)
 
         labels = self.db.session.query(Label).all()
         unique_labels = []
@@ -786,7 +780,7 @@ class RunUpdateTestCase(unittest.TestCase):
         warnings.filterwarnings('error')
 
         with HTTMock(self.response_content):
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(testing=True)
 
     def test_orphaned_organization_deleted(self):
         ''' Make sure that an organization and all its children are deleted when
@@ -797,15 +791,14 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Organization, Project, Event, Story, Issue, Label
         import run_update
 
-        test_sources = "test_org_sources.csv"
         self.organization_count = 3
         full_orgs_list = []
 
         with HTTMock(self.response_content):
             # get the orgs list for comparison
-            full_orgs_list = run_update.get_organizations(test_sources)
+            full_orgs_list = run_update.get_organizations("test_org_sources.csv")
             # run the update on the same orgs
-            run_update.main(org_sources=test_sources)
+            run_update.main(testing=True)
 
         # confirm that the orgs in the list are in the database
         for org_check in full_orgs_list:
@@ -819,7 +812,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.organization_count = 2
         partial_orgs_list = []
         with HTTMock(self.response_content):
-            partial_orgs_list = run_update.get_organizations(test_sources)
+            partial_orgs_list = run_update.get_organizations("test_org_sources.csv")
 
         # save details about the organization(s) and their children who will be orphaned
         orphaned_org_names = list(set([item['name'] for item in full_orgs_list]) - set([item['name'] for item in partial_orgs_list]))
@@ -836,7 +829,7 @@ class RunUpdateTestCase(unittest.TestCase):
                         orphaned_label_ids.append(label.id)
 
         with HTTMock(self.response_content):
-            run_update.main(org_sources=test_sources)
+            run_update.main(testing=True)
 
         # confirm that the two organizations are in the database
         for org_check in partial_orgs_list:
@@ -880,8 +873,6 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Organization, Project, Event, Story, Issue, Label
         import run_update
 
-        test_sources = 'test_org_sources.csv'
-
         # for checking data from the source against what's in the database
         check_orgs = []
         check_events = {}
@@ -891,10 +882,10 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             # run the update
-            run_update.main(org_sources=test_sources)
+            run_update.main(testing=True)
 
             # get raw data from the source to compare with what's in the database
-            check_orgs = run_update.get_organizations(test_sources)
+            check_orgs = run_update.get_organizations("test_org_sources.csv")
             for check_org in check_orgs:
                 check_org_obj = Organization(**check_org)
                 check_events[check_org_obj.name] = run_update.get_meetup_events(check_org_obj, run_update.get_event_group_identifier(check_org_obj.events_url))
@@ -999,8 +990,6 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Project
         import run_update
 
-        test_sources = "test_org_sources.csv"
-
         # save the default response for the cityvoice project
         body_text = None
         headers_dict = None
@@ -1012,7 +1001,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             # run the update
-            run_update.main(org_sources=test_sources)
+            run_update.main(testing=True)
 
         # overwrite to return a 304 (not modified) instead of a 200 for the cityvoice project
         def overwrite_response_content(url, request):
@@ -1022,7 +1011,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 # run the update on the same orgs
-                run_update.main(org_sources=test_sources)
+                run_update.main(testing=True)
 
         # verify that there are multiple 'cityvoice' projects that are identical except in organization name
         projects = self.db.session.query(Project).filter(Project.name == u'cityvoice').all()
@@ -1047,14 +1036,12 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Organization, Project
         import run_update
 
-        test_sources = 'test_org_sources.csv'
-
         # only get one organization
         self.organization_count = 1
 
         with HTTMock(self.response_content):
             # run the update
-            run_update.main(org_sources=test_sources)
+            run_update.main(testing=True)
 
             # verify only one organization was returned
             organizations = self.db.session.query(Organization).all()
@@ -1086,7 +1073,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(testing=True)
 
         # Make sure no events exist
         from app import Event
@@ -1100,11 +1087,9 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Project
         import run_update
 
-        test_sources = "test_org_sources.csv"
-
         # run a standard run_update
         with HTTMock(self.response_content):
-            run_update.main(org_sources=test_sources)
+            run_update.main(testing=True)
 
         # remember how many projects were saved
         project_count = self.db.session.query(Project).count()
@@ -1134,7 +1119,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 # run the update on the same orgs
-                run_update.main(org_sources=test_sources)
+                run_update.main(testing=True)
 
         # verify that the same number of projects are in the database
         self.assertEqual(project_count, self.db.session.query(Project).count())
@@ -1146,8 +1131,6 @@ class RunUpdateTestCase(unittest.TestCase):
 
         from app import Project
         import run_update
-
-        test_sources = "test_org_sources.csv"
 
         self.assertTrue(True)
 
