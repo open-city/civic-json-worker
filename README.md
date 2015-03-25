@@ -208,7 +208,7 @@ $ pip install -r requirements.txt
 
 ```
 createdb cfapi
-python -c 'from app import db; db.create_all()'
+python app.py createdb
 ```
 
 * Run the updater
@@ -225,7 +225,11 @@ You can update just one organization if you need by using:
 python run_update.py --name "Beta NYC"
 ```
 
-There is a line near the top of run_update.py that sets the `ORG_SOURCES` variable. Change the list of org sources to `test_org_sources.csv` for quicker update testing.
+For quicker update testing, use a shorter list of orgs by calling run_update.py with the `--test` flag:
+
+```
+python run_update.py --test
+```
 
 * Start the API
 
