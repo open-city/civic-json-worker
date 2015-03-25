@@ -487,7 +487,7 @@ def update_project_info(project):
         #
         # Populate values from the civic.json if it exists/is updated
         #
-        project, is_updated = update_project_from_civic_json(project)
+        project, civic_json_is_updated = update_project_from_civic_json(project)
 
     return project
 
