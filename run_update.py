@@ -37,13 +37,6 @@ GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
 GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{repo_path}/issues'
 GITHUB_CONTENT_API_URL = 'https://api.github.com/repos{repo_path}/contents/{file_path}'
 
-# Org sources can be csv or yaml
-# They should be lists of organizations you want included at /organizations
-# columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
-# set use_test to True to use test_org_sources.csv instead of org_sources.csv
-use_test = True
-ORG_SOURCES = u'{}org_sources.csv'.format(u'test_' if use_test else u'')
-
 if 'GITHUB_TOKEN' in os.environ:
     github_auth = (os.environ['GITHUB_TOKEN'], '')
 else:
@@ -868,11 +861,17 @@ def get_event_group_identifier(events_url):
     else:
         return None
 
-def main(org_name=None, org_sources=None):
+def main(org_name=None, testing=False):
     ''' Run update over all organizations. Optionally, update just one.
     '''
     # Collect a set of fresh organization names.
     organization_names = set()
+
+    # Org sources can be csv or yaml
+    # They should be lists of organizations you want included at /organizations
+    # columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
+    # set use_test to True to use test_org_sources.csv instead of org_sources.csv
+    org_sources = u'{}org_sources.csv'.format(u'test_' if testing else u'')
 
     # Retrieve all organizations and shuffle the list in place.
     orgs_info = get_organizations(org_sources)
@@ -1001,8 +1000,9 @@ def main(org_name=None, org_sources=None):
 
 parser = ArgumentParser(description='''Update database from CSV source URL.''')
 parser.add_argument('--name', dest='name', help='Single organization name to update.')
+parser.add_argument('--test', default=False, dest='test', help='Use the testing list of organizations.')
 
 if __name__ == "__main__":
     args = parser.parse_args()
     org_name = args.name and args.name.decode('utf8') or ''
-    main(org_name=org_name, org_sources=ORG_SOURCES)
+    main(org_name=org_name, testing=args.test)
