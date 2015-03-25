@@ -1131,6 +1131,17 @@ class RunUpdateTestCase(unittest.TestCase):
         # verify that the same number of projects are in the database
         self.assertEqual(project_count, self.db.session.query(Project).count())
 
+    def test_status_read_from_civic_json(self):
+        ''' Verify that the status value from a civic.json file is read and stored in the database
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        test_sources = "test_org_sources.csv"
+
+        self.assertTrue(True)
 
 if __name__ == '__main__':
     unittest.main()
