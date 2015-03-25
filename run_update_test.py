@@ -637,7 +637,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
     def test_new_value_in_csv_project_list(self):
         ''' A value that has changed in the CSV project list should be saved, even if the
-            related GitHub project hasn't been updated
+            related GitHub project reports that it hasn't been updated
         '''
         self.setup_mock_rss_response()
 
@@ -649,6 +649,9 @@ class RunUpdateTestCase(unittest.TestCase):
         def status_one_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a status of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
                 return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
@@ -677,6 +680,9 @@ class RunUpdateTestCase(unittest.TestCase):
         def status_two_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a status of 'Released' instead of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
                 return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
@@ -694,7 +700,6 @@ class RunUpdateTestCase(unittest.TestCase):
         # the new project status was correctly set
         self.assertEqual(project_v2.status, u'Released')
         # the untouched details from the GitHub project weren't changed
-        self.assertEqual(project_v2.last_updated, v1_last_updated)
         self.assertEqual(project_v2.github_details, v1_github_details)
 
     def test_html_returned_for_csv_project_list(self):
