@@ -646,6 +646,16 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(len(response['objects']), 1)
         self.assertFalse( 'tsv_body' in response['objects'][0])
 
+
+    def test_project_search_includes_status(self):
+        ProjectFactory(
+            status = u'Alpha'
+        )
+        db.session.commit()
+        response = self.app.get('/api/projects?q=')
+        response = json.loads(response.data)
+        self.assertEqual(response["objects"][0]["status"], 'Alpha', "Status is included when searching projects")
+
     def test_pagination(self):
         ProjectFactory()
         ProjectFactory()

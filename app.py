@@ -385,7 +385,7 @@ db.Index('index_project_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
 
 # Trigger to populate the search index column
 trig_ddl = DDL("""
-    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories, github_details);
+    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories, github_details, status);
 """)
 # Initialize the trigger after table is created
 event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
