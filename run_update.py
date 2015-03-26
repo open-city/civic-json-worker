@@ -490,9 +490,13 @@ def update_project_from_civic_json(project_dict, force=False):
     civic_json = get_civic_json_for_project(project_dict, force)
 
     is_updated = False
-    if 'status' in civic_json and 'status' in project_dict and project_dict['status'] != civic_json['status']:
+
+    existing_status = project_dict['status'] if 'status' in project_dict else u''
+    if 'status' in civic_json and existing_status != civic_json['status']:
         project_dict['status'] = civic_json['status']
         is_updated = True
+
+    # add other attributes from civic.json here
 
     return project_dict, is_updated
 
@@ -643,20 +647,20 @@ def get_civic_json_for_project(project_dict, force=False):
 
     # Verify that content has not been modified since last run
     if got.status_code == 304:
-        logging.info('civic.json has not changed since last update at {}'.format(civic_url))
+        logging.info('Unchanged civic.json at {}'.format(civic_url))
 
     elif got.status_code not in range(400, 499):
-        logging.info('NEW civic.json found at {}'.format(civic_url))
+        logging.info('New civic.json at {}'.format(civic_url))
         # Update the project's last_updated_civic_json field
         project_dict['last_updated_civic_json'] = unicode(got.headers['ETag'])
         try:
             # get the contents of the file
             civic = got.json()
         except ValueError:
-            pass
+            logging.error('Malformed civic.json at {}'.format(civic_url))
 
     else:
-        logging.info('NO civic.json found at {}'.format(civic_url))
+        logging.info('No civic.json at {}'.format(civic_url))
 
     return civic
 
