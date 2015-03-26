@@ -21,9 +21,8 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
-from sqlalchemy.orm import backref, class_mapper, defer
+from sqlalchemy.orm import backref, defer
 from sqlalchemy import event, DDL
-from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager, prompt_bool
@@ -350,8 +349,6 @@ class Project(db.Model):
         self.organization_name = organization_name
         self.keep = True
         self.status = status
-
-
 
     def api_url(self):
         ''' API link to itself
@@ -885,8 +882,6 @@ def get_projects(id=None):
 
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
-
-
 
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
