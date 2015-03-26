@@ -57,7 +57,7 @@ def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
     '''
-    logging.info('Asking Github for {} :: {}'.format(url, headers))
+    logging.info('Asking Github for {}{}'.format(url, ' ({})'.format(headers) if headers and headers != {} else ''))
 
     got = get(url, auth=github_auth, headers=headers)
 
