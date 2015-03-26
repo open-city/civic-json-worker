@@ -580,7 +580,6 @@ def get_issues(org_name):
                     logging.error('Issue for project %s is not a dictionary', project.name)
     return issues
 
-# ;;;
 def get_root_directory_listing_for_project(project_dict, force=False):
     ''' Get a listing of the project's github repo root directory. Will return
         an empty list if the listing hasn't changed since the last time we asked

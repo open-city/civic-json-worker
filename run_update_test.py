@@ -81,7 +81,6 @@ class RunUpdateTestCase(unittest.TestCase):
         elif "docs.google.com" in url:
             return response(200, self.get_raw_organization_list(self.organization_count))
 
-        # ;;;
         # contents of civic.json file in root directory
         elif "/contents/civic.json" in url.geturl():
             return response(200, '''{"status": "Beta"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
@@ -180,7 +179,6 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        # ;;;
         def overwrite_response_content(url, request):
             if "/contents/civic.json" in url.geturl():
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
