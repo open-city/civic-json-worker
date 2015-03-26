@@ -641,7 +641,7 @@ def get_civic_json_for_project(project_dict, force=False):
     # without the 'Accept' header we'd get information about the
     # file rather than the contents of the file
     request_headers = {'Accept': 'application/vnd.github.v3.raw'}
-    if 'last_updated_civic_json' in project_dict:
+    if 'last_updated_civic_json' in project_dict and not force:
         request_headers['If-None-Match'] = project_dict['last_updated_civic_json']
     got = get_github_api(civic_url, headers=request_headers)
 
