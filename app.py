@@ -21,9 +21,8 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.sql.expression import func
-from sqlalchemy.orm import backref, class_mapper, defer
+from sqlalchemy.orm import backref, defer
 from sqlalchemy import event, DDL
-from sqlalchemy import types
 from dictalchemy import make_class_dictable
 from dateutil.tz import tzoffset
 from flask.ext.script import Manager, prompt_bool
@@ -231,6 +230,7 @@ class Organization(db.Model):
         '''
         organization_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del organization_dict['keep']
         del organization_dict['tsv_body']
 
@@ -292,7 +292,9 @@ class Story(db.Model):
         '''
         story_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del story_dict['keep']
+
         story_dict['api_url'] = self.api_url()
 
         if include_organization:
@@ -315,6 +317,8 @@ class Project(db.Model):
     github_details = db.Column(JsonType())
     last_updated = db.Column(db.DateTime())
     last_updated_issues = db.Column(db.Unicode())
+    last_updated_civic_json = db.Column(db.Unicode())
+    last_updated_root_files = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
     status = db.Column(db.Unicode())
@@ -329,7 +333,8 @@ class Project(db.Model):
     def __init__(self, name, code_url=None, link_url=None,
                  description=None, type=None, categories=None,
                  github_details=None, last_updated=None, last_updated_issues=None,
-                 organization_name=None, keep=None, status=None):
+                 last_updated_civic_json=None, last_updated_root_files=None, organization_name=None,
+                 keep=None, status=None):
         self.name = name
         self.code_url = code_url
         self.link_url = link_url
@@ -339,11 +344,11 @@ class Project(db.Model):
         self.github_details = github_details
         self.last_updated = last_updated
         self.last_updated_issues = last_updated_issues
+        self.last_updated_civic_json = last_updated_civic_json
+        self.last_updated_root_files = last_updated_root_files
         self.organization_name = organization_name
         self.keep = True
         self.status = status
-
-
 
     def api_url(self):
         ''' API link to itself
@@ -357,8 +362,12 @@ class Project(db.Model):
         '''
         project_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del project_dict['keep']
         del project_dict['tsv_body']
+        del project_dict['last_updated_issues']
+        del project_dict['last_updated_civic_json']
+        del project_dict['last_updated_root_files']
 
         project_dict['api_url'] = self.api_url()
 
@@ -376,7 +385,7 @@ db.Index('index_project_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
 
 # Trigger to populate the search index column
 trig_ddl = DDL("""
-    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories, github_details);
+    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories, github_details, status);
 """)
 # Initialize the trigger after table is created
 event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
@@ -424,7 +433,9 @@ class Issue(db.Model):
             del issue_dict['project']['issues']
             del issue_dict['project_id']
 
+        # remove fields that don't need to be public
         del issue_dict['keep']
+
         issue_dict['api_url'] = self.api_url()
         issue_dict['labels'] = [l.asdict() for l in self.labels]
 
@@ -457,6 +468,7 @@ class Label(db.Model):
         '''
         label_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         del label_dict['id']
         del label_dict['issue_id']
 
@@ -528,6 +540,7 @@ class Event(db.Model):
         '''
         event_dict = db.Model.asdict(self)
 
+        # remove fields that don't need to be public
         for key in ('keep', 'start_time_notz', 'end_time_notz', 'utc_offset'):
             del event_dict[key]
 
@@ -605,8 +618,6 @@ def paged_results(query, page, per_page, querystring=''):
         model_dicts = []
         for o in query.limit(per_page).offset(offset):
             obj = o.asdict(True)
-            # Remove some fields from the API
-            obj.pop('tsv_body', None)
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
@@ -650,7 +661,6 @@ def get_organizations(name=None):
         filter = Organization.name == raw_name(name)
         org = db.session.query(Organization).filter(filter).first()
         if org:
-            # del org.tsv_body
             return jsonify(org.asdict(True))
         else:
             # If no org found
@@ -872,8 +882,6 @@ def get_projects(id=None):
 
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
-
-
 
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')

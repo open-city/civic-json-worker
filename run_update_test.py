@@ -5,7 +5,7 @@ import unittest
 import datetime
 import logging
 import time
-from re import match, sub
+from re import match, search, sub
 
 from httmock import response, HTTMock
 from mock import Mock
@@ -64,10 +64,9 @@ class RunUpdateTestCase(unittest.TestCase):
         return '\n'.join(lines[0:count + 1])
 
     def response_content(self, url, request):
-
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,In Progress''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -81,6 +80,14 @@ class RunUpdateTestCase(unittest.TestCase):
         # csv file of organization descriptions
         elif "docs.google.com" in url:
             return response(200, self.get_raw_organization_list(self.organization_count))
+
+        # contents of civic.json file in root directory
+        elif "/contents/civic.json" in url.geturl():
+            return response(200, '''{"status": "Beta"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        # json of github directory contents
+        elif search(r'\/contents\/$', url.geturl()):
+            return response(200, '''[{"name": "civic.json", "path": "civic.json", "sha": "01a16ec5902e04c170c648c0ff65cb0210468e96", "size": 82, "url": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "html_url": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json", "git_url": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "download_url": "https://raw.githubusercontent.com/codeforamerica/cityvoice/master/civic.json", "type": "file", "_links": {"self": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "git": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "html": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json"}}]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
 
         # json of project description (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
@@ -170,12 +177,16 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_import(self):
         ''' Add one sample organization with two projects and issues, verify that it comes back.
         '''
-
         self.setup_mock_rss_response()
 
+        def overwrite_response_content(url, request):
+            if "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
         with HTTMock(self.response_content):
-            import run_update
-            run_update.main(org_sources="test_org_sources.csv")
+            with HTTMock(overwrite_response_content):
+                import run_update
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         self.db.session.flush()
 
@@ -197,7 +208,7 @@ class RunUpdateTestCase(unittest.TestCase):
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.status, u'')
+        self.assertEqual(project.status, u'In Progress')
 
         # check for the other project
         filter = Project.name == u'cityvoice'
@@ -216,6 +227,8 @@ class RunUpdateTestCase(unittest.TestCase):
             the new organization, its project, and events should be saved. The out of date
             organization, its project and event should be deleted.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory, ProjectFactory, EventFactory, IssueFactory
 
         old_organization = OrganizationFactory(name=u'Old Organization')
@@ -224,11 +237,9 @@ class RunUpdateTestCase(unittest.TestCase):
         old_issue = IssueFactory(title=u'Old Issue', project_id=1)
         self.db.session.flush()
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
             import run_update
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         self.db.session.flush()
 
@@ -297,6 +308,8 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' When github returns a 404 when trying to retrieve project data,
             an error message should be logged.
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(404, '''Not Found!''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
@@ -309,13 +322,15 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         logging.error.assert_called_with('https://api.github.com/repos/codeforamerica/cityvoice doesn\'t exist.')
 
     def test_main_with_github_errors(self):
         ''' When github returns a non-404 error code, an IOError should be raised.
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(422, '''Unprocessable Entity''')
@@ -325,21 +340,21 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 self.assertFalse(run_update.github_throttling)
                 with self.assertRaises(IOError):
-                    run_update.main(org_sources="test_org_sources.csv")
+                    run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
     def test_main_with_weird_organization_name(self):
         ''' When an organization has a weird name, ...
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if "docs.google.com" in url:
                 return response(200, '''name\nCode_for-America''')
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
                 from app import Error
                 errors = self.db.session.query(Error).all()
                 for error in errors:
@@ -355,6 +370,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_main_with_bad_organization_name(self):
         ''' When an org has a invalid name, test that it gets skipped and an error is added to the db
         '''
+        self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
             return response(200, '''name\nCode#America\nCode?America\nCode/America\nCode for America''')
@@ -362,7 +378,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
                 from app import Error
                 errors = self.db.session.query(Error).all()
                 for error in errors:
@@ -377,6 +393,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_main_with_bad_events_url(self):
         ''' When an organization has a badly formed events url is passed, no events are saved
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if "docs.google.com" in url:
                 return response(200, '''name,events_url\nCode for America,http://www.meetup.com/events/foo-%%%''')
@@ -386,7 +404,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         logging.error.assert_called_with('Code for America does not have a valid events url')
 
@@ -400,6 +418,8 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' When meetup returns a 404 for an organization's events url, an error
             message should be logged
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if "docs.google.com" in url:
                 return response(200, '''name,events_url\nCode for America,http://www.meetup.com/events/Code-For-Charlotte''')
@@ -408,12 +428,10 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(404, '''Not Found!''')
 
         logging.error = Mock()
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         logging.error.assert_called_with('Code for America\'s meetup page cannot be found')
 
@@ -446,6 +464,8 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         Test that when GitHub throttles us, we skip updating projects and record an error.
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if url.netloc == 'api.github.com':
                 return response(403, "", {"x-ratelimit-remaining": 0})
@@ -453,7 +473,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         from app import Project
         projects = self.db.session.query(Project).all()
@@ -468,6 +488,8 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         Testing weird csv dialects we've encountered
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         austin = OrganizationFactory(name=u'Open Austin', projects_list_url=u'http://openaustin.org/projects.csv')
@@ -485,6 +507,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_non_github_projects(self):
         ''' Test that non github and non code projects get last_updated timestamps.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         austin = OrganizationFactory(name=u'Open Austin', projects_list_url=u'http://openaustin.org/projects.csv')
@@ -499,10 +523,11 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['name'], "Hack Task Aggregator")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
-
     def test_non_github_projects_updates(self):
         ''' Test that non github projects update their timestamp when something in the sheet changes.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
 
@@ -542,15 +567,11 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
 
-    def test_org_sources_csv(self):
-        '''Test that there is a csv file with links to lists of organizations
-        '''
-        import run_update
-        self.assertTrue(os.path.exists(run_update.ORG_SOURCES))
-
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
@@ -570,6 +591,8 @@ class RunUpdateTestCase(unittest.TestCase):
 
     def test_issue_paging(self):
         ''' test that issues are following page links '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory, ProjectFactory
 
         organization = OrganizationFactory(name=u'Code for America', projects_list_url=u'http://codeforamerica.org/projects.csv')
@@ -579,7 +602,7 @@ class RunUpdateTestCase(unittest.TestCase):
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues':
                 content = '''[{"number": 2,"title": "TEST TITLE 2","body": "TEST BODY 2","labels": [], "html_url":""}]'''
-                headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"', 'ETag': 'TEST ETAG'}
+                headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"', 'ETag': '8456bc53d4cf6b78779ded3408886f82'}
                 return response(200, content, headers)
 
             elif url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2':
@@ -596,6 +619,8 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' Get a project list that doesn't have all the columns.
             Don't die.
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
@@ -611,32 +636,32 @@ class RunUpdateTestCase(unittest.TestCase):
 
     def test_new_value_in_csv_project_list(self):
         ''' A value that has changed in the CSV project list should be saved, even if the
-            related GitHub project hasn't been updated
+            related GitHub project reports that it hasn't been updated
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
-
-        self.setup_mock_rss_response()
 
         org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://organization.org/projects.csv'''
 
         def status_one_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
-            # return a status of 'in progress'
+            # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            # return a status of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,in progress''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(status_one_response_content):
-                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
-
-        self.db.session.flush()
+                run_update.main(org_name=u"Organization Name", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         project_v1 = self.db.session.query(Project).first()
         # the project status was correctly set
-        self.assertEqual(project_v1.status, u'in progress')
-        v1_last_updated = project_v1.last_updated
+        self.assertEqual(project_v1.status, u'In Progress')
         v1_github_details = project_v1.github_details
 
         # save the default github response so we can send it with a 304 status below
@@ -651,29 +676,31 @@ class RunUpdateTestCase(unittest.TestCase):
         def status_two_response_content(url, request):
             if "docs.google.com" in url.geturl():
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
-            # return a status of 'released' instead of 'in progress'
+            # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            # return a status of 'Released' instead of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,released''', {'content-type': 'text/csv; charset=UTF-8'})
-            # return a 304 (not modified) instead of a 200
+                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
+            # return a 304 (not modified) instead of a 200 for the project
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)
 
         with HTTMock(self.response_content):
             with HTTMock(status_two_response_content):
-                run_update.main(org_name=u"Organization Name", org_sources="test_org_sources.csv")
-
-        self.db.session.flush()
+                run_update.main(org_name=u"Organization Name", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         project_v2 = self.db.session.query(Project).first()
         # the new project status was correctly set
-        self.assertEqual(project_v2.status, u'released')
+        self.assertEqual(project_v2.status, u'Released')
         # the untouched details from the GitHub project weren't changed
-        self.assertEqual(project_v2.last_updated, v1_last_updated)
         self.assertEqual(project_v2.github_details, v1_github_details)
 
     def test_html_returned_for_csv_project_list(self):
         ''' We requested a CSV project list and got HTML instead
         '''
+        self.setup_mock_rss_response()
+
         from factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
@@ -694,15 +721,15 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' In rare cases, a project will be in the db without a last_updated date
             Remove a project's last_updated and try and update it.
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
-            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
+            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
             self.db.session.query(Project).update({"last_updated": None})
-            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources="test_org_sources.csv")
+            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # :TODO: no assertion?
 
@@ -710,14 +737,14 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' We keep getting orphan labels,
             run_update twice and check for orphan labels.
         '''
+        self.setup_mock_rss_response()
+
         from app import Label
         import run_update
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
-            run_update.main(org_sources="test_org_sources.csv")
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         labels = self.db.session.query(Label).all()
         for label in labels:
@@ -726,14 +753,14 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_duplicate_labels(self):
         ''' Getting many duplicate labels on issues.
         '''
+        self.setup_mock_rss_response()
+
         from app import Label
         import run_update
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
-            run_update.main(org_sources="test_org_sources.csv")
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         labels = self.db.session.query(Label).all()
         unique_labels = []
@@ -745,34 +772,33 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_unicode_warning(self):
         ''' Testing for the postgres unicode warning
         '''
+        self.setup_mock_rss_response()
+
         import run_update
         import warnings
 
         warnings.filterwarnings('error')
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
-            run_update.main(org_sources="test_org_sources.csv")
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
     def test_orphaned_organization_deleted(self):
         ''' Make sure that an organization and all its children are deleted when
             the organization is no longer included in the returned csv
         '''
+        self.setup_mock_rss_response()
+
         from app import Organization, Project, Event, Story, Issue, Label
         import run_update
 
-        test_sources = "test_org_sources.csv"
         self.organization_count = 3
         full_orgs_list = []
 
-        self.setup_mock_rss_response()
-
         with HTTMock(self.response_content):
             # get the orgs list for comparison
-            full_orgs_list = run_update.get_organizations(test_sources)
+            full_orgs_list = run_update.get_organizations(run_update.TEST_ORG_SOURCES_FILENAME)
             # run the update on the same orgs
-            run_update.main(org_sources=test_sources)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # confirm that the orgs in the list are in the database
         for org_check in full_orgs_list:
@@ -786,7 +812,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.organization_count = 2
         partial_orgs_list = []
         with HTTMock(self.response_content):
-            partial_orgs_list = run_update.get_organizations(test_sources)
+            partial_orgs_list = run_update.get_organizations(run_update.TEST_ORG_SOURCES_FILENAME)
 
         # save details about the organization(s) and their children who will be orphaned
         orphaned_org_names = list(set([item['name'] for item in full_orgs_list]) - set([item['name'] for item in partial_orgs_list]))
@@ -803,7 +829,7 @@ class RunUpdateTestCase(unittest.TestCase):
                         orphaned_label_ids.append(label.id)
 
         with HTTMock(self.response_content):
-            run_update.main(org_sources=test_sources)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # confirm that the two organizations are in the database
         for org_check in partial_orgs_list:
@@ -842,12 +868,10 @@ class RunUpdateTestCase(unittest.TestCase):
     def check_database_against_input(self):
         ''' verify that what's in the database matches the input
         '''
+        self.setup_mock_rss_response()
+
         from app import Organization, Project, Event, Story, Issue, Label
         import run_update
-
-        test_sources = 'test_org_sources.csv'
-
-        self.setup_mock_rss_response()
 
         # for checking data from the source against what's in the database
         check_orgs = []
@@ -858,10 +882,10 @@ class RunUpdateTestCase(unittest.TestCase):
 
         with HTTMock(self.response_content):
             # run the update
-            run_update.main(org_sources=test_sources)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
             # get raw data from the source to compare with what's in the database
-            check_orgs = run_update.get_organizations(test_sources)
+            check_orgs = run_update.get_organizations(run_update.TEST_ORG_SOURCES_FILENAME)
             for check_org in check_orgs:
                 check_org_obj = Organization(**check_org)
                 check_events[check_org_obj.name] = run_update.get_meetup_events(check_org_obj, run_update.get_event_group_identifier(check_org_obj.events_url))
@@ -961,12 +985,10 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_same_projects_different_organizations(self):
         ''' Verify that the same project can be associated with two different organizations
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
-
-        test_sources = "test_org_sources.csv"
-
-        self.setup_mock_rss_response()
 
         # save the default response for the cityvoice project
         body_text = None
@@ -977,6 +999,10 @@ class RunUpdateTestCase(unittest.TestCase):
             body_text = str(got.text)
             headers_dict = got.headers
 
+        with HTTMock(self.response_content):
+            # run the update
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
         # overwrite to return a 304 (not modified) instead of a 200 for the cityvoice project
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
@@ -985,7 +1011,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 # run the update on the same orgs
-                run_update.main(org_sources=test_sources)
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # verify that there are multiple 'cityvoice' projects that are identical except in organization name
         projects = self.db.session.query(Project).filter(Project.name == u'cityvoice').all()
@@ -1005,19 +1031,17 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_repo_name_used_for_missing_project_name(self):
         ''' Verify that a repo name will be used when no project name is available
         '''
+        self.setup_mock_rss_response()
+
         from app import Organization, Project
         import run_update
-
-        test_sources = 'test_org_sources.csv'
-
-        self.setup_mock_rss_response()
 
         # only get one organization
         self.organization_count = 1
 
         with HTTMock(self.response_content):
             # run the update
-            run_update.main(org_sources=test_sources)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
             # verify only one organization was returned
             organizations = self.db.session.query(Organization).all()
@@ -1027,7 +1051,7 @@ class RunUpdateTestCase(unittest.TestCase):
         projects = self.db.session.query(Project).all()
         for project in projects:
             # verify that the project name isn't empty
-            self.assertTrue(project.name not in [u'', None])
+            self.assertTrue(project.name)
             # verify that the project name is the same as the repo name
             self.assertTrue(project.name == project.github_details['name'])
 
@@ -1037,6 +1061,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_bad_events_json(self):
         ''' Verify that a call for event data that returns bad or no json is handled
         '''
+        self.setup_mock_rss_response()
+
         def overwrite_response_content(url, request):
             if 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
                 return response(200, 'no json object can be decoded from me')
@@ -1047,7 +1073,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                run_update.main(org_sources="test_org_sources.csv")
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # Make sure no events exist
         from app import Event
@@ -1056,16 +1082,14 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_unmodified_projects_stay_in_database(self):
         ''' Verify that unmodified projects are not deleted from the database
         '''
+        self.setup_mock_rss_response()
+
         from app import Project
         import run_update
 
-        test_sources = "test_org_sources.csv"
-
-        self.setup_mock_rss_response()
-
         # run a standard run_update
         with HTTMock(self.response_content):
-            run_update.main(org_sources=test_sources)
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # remember how many projects were saved
         project_count = self.db.session.query(Project).count()
@@ -1095,11 +1119,87 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 # run the update on the same orgs
-                run_update.main(org_sources=test_sources)
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
         # verify that the same number of projects are in the database
         self.assertEqual(project_count, self.db.session.query(Project).count())
 
+    def test_status_set_from_civic_json(self):
+        ''' Verify that the status value from a civic.json file is read and stored in the database.
+            Also tests that value of 'status' in civic.json overwrites the value of 'status' in the
+            project spreadsheet.
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check a project for the status in the mock civic.json
+        project = self.db.session.query(Project).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, u'Beta')
+
+    def test_new_value_in_civic_json(self):
+        ''' A value that has changed in civic.json should be saved, even if the
+            related GitHub project reports that it hasn't been updated
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://example.com/cfa-projects.csv'''
+
+        # set results_state to 'after' so we'll only get one project
+        self.results_state = 'after'
+
+        def status_one_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_one_response_content):
+                run_update.main(org_name=u"Organization Name", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        project_v1 = self.db.session.query(Project).first()
+        # the project status was correctly set
+        self.assertEqual(project_v1.status, u'Beta')
+        v1_github_details = project_v1.github_details
+
+        # save the default github response so we can send it with a 304 status below
+        cv_body_text = None
+        cv_headers_dict = None
+        with HTTMock(self.response_content):
+            from requests import get
+            got = get('https://api.github.com/repos/codeforamerica/cityvoice')
+            cv_body_text = str(got.text)
+            cv_headers_dict = got.headers
+
+        def status_two_response_content(url, request):
+            if "docs.google.com" in url.geturl():
+                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            # return a civic.json with a new status value
+            elif "/contents/civic.json" in url.geturl():
+                return response(200, '''{"status": "Cromulent"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            # return a 304 (not modified) instead of a 200 for the project
+            elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
+                return response(304, cv_body_text, cv_headers_dict)
+
+        with HTTMock(self.response_content):
+            with HTTMock(status_two_response_content):
+                run_update.main(org_name=u"Organization Name", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        project_v2 = self.db.session.query(Project).first()
+        # the new project status was correctly set
+        self.assertEqual(project_v2.status, u'Cromulent')
+        # the untouched details from the GitHub project weren't changed
+        self.assertEqual(project_v2.github_details, v1_github_details)
+
+        self.results_state = 'before'
 
 if __name__ == '__main__':
     unittest.main()
