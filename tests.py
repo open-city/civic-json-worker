@@ -17,7 +17,7 @@ class ApiTest(unittest.TestCase):
 
     def setUp(self):
         # Set up the database settings
-        #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres@localhost/civic_json_worker_test'
+        # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://postgres@localhost/civic_json_worker_test'
         app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres:///civic_json_worker_test'
         db.create_all()
         self.app = app.test_client()
@@ -200,7 +200,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response_json['objects'][1]['name'], u'Event Three')
         self.assertEqual(response_json['objects'][5]['name'], u'Event Nine')
 
-
     def test_all_past_events(self):
         '''
         Test the /events/past_events end point.
@@ -257,8 +256,8 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
 
         response = self.app.get('/api/organizations')
-        assert response.headers['Access-Control-Allow-Origin']  == '*'
-        assert response.headers['Content-Type']  == 'application/json'
+        assert response.headers['Access-Control-Allow-Origin'] == '*'
+        assert response.headers['Content-Type'] == 'application/json'
 
     def test_404(self):
         response = self.app.get('/blahblahblah')
@@ -484,7 +483,7 @@ class ApiTest(unittest.TestCase):
         response = self.app.get('/api/projects?q=')
         response = json.loads(response.data)
         self.assertEqual(len(response['objects']), 1)
-        self.assertFalse( 'tsv_body' in response['objects'][0])
+        self.assertFalse('tsv_body' in response['objects'][0])
 
     def test_org_projects_dont_include_tsv(self):
         OrganizationFactory(name=u"Code for San Francisco")
@@ -492,7 +491,7 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
         response = self.app.get('/api/organizations/Code-for-San-Francisco')
         response = json.loads(response.data)
-        self.assertFalse( 'tsv_body' in response['current_projects'][0])
+        self.assertFalse('tsv_body' in response['current_projects'][0])
 
     def test_project_orgs_dont_include_tsv(self):
         OrganizationFactory(name=u"Code for San Francisco")
@@ -500,11 +499,11 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
         response = self.app.get('/api/projects')
         response = json.loads(response.data)
-        self.assertFalse( 'tsv_body' in response['objects'][0]['organization'])
+        self.assertFalse('tsv_body' in response['objects'][0]['organization'])
 
     def test_project_search_includes_status(self):
         ProjectFactory(
-            status = u'Alpha'
+            status=u'Alpha'
         )
         db.session.commit()
         response = self.app.get('/api/projects?q=')
@@ -642,7 +641,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response['total'], 1)
         self.assertEqual(len(response['objects']), 1)
 
-
     def test_org_search_project(self):
         ''' Testing that searching at /api/<org_name>/projects works '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
@@ -760,28 +758,28 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        scheme, netloc, path, _, _, _  = urlparse(response['all_events'])
+        scheme, netloc, path, _, _, _ = urlparse(response['all_events'])
         self.assertTrue('-' in path)
         self.assertFalse('_' in path)
         self.assertFalse(' ' in path)
-        scheme, netloc, path, _, _, _  = urlparse(response['all_stories'])
+        scheme, netloc, path, _, _, _ = urlparse(response['all_stories'])
         self.assertTrue('-' in path)
         self.assertFalse('_' in path)
         self.assertFalse(' ' in path)
-        scheme, netloc, path, _, _, _  = urlparse(response['all_projects'])
+        scheme, netloc, path, _, _, _ = urlparse(response['all_projects'])
         self.assertTrue('-' in path)
         self.assertFalse('_' in path)
         self.assertFalse(' ' in path)
 
         response = self.app.get('/api/organizations/Code-for-America')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['name'], u'Code for America')
 
         response = self.app.get('/api/organizations/Code_for_America')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['name'], u'Code for America')
 
@@ -790,12 +788,12 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code_for_America/projects')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['objects'][0]['organization_name'], u'Code for America')
 
         response = self.app.get('/api/organizations/Code_for_America/projects')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['objects'][0]['organization_name'], u'Code for America')
 
@@ -804,12 +802,12 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America/events')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['objects'][0]['organization_name'], u'Code for America')
 
         response = self.app.get('/api/organizations/Code_for_America/events')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['objects'][0]['organization_name'], u'Code for America')
 
@@ -818,12 +816,12 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America/stories')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['objects'][0]['organization_name'], u'Code for America')
 
         response = self.app.get('/api/organizations/Code_for_America/stories')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['objects'][0]['organization_name'], u'Code for America')
 
@@ -833,7 +831,7 @@ class ApiTest(unittest.TestCase):
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code-for-America')
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['name'], u'Code for America')
 
@@ -896,7 +894,7 @@ class ApiTest(unittest.TestCase):
         project = ProjectFactory(organization_name=organization.name)
         db.session.add(project)
         db.session.commit()
-        issue = IssueFactory(project_id=project.id,title=u'TEST ISSUE',body=u'TEST ISSUE BODY')
+        issue = IssueFactory(project_id=project.id, title=u'TEST ISSUE', body=u'TEST ISSUE BODY')
         db.session.add(issue)
         db.session.commit()
 
@@ -912,7 +910,7 @@ class ApiTest(unittest.TestCase):
         self.assertTrue('project' in response['objects'][0])
         self.assertFalse('issues' in response['objects'][0])
 
-        #Check that project_id is hidden
+        # Check that project_id is hidden
         self.assertTrue('project_id' not in response['objects'][0])
 
         # Check for linked project issues on single issue
@@ -990,7 +988,7 @@ class ApiTest(unittest.TestCase):
         non_web_project = ProjectFactory(name=u'Random Other App', type=u'other service')
 
         web_project.organization = brigade
-        non_web_project.organization =  brigade_somewhere_far
+        non_web_project.organization = brigade_somewhere_far
 
         db.session.add(web_project)
         db.session.add(non_web_project)
@@ -1138,7 +1136,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response['total'], 1)
         self.assertEqual(response['objects'][0]['title'], u'Awesome story')
 
-
     def test_events_query_filter(self):
         org = OrganizationFactory(type=u'Brigade')
         another_org = OrganizationFactory(type=u'Code for All')
@@ -1175,7 +1172,6 @@ class ApiTest(unittest.TestCase):
         response = json.loads(response.data)
         self.assertEqual(response['total'], 1)
         self.assertEqual(response['objects'][0]['name'], u'Awesome event')
-
 
     def test_issues_query_filter(self):
         org1 = OrganizationFactory(name=u'Code for Africa', type=u'Code for All')
@@ -1393,7 +1389,6 @@ class ApiTest(unittest.TestCase):
 
         self.assertTrue(test_passed)
 
-
     def test_set_childs_parent_association_null(self):
         ''' Test that a child's parent association cannot be deleted
         '''
@@ -1482,14 +1477,12 @@ class ApiTest(unittest.TestCase):
         # Test that help wanted works
         response = self.app.get('/api/issues/labels/help wanted')
         response = json.loads(response.data)
-        self.assertEqual(len(response['objects']),1)
+        self.assertEqual(len(response['objects']), 1)
 
         # Test that help wanted, bug works
         response = self.app.get('/api/issues/labels/help wanted, bug')
         response = json.loads(response.data)
-        self.assertEqual(len(response['objects']),1)
-
-
+        self.assertEqual(len(response['objects']), 1)
 
 if __name__ == '__main__':
     unittest.main()
