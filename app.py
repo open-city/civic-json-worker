@@ -774,8 +774,21 @@ def get_orgs_projects(organization_name):
     if not organization:
         return "Organization not found", 404
 
+    filters, querystring = get_query_params(request.args)
+
     # Get project objects
-    query = Project.query.filter_by(organization_name=organization.name).order_by(desc(Project.last_updated))
+    query = Project.query.filter_by(organization_name=organization.name).order_by(desc(Project.last_updated)).options(defer('tsv_body'))
+
+    for attr, value in filters.iteritems():
+        if 'q' in attr:
+            # Returns all results if the value is empty
+            if value:
+                query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
+                relevance_ordering_filter = func.ts_rank(Project.tsv_body, func.plainto_tsquery('%s' % value))
+                ordering_filter_name = 'relevance'
+        else:
+            query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
+
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)))
     return jsonify(response)
 

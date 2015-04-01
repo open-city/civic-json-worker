@@ -787,6 +787,19 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(response['total'], 1)
         self.assertEqual(len(response['objects']), 1)
 
+
+    def test_org_search_project(self):
+        ''' Testing that searching at /api/<org_name>/projects works '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        project = ProjectFactory(organization_name = organization.name, description = u"Flabergasted")
+        project2 = ProjectFactory(organization_name = organization.name, description = u"WHAT")
+        db.session.commit()
+
+        response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=Flabergasted')
+        response = json.loads(response.data)
+        self.assertEqual(len(response["objects"]), 1)
+        self.assertEqual(response["objects"][0]['description'], "Flabergasted")
+
     def test_org_search_existing_part_of_phrase(self):
         OrganizationFactory(
             name=u'Code for San Francisco',
