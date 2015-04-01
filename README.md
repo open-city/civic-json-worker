@@ -89,7 +89,7 @@ By pushing everything on to Github, we will have very little to maintain, conten
 
 ## Setup this app
 
-Propping this sucker up for oneself is pretty simple. Howver, there are some basic requirements which can be gotten 
+Propping this sucker up for oneself is pretty simple. However, there are some basic requirements which can be gotten 
 in the standard Python fashion (assuming you are working in a [virtualenv](https://pypi.python.org/pypi/virtualenv)):
 
 ``` bash
