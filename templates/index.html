@@ -48,7 +48,11 @@
         </ul>
         <p>Parameters:</p>
         <ul>
-            <li><a href="#per_page">per_page</a></li>
+            <li><a href="#per_page">per_page</a> <i>(integer)</i> The number of features to return per page.</li>
+            <li><a href="#q">q</a> <i>(string)</i> A search term with which to filter the results.</li>
+            <li><a href="#only_ids">only_ids</a> Show only IDs if present.</li>
+            <li><a href="#sort_by">sort_by</a> <i>(string: "relevance" or "last_updated")</i> Sort the results by this variable</li>
+            <li><a href="#sort_dir">sort_dir</a> <i>(string: "desc" or "asc")</i> Sort the results in this direction</li> 
         </ul>
     </div>
 
@@ -900,20 +904,136 @@
     <div class="layout-breve">
         <div class="layout-minim">
             <h2>
-                Parameters
+                per_page
+                <a id="per_page" href="#per_page">¶</a>
             </h2>
-            <dl>
-                <dt>
-                    per_page
-                    <a id="per_page" href="#per_page">¶</a>
-                </dt>
-                <dd>The number of features to return on each page.</dd>
-            </dl>
+            <div class="layout-minim">
+                <p>
+                    <i>(integer)</i><br/>The number of features to return per page.
+                </p>
+            </div>
         </div>
         <div class="layout-minim">
             <h4>Sample Request</h4>
             <p><code><a href="{{ api_base }}/api/organizations?per_page=1">{{ api_base }}/api/organizations?per_page=1</a></code></p>
             <p>Notice 12 pages each returning one feature each.</p>
+            <h4>Sample Response</h4>
+            <pre><code>{
+  "objects": [
+     ...
+  ],
+  "pages": {
+    "last": "http://localhost:5000/api/organizations?page=12",
+    "next": "http://localhost:5000/api/organizations?page=2"
+  },
+  "total": 12
+}</code></pre>
+        </div>
+    </div>
+
+    <div class="layout-breve">
+        <div class="layout-minim">
+            <h2>
+                q
+                <a id="q" href="#q">¶</a>
+            </h2>
+            <div class="layout-minim">
+                <p>
+                    <i>(string)</i><br/>A search term with which to filter the results.
+                </p>
+            </div>
+        </div>
+        <div class="layout-minim">
+            <h4>Sample Request</h4>
+            <p><code><a href="{{ api_base }}/api/organizations?q=blah">{{ api_base }}/api/organizations?q=blah</a></code></p>
+            <h4>Sample Response</h4>
+            <pre><code>{
+  "objects": [
+     ...
+  ],
+  "pages": {
+    "last": "http://localhost:5000/api/organizations?page=12",
+    "next": "http://localhost:5000/api/organizations?page=2"
+  },
+  "total": 12
+}</code></pre>
+        </div>
+    </div>
+
+    <div class="layout-breve">
+        <div class="layout-minim">
+            <h2>
+                only_ids
+                <a id="only_ids" href="#only_ids">¶</a>
+            </h2>
+            <div class="layout-minim">
+                <p>
+                    Show only IDs if present.
+                </p>
+            </div>
+        </div>
+        <div class="layout-minim">
+            <h4>Sample Request</h4>
+            <p><code><a href="{{ api_base }}/api/organizations?only_ids">{{ api_base }}/api/organizations?only_ids</a></code></p>
+            <h4>Sample Response</h4>
+            <pre><code>{
+  "objects": [
+     ...
+  ],
+  "pages": {
+    "last": "http://localhost:5000/api/organizations?page=12",
+    "next": "http://localhost:5000/api/organizations?page=2"
+  },
+  "total": 12
+}</code></pre>
+        </div>
+    </div>
+
+    <div class="layout-breve">
+        <div class="layout-minim">
+            <h2>
+                sort_by
+                <a id="sort_by" href="#sort_by">¶</a>
+            </h2>
+            <div class="layout-minim">
+                <p>
+                    <i>(string: "relevance" or "last_updated")</i><br/>Sort the results by this variable
+                </p>
+            </div>
+        </div>
+        <div class="layout-minim">
+            <h4>Sample Request</h4>
+            <p><code><a href="{{ api_base }}/api/organizations?sort_by=last_updated">{{ api_base }}/api/organizations?sort_by=last_updated</a></code></p>
+            <h4>Sample Response</h4>
+            <pre><code>{
+  "objects": [
+     ...
+  ],
+  "pages": {
+    "last": "http://localhost:5000/api/organizations?page=12",
+    "next": "http://localhost:5000/api/organizations?page=2"
+  },
+  "total": 12
+}</code></pre>
+        </div>
+    </div>
+
+    <div class="layout-breve">
+        <div class="layout-minim">
+            <h2>
+                sort_dir
+                <a id="sort_dir" href="#sort_dir">¶</a>
+            </h2>
+            <div class="layout-minim">
+                <p>
+                    <i>(string: "desc" or "asc")</i><br/>Sort the results in this direction
+                </p>
+            </div>
+        </div>
+        <div class="layout-minim">
+            <h4>Sample Request</h4>
+            <p><code><a href="{{ api_base }}/api/organizations?sort_dir=asc">{{ api_base }}/api/organizations?sort_dir=asc</a></code></p>
+            <h4>Sample Response</h4>
             <pre><code>{
   "objects": [
      ...
