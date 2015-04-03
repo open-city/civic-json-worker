@@ -342,148 +342,293 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'][0]['status'], unicode)
 
     def test_project_search_nonexisting_text(self):
-        ProjectFactory(
-            description=u'Coder'
-        )
+        ''' Searching for non-existing text in the project and org/project
+            endpoints returns no results
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'Coder')
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['total'], 0)
-        self.assertEqual(len(response['objects']), 0)
+        project_response = self.app.get('/api/projects?q=ruby')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 0)
+        self.assertEqual(len(project_response['objects']), 0)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 0)
+        self.assertEqual(len(org_project_response['objects']), 0)
 
     def test_project_search_existing_text(self):
-        ProjectFactory(
-            description=u'ruby'
-        )
+        ''' Searching for existing text in the project and org/project endpoints
+            returns expected results
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby')
+        ProjectFactory(organization_name=organization.name, description=u'python')
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['total'], 1)
-        self.assertEqual(len(response['objects']), 1)
+        project_response = self.app.get('/api/projects?q=ruby')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 1)
+        self.assertEqual(len(project_response['objects']), 1)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 1)
+        self.assertEqual(len(org_project_response['objects']), 1)
 
     def test_project_search_existing_phrase(self):
-        ProjectFactory(
-            description=u'ruby on rails'
-        )
+        ''' Searching for an existing phrase in the project and org/project endpoints
+            returns expected results
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby on rails')
+        ProjectFactory(organization_name=organization.name, description=u'i love lamp')
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby on rails')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['total'], 1)
-        self.assertEqual(len(response['objects']), 1)
+        project_response = self.app.get('/api/projects?q=ruby on rails')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 1)
+        self.assertEqual(len(project_response['objects']), 1)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby on rails')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 1)
+        self.assertEqual(len(org_project_response['objects']), 1)
 
     def test_project_search_existing_part_of_phrase(self):
-        ProjectFactory(
-            description=u'ruby on rails'
-        )
+        ''' Searching for a partial phrase in the project and org/project endpoints
+            returns expected results
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby on rails')
+        ProjectFactory(organization_name=organization.name, description=u'i love lamp')
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['total'], 1)
-        self.assertEqual(len(response['objects']), 1)
+        project_response = self.app.get('/api/projects?q=ruby')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 1)
+        self.assertEqual(len(project_response['objects']), 1)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 1)
+        self.assertEqual(len(org_project_response['objects']), 1)
 
     def test_project_search_nonexisting_phrase(self):
-        ProjectFactory(
-            description=u'ruby on rails'
-        )
+        ''' Searching for a term that is not part of an existing phrase in the project and
+            org/project endpoints returns no results
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby on rails')
         db.session.commit()
-        response = self.app.get('/api/projects?q=joomla')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['total'], 0)
-        self.assertEqual(len(response['objects']), 0)
+        project_response = self.app.get('/api/projects?q=joomla')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 0)
+        self.assertEqual(len(project_response['objects']), 0)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=joomla')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 0)
+        self.assertEqual(len(org_project_response['objects']), 0)
 
     def test_project_search_order_by_relevance(self):
-        ProjectFactory(
-            description=u'ruby on rails',
-            last_updated=datetime.now() - timedelta(10)
-        )
-        ProjectFactory(
-            description=u'ruby on grails',
-            last_updated=datetime.now() - timedelta(1)
-        )
+        ''' Search results from the project and org/project endpoints are returned
+            in order of relevance
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['objects'][0]['description'], 'ruby on rails')
+        project_response = self.app.get('/api/projects?q=ruby')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(len(project_response["objects"]), 2)
+        self.assertEqual(project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(len(org_project_response["objects"]), 2)
+        self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
+
+    def test_project_search_order_by_relevance_requested(self):
+        ''' Search results from the project and org/project endpoints are returned
+            in order of relevance when explicitly requested
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=ruby&sort_by=relevance')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(len(project_response["objects"]), 2)
+        self.assertEqual(project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby&sort_by=relevance')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(len(org_project_response["objects"]), 2)
+        self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
 
     def test_project_search_order_by_last_updated(self):
-        ProjectFactory(
-            description=u'ruby on rails',
-            last_updated=datetime.now() - timedelta(10)
-        )
-        ProjectFactory(
-            description=u'ruby on grails',
-            last_updated=datetime.now() - timedelta(1)
-        )
+        ''' Search results from the project and org/project endpoints are returned
+            in order of last_updated, if requested
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby&sort_by=last_updated')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['objects'][0]['description'], 'ruby on grails')
+        project_response = self.app.get('/api/projects?q=ruby&sort_by=last_updated')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(len(project_response["objects"]), 2)
+        self.assertEqual(project_response['objects'][0]['description'], 'ruby')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby&sort_by=last_updated')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(len(org_project_response["objects"]), 2)
+        self.assertEqual(org_project_response['objects'][0]['description'], 'ruby')
+
+    def test_project_search_order_by_last_updated_sort_desc(self):
+        ''' Search results from the project and org/project endpoints are returned
+            in descending order of last_updated, if requested
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=ruby&sort_by=last_updated&sort_dir=desc')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(len(project_response["objects"]), 2)
+        self.assertEqual(project_response['objects'][0]['description'], 'ruby')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby&sort_by=last_updated&sort_dir=desc')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(len(org_project_response["objects"]), 2)
+        self.assertEqual(org_project_response['objects'][0]['description'], 'ruby')
 
     def test_project_search_order_by_last_updated_sort_asc(self):
-        ProjectFactory(
-            description=u'ruby on rails',
-            last_updated=datetime.now() - timedelta(10)
-        )
-        ProjectFactory(
-            description=u'ruby on grails',
-            last_updated=datetime.now() - timedelta(1)
-        )
+        ''' Search results from the project and org/project endpoints are returned
+            in ascending order of last_updated, if requested
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
         db.session.commit()
-        response = self.app.get('/api/projects?q=ruby&sort_by=last_updated&sort_dir=asc')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['objects'][0]['description'], 'ruby on rails')
+        project_response = self.app.get('/api/projects?q=ruby&sort_by=last_updated&sort_dir=asc')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(len(project_response["objects"]), 2)
+        self.assertEqual(project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby&sort_by=last_updated&sort_dir=asc')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(len(org_project_response["objects"]), 2)
+        self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
 
     def test_project_return_only_ids(self):
-        project = ProjectFactory(
-            description=u'ruby on rails'
-        )
+        ''' Search results from the project and org/project endpoints are returned
+            as only IDs if requested
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        project_one = ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        project_two = ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
         db.session.commit()
-        project_id = project.id
+        project_one_id = project_one.id
+        project_two_id = project_two.id
 
-        response = self.app.get('/api/projects?q=ruby&only_ids=true')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        assert isinstance(response['objects'][0], int)
-        self.assertEqual(response['objects'][0], project_id)
+        project_response = self.app.get('/api/projects?q=ruby&only_ids=true')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(len(project_response["objects"]), 2)
+        assert isinstance(project_response['objects'][0], int)
+        assert isinstance(project_response['objects'][1], int)
+        self.assertEqual(project_response['objects'][0], project_one_id)
+        self.assertEqual(project_response['objects'][1], project_two_id)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby&only_ids=true')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(len(org_project_response["objects"]), 2)
+        assert isinstance(org_project_response['objects'][0], int)
+        assert isinstance(org_project_response['objects'][1], int)
+        self.assertEqual(org_project_response['objects'][0], project_one_id)
+        self.assertEqual(org_project_response['objects'][1], project_two_id)
 
     def test_project_search_empty_string(self):
-        ProjectFactory(
-            description=u'ruby on rails'
-        )
+        ''' Searching an empty string on the project and org/project endpoints returns all projects
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
         db.session.commit()
-        response = self.app.get('/api/projects?q=')
-        response = json.loads(response.data)
-        assert isinstance(response['total'], int)
-        assert isinstance(response['objects'], list)
-        self.assertEqual(response['total'], 1)
-        self.assertEqual(len(response['objects']), 1)
+        project_response = self.app.get('/api/projects?q=')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 2)
+        self.assertEqual(len(project_response['objects']), 2)
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 2)
+        self.assertEqual(len(org_project_response['objects']), 2)
 
     def test_project_search_tsv_body_not_in_response(self):
-        ProjectFactory(
-            description=u'ruby on rails'
-        )
+        ''' The tsv_body field is not in the response from the project and org/project endpoints
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'ruby ruby ruby ruby ruby', last_updated=datetime.now() - timedelta(10))
+        ProjectFactory(organization_name=organization.name, description=u'ruby', last_updated=datetime.now() - timedelta(1))
         db.session.commit()
-        response = self.app.get('/api/projects?q=')
-        response = json.loads(response.data)
-        self.assertEqual(len(response['objects']), 1)
-        self.assertFalse('tsv_body' in response['objects'][0])
+        project_response = self.app.get('/api/projects?q=')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 2)
+        self.assertFalse('tsv_body' in project_response['objects'][0])
+        self.assertFalse('tsv_body' in project_response['objects'][1])
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=')
+        org_project_response = json.loads(org_project_response.data)
+        self.assertEqual(len(org_project_response['objects']), 2)
+        self.assertFalse('tsv_body' in org_project_response['objects'][0])
+        self.assertFalse('tsv_body' in org_project_response['objects'][1])
 
     def test_org_projects_dont_include_tsv(self):
         OrganizationFactory(name=u"Code for San Francisco")
@@ -502,13 +647,72 @@ class ApiTest(unittest.TestCase):
         self.assertFalse('tsv_body' in response['objects'][0]['organization'])
 
     def test_project_search_includes_status(self):
-        ProjectFactory(
-            status=u'Alpha'
-        )
+        ''' The status field is included in search results from the project and org/project endpoints
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, status=u'Beta')
+        ProjectFactory(organization_name=organization.name, status=u'Alpha')
         db.session.commit()
-        response = self.app.get('/api/projects?q=')
-        response = json.loads(response.data)
-        self.assertEqual(response["objects"][0]["status"], 'Alpha', "Status is included when searching projects")
+        project_response = self.app.get('/api/projects?q=alpha')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['status'], 'Alpha')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=alpha')
+        org_project_response = json.loads(org_project_response.data)
+        self.assertEqual(len(org_project_response['objects']), 1)
+        self.assertEqual(org_project_response['objects'][0]['status'], 'Alpha')
+
+    def test_project_search_includes_name(self):
+        ''' The name field is included in search results from the project and org/project endpoints
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, name=u'My Cool Project')
+        ProjectFactory(organization_name=organization.name, name=u'My Dumb Project')
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=cool')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['name'], 'My Cool Project')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=cool')
+        org_project_response = json.loads(org_project_response.data)
+        self.assertEqual(len(org_project_response['objects']), 1)
+        self.assertEqual(org_project_response['objects'][0]['name'], 'My Cool Project')
+
+    def test_project_search_includes_categories(self):
+        ''' The categories field is included in search results from the project and org/project endpoints
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, categories=u'project management, civic hacking')
+        ProjectFactory(organization_name=organization.name, categories=u'animal control, twitter')
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=control')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['categories'], 'animal control, twitter')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=control')
+        org_project_response = json.loads(org_project_response.data)
+        self.assertEqual(len(org_project_response['objects']), 1)
+        self.assertEqual(org_project_response['objects'][0]['categories'], 'animal control, twitter')
+
+    def test_project_search_includes_github_details(self):
+        ''' The github_details field is included in search results from the project and org/project endpoints
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, github_details=json.dumps({'panic': 'disco'}))
+        ProjectFactory(organization_name=organization.name, github_details=json.dumps({'button': 'red'}))
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=disco')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['github_details'], '{"panic": "disco"}')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=disco')
+        org_project_response = json.loads(org_project_response.data)
+        self.assertEqual(len(org_project_response['objects']), 1)
+        self.assertEqual(org_project_response['objects'][0]['github_details'], '{"panic": "disco"}')
 
     def test_pagination(self):
         ProjectFactory()
@@ -527,7 +731,7 @@ class ApiTest(unittest.TestCase):
 
     def test_good_orgs_projects(self):
         organization = OrganizationFactory(name=u'Code for America')
-        project = ProjectFactory(organization_name=u'Code for America')
+        ProjectFactory(organization_name=organization.name)
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America/projects')
@@ -573,7 +777,7 @@ class ApiTest(unittest.TestCase):
 
     def test_orgs_stories(self):
         organization = OrganizationFactory(name=u'Code for America')
-        story = StoryFactory(organization_name=u'Code for America')
+        StoryFactory(organization_name=organization.name)
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America/stories')
@@ -583,8 +787,8 @@ class ApiTest(unittest.TestCase):
 
     def test_orgs_current_stories_order(self):
         organization = OrganizationFactory(name=u'Code for America')
-        StoryFactory(organization_name=u'Code for America')
-        StoryFactory(organization_name=u'Code for America')
+        StoryFactory(organization_name=organization.name)
+        StoryFactory(organization_name=organization.name)
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America')
@@ -594,9 +798,9 @@ class ApiTest(unittest.TestCase):
 
     def test_orgs_stories_order(self):
         organization = OrganizationFactory(name=u'Code for America')
-        StoryFactory(organization_name=u'Code for America')
-        StoryFactory(organization_name=u'Code for America')
-        StoryFactory(organization_name=u'Code for America')
+        StoryFactory(organization_name=organization.name)
+        StoryFactory(organization_name=organization.name)
+        StoryFactory(organization_name=organization.name)
         db.session.commit()
 
         response = self.app.get('/api/organizations/Code for America/stories')
@@ -640,18 +844,6 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['objects'], list)
         self.assertEqual(response['total'], 1)
         self.assertEqual(len(response['objects']), 1)
-
-    def test_org_search_project(self):
-        ''' Testing that searching at /api/<org_name>/projects works '''
-        organization = OrganizationFactory(name=u"Code for San Francisco")
-        project = ProjectFactory(organization_name = organization.name, description = u"Flabergasted")
-        project2 = ProjectFactory(organization_name = organization.name, description = u"WHAT")
-        db.session.commit()
-
-        response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=Flabergasted')
-        response = json.loads(response.data)
-        self.assertEqual(len(response["objects"]), 1)
-        self.assertEqual(response["objects"][0]['description'], "Flabergasted")
 
     def test_org_search_existing_part_of_phrase(self):
         OrganizationFactory(
