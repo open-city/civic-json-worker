@@ -38,21 +38,13 @@
     <div class="layout-breve">
         <h1>The Code for America API</h1>
         <p>Read more at <a href="https://github.com/codeforamerica/cfapi#readme">https://github.com/codeforamerica/cfapi</a>.</p>
-        <p>Some data:</p>
+        <p>Endpoints:</p>
         <ul>
             <li><a href="#api-organizations">Organizations</a> (also in <a href="#api-organizations-geojson">GeoJSON</a>)</li>
             <li><a href="#api-projects">Projects</a></li>
             <li><a href="#api-events">Events</a></li>
             <li><a href="#api-stories">Stories</a></li>
             <li><a href="#api-issues">Issues</a></li>
-        </ul>
-        <p>Parameters:</p>
-        <ul>
-            <li><a href="#per_page">per_page</a> <i>(integer)</i> The number of features to return per page.</li>
-            <li><a href="#q">q</a> <i>(string)</i> A search term with which to filter the results.</li>
-            <li><a href="#only_ids">only_ids</a> Show only IDs if present.</li>
-            <li><a href="#sort_by">sort_by</a> <i>(string: "relevance" or "last_updated")</i> Sort the results by this variable</li>
-            <li><a href="#sort_dir">sort_dir</a> <i>(string: "desc" or "asc")</i> Sort the results in this direction</li> 
         </ul>
     </div>
 
@@ -74,7 +66,15 @@
             </p>
             <h4>Url parameters</h4>
             <dl>
-                You can add any of the <a href="#organization-properties">Organization properties</a> as a parameter and the API will filter by Organizations that have that property.
+              <dt>q <i>(string)</i></dt>
+              <dd>A search term by which results will be filtered:<br><br>
+              /api/organizations?q=code%20for<br><br>
+              searches content of the name <a href="#organization-properties">property</a>.<br><br></dd>
+              <dt>per_page <i>(integer)</i></dt>
+              <dd>The number of results to return per page:<br><br>
+              /api/organizations?per_page=5<br><br></dd>
+              <dt>Organization properties</dt>
+              <dd>You can add any of the <a href="#organization-properties">Organization properties</a> as a parameter and the API will filter by organizations that have that property.</dd>
             </dl>
             <h4>Response Properties</h4>
             <dl>
@@ -198,7 +198,6 @@
     <div class="layout-breve">
         <h2>
             One Organization
-            <a id="api-one-organization" href="#api-one-organization">¶</a>
         </h2>
         <div class="layout-minim">
             <p>
@@ -296,9 +295,17 @@
             </p>
             <h4>Url parameters</h4>
             <dl>
-                You can add any of the <a href="#project-properties">Project properties</a> as a parameter and the API will filter by Organizations that have that property. You can also do request projects based on organization properties such as: <br> <br>
+              <dt>q <i>(string)</i></dt>
+              <dd>A search term by which results will be filtered:<br><br>
+              /api/projects?q=bicycle<br><br>
+              searches content of the name, description, categories, github_details and status <a href="#project-properties">properties</a>.<br><br></dd>
+              <dt>per_page <i>(integer)</i></dt>
+              <dd>The number of results to return per page:<br><br>
+              /api/projects?per_page=5<br><br></dd>
+              <dt>Project properties</dt>
+              <dd>You can add any of the <a href="#project-properties">Project properties</a> as a parameter and the API will filter by projects that have that property. You can also request projects based on organization properties such as:<br><br>
                 /api/projects?organization_type=Brigade <br>
-                /api/projects?organization_city=San%20Francisco,%20CA
+                /api/projects?organization_city=San%20Francisco,%20CA</dd>
             </dl>
             <h4>Response Properties</h4>
             <dl>
@@ -382,7 +389,6 @@
     <div class="layout-breve">
         <h2>
             One Project
-            <a id="api-one-project" href="#api-one-project">¶</a>
         </h2>
         <div class="layout-minim">
             <p>
@@ -503,6 +509,16 @@
                 /api/organizations/{organization id}/upcoming_events <br>
                 /api/organizations/{organization id}/past_events
             </p>
+            <h4>Url parameters</h4>
+            <dl>
+              <dt>per_page <i>(integer)</i></dt>
+              <dd>The number of results to return per page:<br><br>
+              /api/events?per_page=5<br><br></dd>
+              <dt>Event properties</dt>
+              <dd>You can add any of the <a href="#event-properties">Event properties</a> as a parameter and the API will filter by events that have that property. You can also request events based on organization properties such as:<br><br>
+                /api/events?organization_type=Brigade <br>
+                /api/events?organization_city=San%20Francisco,%20CA</dd>
+            </dl>
             <h4>Response Properties</h4>
             <dl>
                 <dt>pages</dt>
@@ -555,7 +571,6 @@
     <div class="layout-breve">
         <h2>
             One Event
-            <a id="api-one-event" href="#api-one-event">¶</a>
         </h2>
         <div class="layout-minim">
             <p>
@@ -627,6 +642,16 @@
                 /api/stories <br>
                 /api/organizations/{organization id}/stories
             </p>
+            <h4>Url parameters</h4>
+            <dl>
+              <dt>per_page <i>(integer)</i></dt>
+              <dd>The number of results to return per page:<br><br>
+              /api/stories?per_page=5<br><br></dd>
+              <dt>Story properties</dt>
+              <dd>You can add any of the <a href="#story-properties">Story properties</a> as a parameter and the API will filter by stories that have that property. You can also request stories based on organization properties such as:<br><br>
+                /api/events?organization_type=Brigade <br>
+                /api/events?organization_city=San%20Francisco,%20CA</dd>
+            </dl>
             <h4>Response Properties</h4>
             <dl>
                 <dt>pages</dt>
@@ -667,7 +692,6 @@
     <div class="layout-breve">
         <h2>
             One Story
-            <a id="api-one-story" href="#api-one-story">¶</a>
         </h2>
         <div class="layout-minim">
             <p>
@@ -692,6 +716,8 @@
                 <dd>Dictionary of <a href="#organization-properties">organization details</a>.</dd>
                 <dt>organization_name</dt>
                 <dd>Name of organization.</dd>
+                <dt>type</dt>
+                <dd>Type of story</dd>
             </dl>
         </div>
         <div class="layout-minim">
@@ -723,6 +749,19 @@
                 /api/issues <br>
                 /api/issues/labels/{label name(s)}
             </p>
+            <h4>Url parameters</h4>
+            <dl>
+              <dt>per_page <i>(integer)</i></dt>
+              <dd>The number of results to return per page:<br><br>
+              /api/issues?per_page=5<br><br></dd>
+              <dt>Issue properties</dt>
+              <dd>You can add any of the <a href="#issue-properties">Issue properties</a> as a parameter and the API will filter by issues that have that property. You can also request issues based on organization properties such as:<br><br>
+                /api/issues?organization_type=Brigade<br>
+                /api/issues?organization_city=San%20Francisco,%20CA<br><br>
+                Or by project properties such as:<br><br>
+                /api/issues?project_name=communities<br>
+                /api/issues?project_status=beta<br></dd>
+            </dl>
             <h4>Response Properties</h4>
             <dl>
                 <dt>pages</dt>
@@ -733,14 +772,6 @@
             <h4>Issue filters</h4>
             <dt>labels (comma separated)</dt>
             <dd>Return issues that have atleast one of the given labels</dd>
-
-						<h4>Issue parameters</h4>
-						<dt>Any issue attribute</dt>
-						<dd>id, title, body, etc ...</dd>
-						<dt>Any project attribute</dt>
-						<dd>name, type, html_url, etc ...</dd>
-						<dt>Any organization attribute</dt>
-						<dd>name, website, city, etc ...</dd>
         </div>
         <div class="layout-minim">
             <h4>Sample Request</h4>
@@ -845,7 +876,6 @@
     <div class="layout-breve">
         <h2>
             One Issue
-            <a id="api-one-issue" href="#api-one-issue">¶</a>
         </h2>
         <div class="layout-minim">
             <p>
@@ -897,152 +927,6 @@
   ],
   "project": { … },
   "project_name": "ballot_initiatives",
-}</code></pre>
-        </div>
-    </div>
-
-    <div class="layout-breve">
-        <div class="layout-minim">
-            <h2>
-                per_page
-                <a id="per_page" href="#per_page">¶</a>
-            </h2>
-            <div class="layout-minim">
-                <p>
-                    <i>(integer)</i><br/>The number of features to return per page.
-                </p>
-            </div>
-        </div>
-        <div class="layout-minim">
-            <h4>Sample Request</h4>
-            <p><code><a href="{{ api_base }}/api/organizations?per_page=1">{{ api_base }}/api/organizations?per_page=1</a></code></p>
-            <p>Notice 12 pages each returning one feature each.</p>
-            <h4>Sample Response</h4>
-            <pre><code>{
-  "objects": [
-     ...
-  ],
-  "pages": {
-    "last": "http://localhost:5000/api/organizations?page=12",
-    "next": "http://localhost:5000/api/organizations?page=2"
-  },
-  "total": 12
-}</code></pre>
-        </div>
-    </div>
-
-    <div class="layout-breve">
-        <div class="layout-minim">
-            <h2>
-                q
-                <a id="q" href="#q">¶</a>
-            </h2>
-            <div class="layout-minim">
-                <p>
-                    <i>(string)</i><br/>A search term with which to filter the results.
-                </p>
-            </div>
-        </div>
-        <div class="layout-minim">
-            <h4>Sample Request</h4>
-            <p><code><a href="{{ api_base }}/api/organizations?q=blah">{{ api_base }}/api/organizations?q=blah</a></code></p>
-            <h4>Sample Response</h4>
-            <pre><code>{
-  "objects": [
-     ...
-  ],
-  "pages": {
-    "last": "http://localhost:5000/api/organizations?page=12",
-    "next": "http://localhost:5000/api/organizations?page=2"
-  },
-  "total": 12
-}</code></pre>
-        </div>
-    </div>
-
-    <div class="layout-breve">
-        <div class="layout-minim">
-            <h2>
-                only_ids
-                <a id="only_ids" href="#only_ids">¶</a>
-            </h2>
-            <div class="layout-minim">
-                <p>
-                    Show only IDs if present.
-                </p>
-            </div>
-        </div>
-        <div class="layout-minim">
-            <h4>Sample Request</h4>
-            <p><code><a href="{{ api_base }}/api/organizations?only_ids">{{ api_base }}/api/organizations?only_ids</a></code></p>
-            <h4>Sample Response</h4>
-            <pre><code>{
-  "objects": [
-     ...
-  ],
-  "pages": {
-    "last": "http://localhost:5000/api/organizations?page=12",
-    "next": "http://localhost:5000/api/organizations?page=2"
-  },
-  "total": 12
-}</code></pre>
-        </div>
-    </div>
-
-    <div class="layout-breve">
-        <div class="layout-minim">
-            <h2>
-                sort_by
-                <a id="sort_by" href="#sort_by">¶</a>
-            </h2>
-            <div class="layout-minim">
-                <p>
-                    <i>(string: "relevance" or "last_updated")</i><br/>Sort the results by this variable
-                </p>
-            </div>
-        </div>
-        <div class="layout-minim">
-            <h4>Sample Request</h4>
-            <p><code><a href="{{ api_base }}/api/organizations?sort_by=last_updated">{{ api_base }}/api/organizations?sort_by=last_updated</a></code></p>
-            <h4>Sample Response</h4>
-            <pre><code>{
-  "objects": [
-     ...
-  ],
-  "pages": {
-    "last": "http://localhost:5000/api/organizations?page=12",
-    "next": "http://localhost:5000/api/organizations?page=2"
-  },
-  "total": 12
-}</code></pre>
-        </div>
-    </div>
-
-    <div class="layout-breve">
-        <div class="layout-minim">
-            <h2>
-                sort_dir
-                <a id="sort_dir" href="#sort_dir">¶</a>
-            </h2>
-            <div class="layout-minim">
-                <p>
-                    <i>(string: "desc" or "asc")</i><br/>Sort the results in this direction
-                </p>
-            </div>
-        </div>
-        <div class="layout-minim">
-            <h4>Sample Request</h4>
-            <p><code><a href="{{ api_base }}/api/organizations?sort_dir=asc">{{ api_base }}/api/organizations?sort_dir=asc</a></code></p>
-            <h4>Sample Response</h4>
-            <pre><code>{
-  "objects": [
-     ...
-  ],
-  "pages": {
-    "last": "http://localhost:5000/api/organizations?page=12",
-    "next": "http://localhost:5000/api/organizations?page=2"
-  },
-  "total": 12
 }</code></pre>
         </div>
     </div>
