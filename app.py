@@ -838,10 +838,10 @@ def get_orgs_issues(organization_name, labels=None):
     projects = Project.query.filter_by(organization_name=organization.name).all()
     project_ids = [project.id for project in projects]
 
-    # Get all issues belonging to these projects
-    query = Issue.query.filter(Issue.project_id.in_(project_ids))
-
     if labels:
+        # Get all issues belonging to these projects
+        query = Issue.query.filter(Issue.project_id.in_(project_ids))
+
         # Create a labels list by comma separating the argument
         labels = [label.strip() for label in labels.split(',')]
 
@@ -855,7 +855,11 @@ def get_orgs_issues(organization_name, labels=None):
         label_queries = [query.filter(L) for L in labels]
 
         # Intersect filters to find issues with all labels
-        query = query.intersect(*label_queries)
+        query = query.intersect(*label_queries).order_by(func.random())
+
+    else:
+        # Get all issues belonging to these projects
+        query = Issue.query.filter(Issue.project_id.in_(project_ids)).order_by(func.random())
 
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)))
     return jsonify(response)
