@@ -329,6 +329,7 @@ class ApiTest(unittest.TestCase):
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
         assert isinstance(response['objects'][0]['categories'], unicode)
+        assert isinstance(response['objects'][0]['tags'], unicode)
         assert isinstance(response['objects'][0]['code_url'], unicode)
         assert isinstance(response['objects'][0]['description'], unicode)
         assert isinstance(response['objects'][0]['github_details'], dict)
@@ -696,6 +697,23 @@ class ApiTest(unittest.TestCase):
         org_project_response = json.loads(org_project_response.data)
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['categories'], 'animal control, twitter')
+
+    def test_project_search_includes_tags(self):
+        ''' The tags field is included in search results from the project and org/project endpoints
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, tags=u'mapping, philly')
+        ProjectFactory(organization_name=organization.name, tags=u'food stamps, health')
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=stamps')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['tags'], 'food stamps, health')
+
+        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=stamps')
+        org_project_response = json.loads(org_project_response.data)
+        self.assertEqual(len(org_project_response['objects']), 1)
+        self.assertEqual(org_project_response['objects'][0]['tags'], 'food stamps, health')
 
     def test_project_search_includes_github_details(self):
         ''' The github_details field is included in search results from the project and org/project endpoints

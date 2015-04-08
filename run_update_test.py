@@ -66,7 +66,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,In Progress''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,,Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,,In Progress''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -165,11 +165,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # csv of projects (philly)
         elif url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # csv of projects (austin)
         elif url.geturl() == 'http://openaustin.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         else:
             raise Exception('Asked for unknown URL ' + url.geturl())
@@ -543,7 +543,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def updated_description(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                    return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+                    return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # Test that a different description gives a new timestamp
         with HTTMock(updated_description):
@@ -558,7 +558,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def updated_status(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","active"''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","","active"''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # Test that a different status gives a new timestamp
         with HTTMock(updated_status):
@@ -575,12 +575,12 @@ class RunUpdateTestCase(unittest.TestCase):
         from factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
-        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', type=u'', link_url=u'http://phillymapofshame.org', code_url=u'', status=u'In Progress')
+        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=u'philly, mapping', type=u'', link_url=u'http://phillymapofshame.org', code_url=u'', status=u'In Progress')
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","In Progress"''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","philly, mapping","In Progress"''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -653,7 +653,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a status of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(status_one_response_content):
@@ -681,7 +681,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a status of 'Released' instead of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
             # return a 304 (not modified) instead of a 200 for the project
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)

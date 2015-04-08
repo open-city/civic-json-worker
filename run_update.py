@@ -271,7 +271,7 @@ def get_projects(organization):
             if "html_url" in project:
                 project["code_url"] = project["html_url"]
             for key in project.keys():
-                if key not in ['name', 'description', 'link_url', 'code_url', 'type', 'categories', 'organization_name', 'status']:
+                if key not in ['name', 'description', 'link_url', 'code_url', 'type', 'categories', 'tags', 'organization_name', 'status']:
                     del project[key]
 
     # Get any updates on the projects
