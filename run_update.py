@@ -10,7 +10,7 @@ from urlparse import urlparse
 from random import shuffle
 from argparse import ArgumentParser
 from time import time
-from re import match
+from re import match, sub
 
 from requests import get, exceptions
 from dateutil.tz import tzoffset
@@ -18,7 +18,6 @@ import feedparser
 
 from feeds import get_first_working_feed_link
 from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name
-
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
@@ -484,6 +483,37 @@ def update_project_info(project):
 
     return project
 
+def get_tags_from_civic_json_object(tags_in):
+    ''' Extract and return tags in the correct format from the passed object
+    '''
+    # the in object should be a list with something in it
+    if type(tags_in) is not list or not len(tags_in):
+        return None
+
+    # a mini function to extract the value of the tag from a string or object
+    # tag_candidate must be in the form of either u'tag value' or {'tag': u'tag value'}
+    def extract_tag_value(tag_candidate):
+        if (type(tag_candidate) is str or type(tag_candidate) is unicode) and len(tag_candidate) > 0:
+            # unicodeify
+            tag_candidate = unicode(tag_candidate)
+            # escape csv characters
+            tag_candidate = sub(u'"', u'""', tag_candidate)
+            tag_candidate = u'"{}"'.format(tag_candidate) if u',' in tag_candidate or u'"' in tag_candidate else tag_candidate
+
+            return tag_candidate
+
+        if type(tag_candidate) is dict and 'tag' in tag_candidate:
+            return extract_tag_value(tag_candidate['tag'])
+
+        return None
+
+    # get the tags
+    extracted = [extract_tag_value(item) for item in tags_in]
+    # strip None values
+    stripped = [item for item in extracted if item is not None]
+    # return as a string
+    return u','.join(stripped)
+
 def update_project_from_civic_json(project_dict, force=False):
     ''' Update and return the passed project dict with values from civic.json
     '''
@@ -491,9 +521,17 @@ def update_project_from_civic_json(project_dict, force=False):
 
     is_updated = False
 
+    # get status
     existing_status = project_dict['status'] if 'status' in project_dict else u''
     if 'status' in civic_json and existing_status != civic_json['status']:
         project_dict['status'] = civic_json['status']
+        is_updated = True
+
+    # get tags
+    existing_tags = project_dict['tags'] if 'tags' in project_dict else u''
+    civic_tags = get_tags_from_civic_json_object(civic_json['tags']) if 'tags' in civic_json else u''
+    if civic_tags and existing_tags != civic_tags:
+        project_dict['tags'] = civic_tags
         is_updated = True
 
     # add other attributes from civic.json here
