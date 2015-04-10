@@ -343,6 +343,8 @@ def update_project_info(project):
         if 'name' in project and project['name']:
             existing_filter.append(Project.name == project['name'])
 
+        spreadsheet_is_updated = False
+
         existing_project = db.session.query(Project).filter(*existing_filter).first()
         if existing_project:
             # copy 'last_updated' values from the existing project to the project dict
@@ -350,6 +352,15 @@ def update_project_info(project):
             project['last_updated_issues'] = existing_project.last_updated_issues
             project['last_updated_civic_json'] = existing_project.last_updated_civic_json
             project['last_updated_root_files'] = existing_project.last_updated_root_files
+
+            # check whether any of the org spreadsheet values for the project have changed
+            for project_key in project:
+                check_value = project[project_key]
+                existing_value = existing_project.__dict__[project_key]
+                if check_value and check_value != existing_value:
+                    spreadsheet_is_updated = True
+                elif not check_value and existing_value:
+                    project[project_key] = existing_value
 
             # request project info from GitHub with the If-Modified-Since header
             if existing_project.last_updated:
@@ -388,18 +399,8 @@ def update_project_info(project):
         elif got.status_code == 304:
             logging.info('Project {} has not been modified since last update'.format(repo_url))
 
-            # check whether any of the org spreadsheet values for the project have changed
-            spreadsheet_is_updated = False
-            for project_key in project:
-                check_value = project[project_key]
-                existing_value = existing_project.__dict__[project_key]
-                if check_value and check_value != existing_value:
-                    spreadsheet_is_updated = True
-                elif not check_value and existing_value:
-                    project[project_key] = existing_value
-
             # Populate values from the civic.json if it exists/is updated
-            project, civic_json_is_updated = update_project_from_civic_json(project)
+            project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
 
             # if values have changed, copy untouched values from the existing project object and return it
             if spreadsheet_is_updated or civic_json_is_updated:
@@ -479,32 +480,33 @@ def update_project_info(project):
         #
         # Populate values from the civic.json if it exists/is updated
         #
-        project, civic_json_is_updated = update_project_from_civic_json(project)
+        project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
 
     return project
+
+def extract_tag_value(tag_candidate):
+    ''' Extract the value of a tag from a string or object. tag_candidate must
+        be in the form of either u'tag value' or {'tag': u'tag value'}
+    '''
+    if (type(tag_candidate) is str or type(tag_candidate) is unicode) and len(tag_candidate) > 0:
+        # unicodeify
+        tag_candidate = unicode(tag_candidate)
+        # escape csv characters
+        tag_candidate = sub(u'"', u'""', tag_candidate)
+        tag_candidate = u'"{}"'.format(tag_candidate) if u',' in tag_candidate or u'"' in tag_candidate else tag_candidate
+
+        return tag_candidate
+
+    if type(tag_candidate) is dict and 'tag' in tag_candidate:
+        return extract_tag_value(tag_candidate['tag'])
+
+    return None
 
 def get_tags_from_civic_json_object(tags_in):
     ''' Extract and return tags in the correct format from the passed object
     '''
     # the in object should be a list with something in it
     if type(tags_in) is not list or not len(tags_in):
-        return None
-
-    # a mini function to extract the value of the tag from a string or object
-    # tag_candidate must be in the form of either u'tag value' or {'tag': u'tag value'}
-    def extract_tag_value(tag_candidate):
-        if (type(tag_candidate) is str or type(tag_candidate) is unicode) and len(tag_candidate) > 0:
-            # unicodeify
-            tag_candidate = unicode(tag_candidate)
-            # escape csv characters
-            tag_candidate = sub(u'"', u'""', tag_candidate)
-            tag_candidate = u'"{}"'.format(tag_candidate) if u',' in tag_candidate or u'"' in tag_candidate else tag_candidate
-
-            return tag_candidate
-
-        if type(tag_candidate) is dict and 'tag' in tag_candidate:
-            return extract_tag_value(tag_candidate['tag'])
-
         return None
 
     # get the tags
