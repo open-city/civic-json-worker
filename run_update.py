@@ -143,28 +143,32 @@ def get_organizations_from_spreadsheet(org_source):
     return organizations
 
 def get_stories(organization):
-    '''
-        Get two recent stories from an rss feed.
+    ''' Get two recent stories from an rss feed.
     '''
     # If there is no given rss link, try the website url.
     if organization.rss:
         rss = organization.rss
     else:
         rss = organization.website
+
+    # Extract a valid RSS feed from the URL
     try:
         url = get_first_working_feed_link(rss)
 
-        # If no blog found then give up
+        # If no feed found then give up
         if not url:
             url = None
             return None
-
     except (HTTPError, ValueError, URLError):
         url = None
         return None
 
-    logging.info('Asking cyberspace for ' + url)
-    d = feedparser.parse(get(url).text)
+    try:
+        logging.info('Asking cyberspace for ' + url)
+        d = feedparser.parse(get(url).text)
+    except (HTTPError, URLError, exceptions.SSLError):
+        url = None
+        return None
 
     #
     # Return dictionaries for the two most recent entries.
