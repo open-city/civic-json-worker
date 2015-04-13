@@ -155,9 +155,9 @@ name, description, link_url, code_url, type, categories, tags, status
 South Bend Voices, "A redeploy of CityVoice for South Bend, IN.", http://www.southbendvoices.com/, https://github.com/codeforamerica/cityvoice, web service, "community engagement, housing", "mapping, python" "In progress"
 ```
 
-That projects list URL can be any flavor of csv. The easiest way is to make a Google Spreadsheet like [my example](https://docs.google.com/spreadsheet/ccc?key=0ArHmv-6U1drqdDBzNXpSZkVzRDJUQnpOS0RJM0FDWGc&usp=sharing) and then select **File > Publish it to the web**. 
+That projects list URL can be any flavor of csv. The easiest way is to make a Google Spreadsheet like [my example](https://docs.google.com/spreadsheet/ccc?key=0ArHmv-6U1drqdDBzNXpSZkVzRDJUQnpOS0RJM0FDWGc&usp=sharing) and then select **File > Publish it to the web**.
 
-If you are using the new Google Spreadsheets, add `/export?format=csv` to the end. 
+If you are using the new Google Spreadsheets, add `/export?format=csv` to the end.
 `https://docs.google.com/spreadsheets/d/<key>/export?format=csv`
 
 If you have the older Google Drive version change `?output=html` to `?output=csv`.
@@ -169,13 +169,27 @@ The projects list URL can also be a JSON file, with a list of strings containing
 
 Lastly, the projects list URL can be a GitHub organization URL, like http://github.com/codeforamerica.
 
+### Civic.json
+To add extra data about your projects to the CfAPI, include a `civic.json` file in the top level of your repo.
+
+Currently we accept `status` and `tags` as fields in the civic.json.
+
+An example civic.json file
+```
+{
+    "status": "Production",
+    "tags": ["slack", "bot", "integration", "python", "flask", "glossary", "dictionary"]
+}
+```
+
+This project could then be easily found by searching the CfAPI like
+[http://codeforamerica.org/api/projects?q=production,slack,bot](http://codeforamerica.org/api/projects?q=production,slack,bot)
+
+The `civic.json` idea comes from BetaNYC and still has an [active discussion](https://github.com/BetaNYC/civic.json/issues) about its spec.
+
+
 ### Civic Tech Issue Finder
 Once you've got your organization's GitHub projects on the API, all of your groups open GitHub Issues will be seen in the [Civic Tech Issue Finder](http://www.codeforamerica.org/geeks/civicissues). Use the label "help wanted" to get the most exposure. More info on that [project's README](https://github.com/codeforamerica/civic-issue-finder#civic-issue-finder).
-
-### Civic.json data standard
-The `/projects` endpoint is structure is influenced by [Civic.json](https://github.com/BetaNYC/civic.json), a proposed meta-data standard for describing civic tech projects. The goal is for this standard to be simple, and for the data fields that describe projects to be largely assembled programatically.
-
-The standard is still very much in planning phases, and we [welcome discussion](https://github.com/BetaNYC/civic.json/issues).
 
 ## Installation
 
