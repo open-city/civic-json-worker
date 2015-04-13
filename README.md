@@ -75,6 +75,7 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
       name: "localfreeweb.org",
       organization: {},
       organization_name: "Code for San Francisco",
+      tags: "digital access",
       type: null,
       status: "Delivered"
     },
