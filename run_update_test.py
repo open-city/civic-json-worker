@@ -66,7 +66,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,In Progress''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,,In Progress''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -83,7 +83,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # contents of civic.json file in root directory
         elif "/contents/civic.json" in url.geturl():
-            return response(200, '''{"status": "Beta"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            return response(200, '''{"status": "Beta", "tags": ["mapping", "transportation", "community organizing"]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
 
         # json of github directory contents
         elif search(r'\/contents\/$', url.geturl()):
@@ -165,11 +165,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # csv of projects (philly)
         elif url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # csv of projects (austin)
         elif url.geturl() == 'http://openaustin.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         else:
             raise Exception('Asked for unknown URL ' + url.geturl())
@@ -543,7 +543,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def updated_description(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                    return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+                    return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # Test that a different description gives a new timestamp
         with HTTMock(updated_description):
@@ -558,7 +558,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def updated_status(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","active"''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","UPDATED DESCRIPTION","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","","active"''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # Test that a different status gives a new timestamp
         with HTTMock(updated_status):
@@ -575,12 +575,12 @@ class RunUpdateTestCase(unittest.TestCase):
         from factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
-        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', type=u'', link_url=u'http://phillymapofshame.org', code_url=u'', status=u'In Progress')
+        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=u'philly, mapping', type=u'', link_url=u'http://phillymapofshame.org', code_url=u'', status=u'In Progress')
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","In Progress"''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"Philly Map of Shame","PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\xe2\x80\x99s \xe2\x80\x9cdoomsday budget\xe2\x80\x9d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.","http://phillymapofshame.org","","","Education, CivicEngagement","philly, mapping","In Progress"''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -653,7 +653,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a status of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(status_one_response_content):
@@ -681,7 +681,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a status of 'Released' instead of 'In Progress'
             elif url.geturl() == 'http://organization.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
+                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nProject Name,"Long project description here.",,https://github.com/codeforamerica/cityvoice,,,,Released''', {'content-type': 'text/csv; charset=UTF-8'})
             # return a 304 (not modified) instead of a 200 for the project
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)
@@ -1124,10 +1124,9 @@ class RunUpdateTestCase(unittest.TestCase):
         # verify that the same number of projects are in the database
         self.assertEqual(project_count, self.db.session.query(Project).count())
 
-    def test_status_set_from_civic_json(self):
-        ''' Verify that the status value from a civic.json file is read and stored in the database.
-            Also tests that value of 'status' in civic.json overwrites the value of 'status' in the
-            project spreadsheet.
+    def test_values_set_from_civic_json(self):
+        ''' Values from a civic.json file are read and stored in the database.
+            Also tests that civic.json values overwrite values set in the project spreadsheet.
         '''
         self.setup_mock_rss_response()
 
@@ -1138,12 +1137,13 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
-        # check a project for the status in the mock civic.json
+        # check a project for the status and tags from the mock civic.json
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Beta')
+        self.assertEqual(project.tags, u'mapping,transportation,community organizing')
 
-    def test_new_value_in_civic_json(self):
+    def test_new_values_in_civic_json(self):
         ''' A value that has changed in civic.json should be saved, even if the
             related GitHub project reports that it hasn't been updated
         '''
@@ -1168,6 +1168,8 @@ class RunUpdateTestCase(unittest.TestCase):
         project_v1 = self.db.session.query(Project).first()
         # the project status was correctly set
         self.assertEqual(project_v1.status, u'Beta')
+        # the project tags were correctly set
+        self.assertEqual(project_v1.tags, u'mapping,transportation,community organizing')
         v1_github_details = project_v1.github_details
 
         # save the default github response so we can send it with a 304 status below
@@ -1184,7 +1186,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
             # return a civic.json with a new status value
             elif "/contents/civic.json" in url.geturl():
-                return response(200, '''{"status": "Cromulent"}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+                return response(200, '''{"status": "Cromulent", "tags": ["community organizing", "safety and justice"]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
             # return a 304 (not modified) instead of a 200 for the project
             elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
                 return response(304, cv_body_text, cv_headers_dict)
@@ -1196,8 +1198,109 @@ class RunUpdateTestCase(unittest.TestCase):
         project_v2 = self.db.session.query(Project).first()
         # the new project status was correctly set
         self.assertEqual(project_v2.status, u'Cromulent')
+        # the new tags were correctly set
+        self.assertEqual(project_v2.tags, u'community organizing,safety and justice')
         # the untouched details from the GitHub project weren't changed
         self.assertEqual(project_v2.github_details, v1_github_details)
+
+        self.results_state = 'before'
+
+    def test_unicode_values_in_civic_json(self):
+        ''' Unicode values in the civic.json file are handled correctly
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        def unicode_response_content(url, request):
+            if "/contents/civic.json" in url.geturl():
+                return response(200, '''{"status": "汉语 漢語", "tags": ["한국어 조선말", "ру́сский язы́к", "†≈ç®åz¥≈†"]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            with HTTMock(unicode_response_content):
+                run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check a project for the status and tags from the mock civic.json
+        project = self.db.session.query(Project).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, u'汉语 漢語')
+        self.assertEqual(project.tags, u'한국어 조선말,ру́сский язы́к,†≈ç®åz¥≈†')
+        # testing for the roman text representations as well, just for reference
+        self.assertEqual(project.status, u'\u6c49\u8bed \u6f22\u8a9e')
+        self.assertEqual(project.tags, u'\ud55c\uad6d\uc5b4 \uc870\uc120\ub9d0,\u0440\u0443\u0301\u0441\u0441\u043a\u0438\u0439 \u044f\u0437\u044b\u0301\u043a,\u2020\u2248\xe7\xae\xe5z\xa5\u2248\u2020')
+
+    def test_alt_tag_format_in_civic_json(self):
+        ''' Tags represented as objects rather than strings are read correctly.
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        def unicode_response_content(url, request):
+            if "/contents/civic.json" in url.geturl():
+                return response(200, '''{"status": "Cromulent", "tags": [{"tag": "economic development"}, {"tag": "twitter"}, {"tag": "người máy"}, {"tag": "python"}]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            with HTTMock(unicode_response_content):
+                run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check a project for the status and tags from the mock civic.json
+        project = self.db.session.query(Project).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, u'Cromulent')
+        self.assertEqual(project.tags, u'economic development,twitter,người máy,python')
+        # testing for the roman text representations as well, just for reference
+        self.assertEqual(project.tags, u'economic development,twitter,ng\u01b0\u1eddi m\xe1y,python')
+
+    def test_civic_json_values_preferred(self):
+        ''' Values set in civic.json are preferred over values set in spreadsheets,
+            even after multiple updates.
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        # set results_state to 'after' so we'll only get one project
+        self.results_state = 'after'
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check a project for the status and tags from the mock civic.json
+        project = self.db.session.query(Project).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, u'Beta')
+        self.assertEqual(project.tags, u'mapping,transportation,community organizing')
+
+        # respond to requests for project, root file listing, and civic.json with 304s
+        # only if a 'If-None-Match' or 'If-Modified-Since' header is passed
+        def files_not_updated(url, request):
+            if "/contents/civic.json" in url.geturl():
+                if 'If-None-Match' in request.headers:
+                    return response(304, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            elif search(r'\/contents\/$', url.geturl()):
+                if 'If-None-Match' in request.headers:
+                    return response(304, '''[]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
+            elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
+                if 'If-Modified-Since' in request.headers:
+                    return response(304, '', {})
+
+        # run another run_update
+        with HTTMock(self.response_content):
+            with HTTMock(files_not_updated):
+                run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check a project for the status and tags from the mock civic.json
+        project = self.db.session.query(Project).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, u'Beta')
+        self.assertEqual(project.tags, u'mapping,transportation,community organizing')
 
         self.results_state = 'before'
 

@@ -10,7 +10,7 @@ from urlparse import urlparse
 from random import shuffle
 from argparse import ArgumentParser
 from time import time
-from re import match
+from re import match, sub
 
 from requests import get, exceptions
 from dateutil.tz import tzoffset
@@ -18,7 +18,6 @@ import feedparser
 
 from feeds import get_first_working_feed_link
 from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name
-
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
@@ -271,7 +270,7 @@ def get_projects(organization):
             if "html_url" in project:
                 project["code_url"] = project["html_url"]
             for key in project.keys():
-                if key not in ['name', 'description', 'link_url', 'code_url', 'type', 'categories', 'organization_name', 'status']:
+                if key not in ['name', 'description', 'link_url', 'code_url', 'type', 'categories', 'tags', 'organization_name', 'status']:
                     del project[key]
 
     # Get any updates on the projects
@@ -344,6 +343,8 @@ def update_project_info(project):
         if 'name' in project and project['name']:
             existing_filter.append(Project.name == project['name'])
 
+        spreadsheet_is_updated = False
+
         existing_project = db.session.query(Project).filter(*existing_filter).first()
         if existing_project:
             # copy 'last_updated' values from the existing project to the project dict
@@ -351,6 +352,15 @@ def update_project_info(project):
             project['last_updated_issues'] = existing_project.last_updated_issues
             project['last_updated_civic_json'] = existing_project.last_updated_civic_json
             project['last_updated_root_files'] = existing_project.last_updated_root_files
+
+            # check whether any of the org spreadsheet values for the project have changed
+            for project_key in project:
+                check_value = project[project_key]
+                existing_value = existing_project.__dict__[project_key]
+                if check_value and check_value != existing_value:
+                    spreadsheet_is_updated = True
+                elif not check_value and existing_value:
+                    project[project_key] = existing_value
 
             # request project info from GitHub with the If-Modified-Since header
             if existing_project.last_updated:
@@ -389,18 +399,8 @@ def update_project_info(project):
         elif got.status_code == 304:
             logging.info('Project {} has not been modified since last update'.format(repo_url))
 
-            # check whether any of the org spreadsheet values for the project have changed
-            spreadsheet_is_updated = False
-            for project_key in project:
-                check_value = project[project_key]
-                existing_value = existing_project.__dict__[project_key]
-                if check_value and check_value != existing_value:
-                    spreadsheet_is_updated = True
-                elif not check_value and existing_value:
-                    project[project_key] = existing_value
-
             # Populate values from the civic.json if it exists/is updated
-            project, civic_json_is_updated = update_project_from_civic_json(project)
+            project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
 
             # if values have changed, copy untouched values from the existing project object and return it
             if spreadsheet_is_updated or civic_json_is_updated:
@@ -480,9 +480,41 @@ def update_project_info(project):
         #
         # Populate values from the civic.json if it exists/is updated
         #
-        project, civic_json_is_updated = update_project_from_civic_json(project)
+        project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
 
     return project
+
+def extract_tag_value(tag_candidate):
+    ''' Extract the value of a tag from a string or object. tag_candidate must
+        be in the form of either u'tag value' or {'tag': u'tag value'}
+    '''
+    if (type(tag_candidate) is str or type(tag_candidate) is unicode) and len(tag_candidate) > 0:
+        # unicodeify
+        tag_candidate = unicode(tag_candidate)
+        # escape csv characters
+        tag_candidate = sub(u'"', u'""', tag_candidate)
+        tag_candidate = u'"{}"'.format(tag_candidate) if u',' in tag_candidate or u'"' in tag_candidate else tag_candidate
+
+        return tag_candidate
+
+    if type(tag_candidate) is dict and 'tag' in tag_candidate:
+        return extract_tag_value(tag_candidate['tag'])
+
+    return None
+
+def get_tags_from_civic_json_object(tags_in):
+    ''' Extract and return tags in the correct format from the passed object
+    '''
+    # the in object should be a list with something in it
+    if type(tags_in) is not list or not len(tags_in):
+        return None
+
+    # get the tags
+    extracted = [extract_tag_value(item) for item in tags_in]
+    # strip None values
+    stripped = [item for item in extracted if item is not None]
+    # return as a string
+    return u','.join(stripped)
 
 def update_project_from_civic_json(project_dict, force=False):
     ''' Update and return the passed project dict with values from civic.json
@@ -491,9 +523,17 @@ def update_project_from_civic_json(project_dict, force=False):
 
     is_updated = False
 
+    # get status
     existing_status = project_dict['status'] if 'status' in project_dict else u''
     if 'status' in civic_json and existing_status != civic_json['status']:
         project_dict['status'] = civic_json['status']
+        is_updated = True
+
+    # get tags
+    existing_tags = project_dict['tags'] if 'tags' in project_dict else u''
+    civic_tags = get_tags_from_civic_json_object(civic_json['tags']) if 'tags' in civic_json else u''
+    if civic_tags and existing_tags != civic_tags:
+        project_dict['tags'] = civic_tags
         is_updated = True
 
     # add other attributes from civic.json here

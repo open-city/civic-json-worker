@@ -314,6 +314,7 @@ class Project(db.Model):
     description = db.Column(db.Unicode())
     type = db.Column(db.Unicode())
     categories = db.Column(db.Unicode())
+    tags = db.Column(db.Unicode())
     github_details = db.Column(JsonType())
     last_updated = db.Column(db.DateTime())
     last_updated_issues = db.Column(db.Unicode())
@@ -331,7 +332,7 @@ class Project(db.Model):
     # can contain issues (this relationship is defined in the child object)
 
     def __init__(self, name, code_url=None, link_url=None,
-                 description=None, type=None, categories=None,
+                 description=None, type=None, categories=None, tags=None,
                  github_details=None, last_updated=None, last_updated_issues=None,
                  last_updated_civic_json=None, last_updated_root_files=None, organization_name=None,
                  keep=None, status=None):
@@ -341,6 +342,7 @@ class Project(db.Model):
         self.description = description
         self.type = type
         self.categories = categories
+        self.tags = tags
         self.github_details = github_details
         self.last_updated = last_updated
         self.last_updated_issues = last_updated_issues
@@ -385,7 +387,7 @@ db.Index('index_project_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
 
 # Trigger to populate the search index column
 trig_ddl = DDL("""
-    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, categories, github_details, status);
+    CREATE TRIGGER tsvupdate_projects_trigger BEFORE INSERT OR UPDATE ON project FOR EACH ROW EXECUTE PROCEDURE tsvector_update_trigger(tsv_body, 'pg_catalog.english', name, description, type, categories, tags, github_details, status);
 """)
 # Initialize the trigger after table is created
 event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))

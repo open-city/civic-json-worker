@@ -33,10 +33,10 @@ class ProjectFactory(SQLAlchemyModelFactory):
     description = u'This is a description'
     type = factory.LazyAttribute(lambda n: choice([u'web service', u'api', u'data standard']))
     categories = factory.LazyAttribute(lambda n: choice([u'housing', u'community engagement', u'criminal justice', u'education']))
+    tags = factory.LazyAttribute(lambda n: choice([u'civic', u'mapping']))
     github_details = {'repo': u'git@github.com:codeforamerica/civic-project.git'}
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
     status = u'Project status'
-
 
 class EventFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Event
