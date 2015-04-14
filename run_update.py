@@ -233,7 +233,7 @@ def get_projects(organization):
                 return []
 
             # If its a csv
-            if "csv" in organization.projects_list_url and (('content-type' in response.headers and 'text/csv' in response.headers['content-type']) or 'content-type' not in response.headers):
+            if "csv" in projects_url and (('content-type' in response.headers and 'text/csv' in response.headers['content-type']) or 'content-type' not in response.headers):
                 data = response.content.splitlines()
                 projects = list(DictReader(data, dialect='excel'))
                 # convert all the values to unicode

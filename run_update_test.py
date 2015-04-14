@@ -60,6 +60,8 @@ class RunUpdateTestCase(unittest.TestCase):
     def get_raw_organization_list(self, count=3):
         if type(count) is not int:
             count = 3
+        # 'https://github.com/codeforamerica' and 'https://www.github.com/orgs/codeforamerica' are transformed
+        #  to 'https://api.github.com/users/codeforamerica/repos' in run_update/get_projects()
         lines = [u'''name,website,events_url,rss,projects_list_url'''.encode('utf8'), u'''Cöde for Ameriça,http://codeforamerica.org,http://www.meetup.com/events/Code-For-Charlotte/,http://www.codeforamerica.org/blog/feed/,http://example.com/cfa-projects.csv'''.encode('utf8'), u'''Code for America (2),,,,https://github.com/codeforamerica'''.encode('utf8'), u'''Code for America (3),,http://www.meetup.com/events/Code-For-Rhode-Island/,http://www.codeforamerica.org/blog/another/feed/,https://www.github.com/orgs/codeforamerica'''.encode('utf8')]
         return '\n'.join(lines[0:count + 1])
 
@@ -78,16 +80,25 @@ class RunUpdateTestCase(unittest.TestCase):
             return response(200, '''[{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37 }]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=2>; rel="next", <https://api.github.com/user/337792/repos?page=2>; rel="last"'))
 
         # csv file of organization descriptions
+        # this catches the request for the URL contained in run_update.TEST_ORG_SOURCES_FILENAME
         elif "docs.google.com" in url:
             return response(200, self.get_raw_organization_list(self.organization_count))
 
-        # contents of civic.json file in root directory
-        elif "/contents/civic.json" in url.geturl():
+        # contents of civic.json file in root directory for cityvoice
+        elif "cityvoice/contents/civic.json" in url.geturl():
             return response(200, '''{"status": "Beta", "tags": ["mapping", "transportation", "community organizing"]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
 
-        # json of github directory contents
-        elif search(r'\/contents\/$', url.geturl()):
+        # contents of civic.json file in root directory for bizfriendly-web
+        elif "bizfriendly-web/contents/civic.json" in url.geturl():
+            return response(404, '''Not Found!''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        # json of github directory contents for cityvoice (has civic.json)
+        elif search(r'cityvoice\/contents\/$', url.geturl()):
             return response(200, '''[{"name": "civic.json", "path": "civic.json", "sha": "01a16ec5902e04c170c648c0ff65cb0210468e96", "size": 82, "url": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "html_url": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json", "git_url": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "download_url": "https://raw.githubusercontent.com/codeforamerica/cityvoice/master/civic.json", "type": "file", "_links": {"self": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic.json?ref=master", "git": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "html": "https://github.com/codeforamerica/cityvoice/blob/master/civic.json"}}]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        # json of github directory contents for bizfriendly-web (no civic.json)
+        elif search(r'bizfriendly-web\/contents\/$', url.geturl()):
+            return response(200, '''[{"name": "civic-not.json", "path": "civic-not.json", "sha": "01a16ec5902e04c170c648c0ff65cb0210468e96", "size": 82, "url": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic-not.json?ref=master", "html_url": "https://github.com/codeforamerica/cityvoice/blob/master/civic-not.json", "git_url": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "download_url": "https://raw.githubusercontent.com/codeforamerica/cityvoice/master/civic-not.json", "type": "file", "_links": {"self": "https://api.github.com/repos/codeforamerica/cityvoice/contents/civic-not.json?ref=master", "git": "https://api.github.com/repos/codeforamerica/cityvoice/git/blobs/01a16ec5902e04c170c648c0ff65cb0210468e96", "html": "https://github.com/codeforamerica/cityvoice/blob/master/civic-not.json"}}]''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
 
         # json of project description (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
@@ -165,11 +176,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # csv of projects (philly)
         elif url.geturl() == 'http://codeforphilly.org/projects.csv':
-                return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
+            return response(200, '''"name","description","link_url","code_url","type","categories","tags","status"\r\n"OpenPhillyGlobe","\"Google Earth for Philadelphia\" with open source and open transit data.","http://cesium.agi.com/OpenPhillyGlobe/","http://google.com","","","",""''', {'content-type': 'text/csv; charset=UTF-8'})
 
         # csv of projects (austin)
         elif url.geturl() == 'http://openaustin.org/projects.csv':
-                return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
+            return response(200, '''name,description,link_url,code_url,type,categories,tags,status\nHack Task Aggregator,"Web application to aggregate tasks across projects that are identified for ""hacking"".",,,web service,"project management, civic hacking",,In Progress''', {'content-type': 'text/csv; charset=UTF-8'})
 
         else:
             raise Exception('Asked for unknown URL ' + url.geturl())
@@ -181,7 +192,9 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def overwrite_response_content(url, request):
             if "/contents/civic.json" in url.geturl():
-                return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+                return response(404, '''Not Found!''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            elif search(r'\/contents\/$', url.geturl()):
+                return response(200, '''[{"name": "civic-not.json"}]''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -205,10 +218,10 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(project.name, u'bizfriendly-web')
 
         # check for the one project status
-        filter = Project.name == u'bizfriendly-web'
-        project = self.db.session.query(Project).filter(filter).first()
+        filter = [Project.organization_name == u'Cöde for Ameriça', Project.name == u'cityvoice']
+        project = self.db.session.query(Project).filter(*filter).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.status, u'In Progress')
+        self.assertEqual(project.status, u'Shuttered')
 
         # check for the other project
         filter = Project.name == u'cityvoice'
