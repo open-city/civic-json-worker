@@ -199,6 +199,10 @@ def get_projects(organization):
         TODO: Have this work for GDocs.
     '''
 
+    # don't try to process an empty projects_list_url
+    if not organization.projects_list_url:
+        return []
+
     # If projects_list is a GitHub organization
     # Use the GitHub auth to request all the included repos.
     # Follow next page links
@@ -553,6 +557,9 @@ def get_issues_for_project(project):
     '''
     issues = []
 
+    if not project.code_url:
+        return issues
+
     # Get github issues api url
     _, host, path, _, _, _ = urlparse(project.code_url)
     issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
@@ -590,6 +597,10 @@ def get_issues(org_name):
         # Mark this project's issues for deletion
         # :::here (issue/false)
         db.session.execute(db.update(Issue, values={'keep': False}).where(Issue.project_id == project.id))
+
+        # don't try to parse an empty code_url
+        if not project.code_url:
+            continue
 
         # Get github issues api url
         _, host, path, _, _, _ = urlparse(project.code_url)
@@ -636,11 +647,14 @@ def get_root_directory_listing_for_project(project_dict, force=False):
         an empty list if the listing hasn't changed since the last time we asked
         unless force is True.
     '''
+    listing = []
+
+    if 'code_url' not in project_dict or not project_dict['code_url']:
+        return listing
+
     # Get the API URL
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
     directory_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='')
-
-    listing = []
 
     # Request the directory listing
     request_headers = {}
@@ -680,7 +694,7 @@ def get_civic_json_for_project(project_dict, force=False):
     if not get_civic_json_exists_for_project(project_dict, force):
         return civic
 
-    # Get the API URL
+    # Get the API URL (if 'code_url' wasn't in project_dict, it would've been caught upstream)
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
     civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
 
