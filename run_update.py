@@ -245,6 +245,9 @@ def get_projects(organization):
                         if type(project_value) is list:
                             project_value = [unicode(item.decode('utf8')) for item in project_value]
                             project[project_key] = project_value
+                        # some values might be empty strings
+                        elif type(project_value) in (str, unicode) and unicode(project_value.decode('utf8')) == u'':
+                            project[project_key] = None
                         else:
                             project[project_key] = unicode(project_value.decode('utf8'))
 
