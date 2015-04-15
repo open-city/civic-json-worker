@@ -326,7 +326,7 @@ def update_project_info(project):
         Github_details is specifically expected to be used on this page:
         http://opengovhacknight.org/projects.html
     '''
-    if 'code_url' not in project:
+    if 'code_url' not in project or not project['code_url']:
         project = non_github_project_update_time(project)
         return project
 

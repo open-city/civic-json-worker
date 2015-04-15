@@ -579,7 +579,6 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['status'], "active")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
-
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
         '''
@@ -588,7 +587,7 @@ class RunUpdateTestCase(unittest.TestCase):
         from factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
-        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=u'philly, mapping', type=u'', link_url=u'http://phillymapofshame.org', code_url=u'', status=u'In Progress')
+        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=u'philly, mapping', type=None, link_url=u'http://phillymapofshame.org', code_url=None, status=u'In Progress')
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
