@@ -521,7 +521,7 @@ def get_tags_from_civic_json_object(tags_in):
     # strip None values
     stripped = [item for item in extracted if item is not None]
     # return as a string
-    return u','.join(stripped)
+    return u','.join(stripped) if len(stripped) else None
 
 def update_project_from_civic_json(project_dict, force=False):
     ''' Update and return the passed project dict with values from civic.json
@@ -531,14 +531,14 @@ def update_project_from_civic_json(project_dict, force=False):
     is_updated = False
 
     # get status
-    existing_status = project_dict['status'] if 'status' in project_dict else u''
+    existing_status = project_dict['status'] if 'status' in project_dict else None
     if 'status' in civic_json and existing_status != civic_json['status']:
-        project_dict['status'] = civic_json['status']
+        project_dict['status'] = civic_json['status'] if civic_json['status'].strip() else None
         is_updated = True
 
     # get tags
-    existing_tags = project_dict['tags'] if 'tags' in project_dict else u''
-    civic_tags = get_tags_from_civic_json_object(civic_json['tags']) if 'tags' in civic_json else u''
+    existing_tags = project_dict['tags'] if 'tags' in project_dict else None
+    civic_tags = get_tags_from_civic_json_object(civic_json['tags']) if 'tags' in civic_json else None
     if civic_tags and existing_tags != civic_tags:
         project_dict['tags'] = civic_tags
         is_updated = True

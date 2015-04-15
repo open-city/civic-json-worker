@@ -1040,6 +1040,42 @@ class RunUpdateTestCase(unittest.TestCase):
         # all the organization names should be unique
         self.assertTrue(len(set(project_organization_names)) == len(project_organization_names))
 
+    def test_empty_project_values_set_null(self):
+        ''' Values in a project csv or civic.json that are empty are saved to the
+            database as None rather than empty strings
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        # overwrite response content to send back a civic.json with some empty values
+        # these should be transformed to None values in run_update
+        def overwrite_response_content(url, request):
+            if "cityvoice/contents/civic.json" in url.geturl():
+                return response(200, '''{"status": "", "tags": ["", "", ""]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                # run the update
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check for empty strings in the saved project you know doesn't have status & tags set
+        # because they're missing from the spreadsheet/csv...
+        filter = [Project.organization_name == u'Cöde for Ameriça', Project.name == u'bizfriendly-web']
+        project = self.db.session.query(Project).filter(*filter).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, None)
+        self.assertEqual(project.tags, None)
+
+        # and in the saved project you know doesn't have status & tags set because they're
+        # missing from civic.json
+        filter = [Project.organization_name == u'Code for America (3)', Project.name == u'cityvoice']
+        project = self.db.session.query(Project).filter(*filter).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.status, None)
+        self.assertEqual(project.tags, None)
+
     def test_repo_name_used_for_missing_project_name(self):
         ''' Verify that a repo name will be used when no project name is available
         '''
