@@ -9,6 +9,7 @@
 """
 
 import urllib2
+from httplib import BadStatusLine
 
 import feedparser
 
@@ -71,7 +72,7 @@ def get_first_working_feed_link(url):
     html = None
     try:
         html = urllib2.urlopen(url).read(1000000)
-    except SocketError as e:
+    except (SocketError, BadStatusLine):
         return None
 
     feed = feedparser.parse(html)
