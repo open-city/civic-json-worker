@@ -191,27 +191,25 @@ Once you've got your organization's GitHub projects on the API, all of your grou
 
 ## Installation
 
-The CFAPI is built on [Flask](http://flask.pocoo.org/) and Python. The `app.py` file describes the models and routes. The `run_update.py` file runs once an hour and collects all the data about the different Brigades. Both `tests.py` and `run_update_test.py` are automatically run by [Travis-CI](https://travis-ci.org/codeforamerica/cfapi) whenever a new commit is made. The production service lives on Heroku. Please contact Andrew and Erica in the "Contribute" section below to get involved.
+The CFAPI is built on [Flask](http://flask.pocoo.org/) and Python. The `app.py` file describes the models and routes. The `run_update.py` file runs once an hour and collects all the data about the different Brigades. Both `tests.py` and `run_update_test.py` are automatically run by [Travis-CI](https://travis-ci.org/codeforamerica/cfapi) whenever a new commit is made. The production service lives on Heroku. Please contact [us](https://github.com/codeforamerica/cfapi#contacts) with any questions.
 
 ### Development setup
 
+#### Requirements
+
+* PostgreSQL Database - [How To](https://github.com/codeforamerica/howto/blob/master/PostgreSQL.md)
+
 #### Environmental variables
 
-* `DATABASE_URL=[db connection string]` — My local example is `postgres://hackyourcity@localhost/cfapi` When testing locally, `sqlite:///data.db` is a great way to skip Postgres installation.
+* `DATABASE_URL=[db connection string]` — My local example is `postgres:///cfapi`
 * `GITHUB_TOKEN=[GitHub API token]` — Read about setting that up here: http://developer.github.com/v3/oauth/
 * `MEETUP_KEY=[Meetup API Key]` — Read about setting that up here: https://secure.meetup.com/meetup_api/key/
 
-Set these environment variables in your `.bash_profile`. Then run `source ~/.bash_profile`.
+Set these up in a local `.env` file.
 
 #### Project setup
 
-* Set up a [virtualenv](https://pypi.python.org/pypi/virtualenv)
-
-```
-pip install virtualenv
-virtualenv venv-cfapi
-source venv-cfapi/bin/activate
-```
+* Set up a [virtual environment](https://github.com/codeforamerica/howto/blob/master/Python-Virtualenv.md)
 
 * Install the required libraries
 
@@ -249,10 +247,19 @@ python run_update.py --test
 * Start the API
 
 ```
-python app.py runserver
+env `cat .env` python app.py runserver
 ```
 
-* Visit http://localhost:5000/api/organizations/Code-for-America to see your results.
+* or use [foreman](http://theforeman.org/) to mimic how the CfAPI runs on Heroku.
+
+```
+foreman start
+```
+
+* Visit `localhost:5000` in your browser to see the results
+```
+http://localhost:5000/api/organizations/Code-for-America
+```
 
 ### Deployment
 
@@ -295,7 +302,6 @@ Contacts
 --------
 
 * Andrew Hyder ([ondrae](https://github.com/ondrae))
-* Erica Kwan ([pui](https://github.com/pui))
 * Michal Migurski ([migurski](https://github.com/migurski))
 * Tomas Apodaca ([tmaybe](https://github.com/tmaybe))
 
@@ -346,4 +352,4 @@ Submitting a Pull Request
 Copyright
 ---------
 
-Copyright (c) 2014 Code for America.
+Copyright (c) 2015 Code for America.
