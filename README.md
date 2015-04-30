@@ -144,15 +144,13 @@ This projects list you point us to will need the following columns:
 * `description` - filled in by GitHub if left blank
 * `link_url` - filled in by GitHub if left blank
 * `code_url` - Only GitHub links work for now. Others will be added as needed later.
-* `type` - Is this project an app, an open data policy, a webservice?
-* `categories` - Write your own separated by commas. "Education, digital literacy"
-* `tags` - Catch-all project tagging, terms separated by commas.
-* `status` - Whatever status names you use, e.g., "Needs sponsor", "In progress", "Delivered"
+* `tags` - Catch-all project tagging, terms separated by commas. "Education, digital literacy, iOS, Kansas City"
+* `status` - Whatever status names you use, e.g., "Alpha, Beta, Launched, In Progress"
 
 An example:
 ```
 name, description, link_url, code_url, type, categories, tags, status
-South Bend Voices, "A redeploy of CityVoice for South Bend, IN.", http://www.southbendvoices.com/, https://github.com/codeforamerica/cityvoice, web service, "community engagement, housing", "mapping, python" "In progress"
+South Bend Voices, "A redeploy of CityVoice for South Bend, IN.", http://www.southbendvoices.com/, https://github.com/codeforamerica/cityvoice,,, "community engagement, housing, mapping, ruby" "In progress"
 ```
 
 That projects list URL can be any flavor of csv. The easiest way is to make a Google Spreadsheet like [my example](https://docs.google.com/spreadsheet/ccc?key=0ArHmv-6U1drqdDBzNXpSZkVzRDJUQnpOS0RJM0FDWGc&usp=sharing) and then select **File > Publish it to the web**.
