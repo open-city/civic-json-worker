@@ -931,9 +931,7 @@ def get_event_group_identifier(events_url):
     else:
         return None
 
-# Org sources can be csv or yaml
-# They should be lists of organizations you want included at /organizations
-# columns should be name, website, events_url, rss, projects_list_url, city, latitude, longitude, type
+
 def main(org_name=None, org_sources=None):
     ''' Run update over all organizations. Optionally, update just one.
     '''
