@@ -7,12 +7,12 @@ Flask-Script==2.0.5
 Jinja2==2.7.2
 Mako==1.0.0
 MarkupSafe==0.18
-PyYAML==3.11
+
 SQLAlchemy==0.9.3
 Unidecode==0.04.14
 Werkzeug==0.9.4
 alembic==0.6.5
-boto==2.25.0
+
 dictalchemy==0.1.2.1
 factory-boy==2.3.1
 feedparser==5.1.3
