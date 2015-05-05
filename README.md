@@ -279,7 +279,7 @@ These must be set:
 * Initialize the database
 
 ```
-heroku console
+heroku run bash
 python -c 'from app import db; db.create_all()'
 ```
 
