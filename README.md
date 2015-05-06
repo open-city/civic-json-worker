@@ -18,13 +18,7 @@ To get the information for the CfAPI, Code for America maintains a [list of civi
 * The Brigade <a href="http://codeforamerica.org/brigade/projects">Projects</a> Page
 <br/><a href="http://codeforamerica.org/brigade/projects"><img src="http://i.imgur.com/Zv2zKvp.png" width="500px"/></a>
 
-* The Brigade <a href="http://codeforamerica.org/brigade/events">Events</a> Page
-<br/><a href="http://codeforamerica.org/brigade/events"><img src="http://i.imgur.com/p29utjI.png" width="500px"/></a>
-
-* The Code for America <a href="http://codeforamerica.org/geeks">Citizens</a> Page
-<br/><a href="http://codeforamerica.org/geeks"><img src="http://i.imgur.com/5PZBBfQ.png" width="500px"/></a>
-
-* <a href="http://www.codeforamerica.org/geeks/civicissues/embed">The Civic Tech Issue Finder
+* <a href="http://www.codeforamerica.org/geeks/civicissues">The Civic Tech Issue Finder
 <br/><img src="http://i.imgur.com/9aWV25e.png" width="400px"/></a>
 
 * <a href="https://twitter.com/civicissues">The Civic Issue Twitter Bot
