@@ -1,9 +1,10 @@
 import json
-
-from factories import ProjectFactory, OrganizationFactory, IssueFactory
-from test.base.integration_test import IntegrationTest
-from app import db, Issue
 from datetime import datetime, timedelta
+
+from test.factories import ProjectFactory, OrganizationFactory, IssueFactory
+from test.harness import IntegrationTest
+from app import db, Issue
+
 
 class TestProjects(IntegrationTest):
 

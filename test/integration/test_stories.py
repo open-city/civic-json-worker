@@ -1,7 +1,9 @@
-from factories import ProjectFactory, StoryFactory, OrganizationFactory
-from test.base.integration_test import IntegrationTest
-from app import db
 import json
+
+from test.factories import StoryFactory, OrganizationFactory
+from test.harness import IntegrationTest
+from app import db
+
 
 class TestStories(IntegrationTest):
 

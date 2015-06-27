@@ -242,7 +242,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory, ProjectFactory, EventFactory, IssueFactory
+        from test.factories import OrganizationFactory, ProjectFactory, EventFactory, IssueFactory
 
         old_organization = OrganizationFactory(name=u'Old Organization')
         old_project = ProjectFactory(name=u'Old Project', organization_name=u'Old Organization')
@@ -454,7 +454,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory
+        from test.factories import OrganizationFactory
         organization = OrganizationFactory(name=u'Code for America')
 
         with HTTMock(self.response_content):
@@ -503,7 +503,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory
+        from test.factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         austin = OrganizationFactory(name=u'Open Austin', projects_list_url=u'http://openaustin.org/projects.csv')
 
@@ -522,7 +522,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory
+        from test.factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         austin = OrganizationFactory(name=u'Open Austin', projects_list_url=u'http://openaustin.org/projects.csv')
 
@@ -541,7 +541,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory
+        from test.factories import OrganizationFactory
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
 
         # Get a Philly project into the db
@@ -584,7 +584,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory, ProjectFactory
+        from test.factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=u'philly, mapping', type=None, link_url=u'http://phillymapofshame.org', code_url=None, status=u'In Progress')
@@ -605,7 +605,7 @@ class RunUpdateTestCase(unittest.TestCase):
         ''' test that issues are following page links '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory, ProjectFactory
+        from test.factories import OrganizationFactory, ProjectFactory
 
         organization = OrganizationFactory(name=u'Code for America', projects_list_url=u'http://codeforamerica.org/projects.csv')
         project = ProjectFactory(organization_name=u'Code for America',code_url=u'https://github.com/TESTORG/TESTPROJECT')
@@ -633,7 +633,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory
+        from test.factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
         def overwrite_response_content(url, request):
@@ -713,7 +713,7 @@ class RunUpdateTestCase(unittest.TestCase):
         '''
         self.setup_mock_rss_response()
 
-        from factories import OrganizationFactory
+        from test.factories import OrganizationFactory
         organization = OrganizationFactory(projects_list_url=u'http://organization.org/projects.csv')
 
         def overwrite_response_content(url, request):

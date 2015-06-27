@@ -1,9 +1,10 @@
 import json
-
-from factories import OrganizationFactory, EventFactory
-from test.base.integration_test import IntegrationTest
-from app import db
 from datetime import datetime, timedelta
+
+from test.factories import OrganizationFactory, EventFactory
+from test.harness import IntegrationTest
+from app import db
+
 
 class TestEvents(IntegrationTest):
 
@@ -155,6 +156,31 @@ class TestEvents(IntegrationTest):
         assert isinstance(response['objects'][0]['organization'], dict)
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['start_time'], unicode)
+
+    def test_past_events(self):
+        '''
+        Only return events that occurred in the past
+        Make sure they are ordered from most recent to
+        furthest in the past
+        '''
+        # Assuming today is Christmas...
+        organization = OrganizationFactory(name=u'International Cat Association')
+        db.session.flush()
+
+        # Create multiple events, one in the future, some in the past
+        EventFactory(organization_name=organization.name, name=u'Thanksgiving', start_time_notz=datetime.now() - timedelta(30))
+        EventFactory(organization_name=organization.name, name=u'Christmas Eve', start_time_notz=datetime.now() - timedelta(1))
+        EventFactory(organization_name=organization.name, name=u'New Years', start_time_notz=datetime.now() + timedelta(7))
+        db.session.commit()
+
+        # Check that past events are returned in the correct order
+        response = self.app.get('/api/organizations/International Cat Association/past_events')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], u'Christmas Eve')
+        self.assertEqual(response['objects'][1]['name'], u'Thanksgiving')
+
 
     def test_events_query_filter(self):
         org = OrganizationFactory(type=u'Brigade')

@@ -1,10 +1,11 @@
 import json
-
-from factories import OrganizationFactory, ProjectFactory, EventFactory, StoryFactory, IssueFactory, LabelFactory
-from test.base.integration_test import IntegrationTest
 from datetime import datetime, timedelta
-from app import db
 import time
+
+from test.factories import OrganizationFactory, ProjectFactory, EventFactory, StoryFactory, IssueFactory, LabelFactory
+from test.harness import IntegrationTest
+from app import db
+
 
 class TestOrganizations(IntegrationTest):
 
@@ -535,7 +536,7 @@ class TestOrganizations(IntegrationTest):
 
     def test_org_dont_show_issues(self):
         ''' Test that calls to /organizations dont return project issues '''
-        from factories import OrganizationFactory, ProjectFactory, IssueFactory
+        from test.factories import OrganizationFactory, ProjectFactory, IssueFactory
         organization = OrganizationFactory()
         db.session.flush()
 

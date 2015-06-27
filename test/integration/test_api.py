@@ -1,11 +1,14 @@
 # -*- coding: utf8 -*-
 
 from urlparse import urlparse
-from sqlalchemy.exc import IntegrityError
-from factories import ProjectFactory, OrganizationFactory, EventFactory, StoryFactory, IssueFactory, LabelFactory
-from test.base.integration_test import IntegrationTest
-from app import db, Organization, Event, Story, Project, Issue, Label
 import json
+
+from sqlalchemy.exc import IntegrityError
+
+from test.factories import ProjectFactory, OrganizationFactory, EventFactory, StoryFactory, IssueFactory, LabelFactory
+from test.harness import IntegrationTest
+from app import db, Organization, Event, Story, Project, Issue, Label
+
 
 class TestApi(IntegrationTest):
 
