@@ -27,3 +27,6 @@ requests==1.2.3
 six==1.5.2
 wsgiref==0.1.2
 newrelic==2.40.0.34
+
+green=1.11.0
+coverage=3.7.1
