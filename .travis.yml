@@ -4,7 +4,7 @@ before_script:
 - psql -c 'create database civic_json_worker_test;' -U postgres
 script:
 - python run_update_test.py
-- python tests.py
+- green test/integration -vvv --run-coverage
 notifications:
   webhooks: http://project-monitor.codeforamerica.org/projects/72d031cc-8f21-4968-8db6-ff7370f5e98b/status
   slack: cfa:IjK8dNdwBJHL0Xc9FqvROliV

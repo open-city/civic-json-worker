@@ -3,3 +3,4 @@
 venv-civic-json-worker
 venv
 venv-cfapi
+.coverage
