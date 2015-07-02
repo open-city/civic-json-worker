@@ -286,8 +286,13 @@ python -c 'from app import db; db.create_all()'
 ```
 
 `python run_update_test.py` to test the run_update process.
+
 `green test/integration -vvv` to test the API.
-`green test/integration -vvv --run-coverage` to test the API with code coverage
+
+`green test/integration -vvv --run-coverage` to test the API with code coverage.
+
+`green test/ run_update_test.py -vvv --run-coverage` to run everything at once.
+
 
 
 ### Migrations
