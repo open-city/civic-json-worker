@@ -554,6 +554,26 @@ class Event(db.Model):
 
         return event_dict
 
+
+class Attendance(db.Model):
+    ''' Attendance at organization events
+        sourced from the peopledb
+    '''
+    # Columns
+    organization_url = db.Column(db.Unicode(), primary_key=True)
+    total = db.Column(db.Integer())
+    weekly = db.Column(JsonType())
+
+    # Relationship
+    organization = db.relationship('Organization', single_parent=True, cascade='all, delete-orphan', backref=backref("attendance", cascade="save-update, delete"))
+    organization_name = db.Column(db.Unicode(), db.ForeignKey('organization.name', ondelete='CASCADE'), nullable=False)
+
+    def __init__(self, organization_url, organization_name, total, weekly):
+        self.organization_url = organization_url
+        self.organization_name = organization_name
+        self.total = total
+        self.weekly = weekly
+
 class Error(db.Model):
     '''
         Errors from run_update.py

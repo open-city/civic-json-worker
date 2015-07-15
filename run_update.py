@@ -11,13 +11,14 @@ from random import shuffle
 from argparse import ArgumentParser
 from time import time
 from re import match, sub
+from psycopg2 import connect, extras
 
 from requests import get, exceptions
 from dateutil.tz import tzoffset
 import feedparser
 
 from feeds import get_first_working_feed_link
-from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name
+from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name, Attendance
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
@@ -932,6 +933,51 @@ def get_event_group_identifier(events_url):
         return None
 
 
+def get_attendance(peopledb, organization_url, organization_name):
+    ''' Get the attendance of an org from the peopledb '''
+    # cfapi_url = "https://www.codeforamerica.org/api/organizations/"
+    # organization_url = cfapi_url + organization.api_id()
+
+    # Total attendance
+    q = ''' SELECT COUNT(*) AS total FROM attendance
+            WHERE organization_url = %s '''
+    peopledb.execute(q,(organization_url,))
+    total = int(peopledb.fetchone()["total"])
+
+    # weekly attendance
+    q = ''' SELECT COUNT(*) AS total,
+            to_char(datetime, 'YYYY WW') AS week
+            FROM attendance
+            WHERE organization_url = %s
+            GROUP BY week '''
+    peopledb.execute(q,(organization_url,))
+    weekly = peopledb.fetchall()
+    weekly = [ {week["week"] : int(week["total"]) } for week in weekly ]
+    weekly = sorted(weekly, key=lambda week: week.keys(), reverse=True)
+
+    attendance = {
+        "organization_name" : organization_name,
+        "organization_url" : organization_url,
+        "total" : total,
+        "weekly" : weekly
+    }
+
+    return attendance
+
+def update_attendance(db, organization_name, attendance):
+    ''' Update exisiting attendance '''
+    filter = Attendance.organization_name == organization_name
+    existing_attendance = db.session.query(Attendance).filter(filter).first()
+    if existing_attendance:
+        existing_attendance.total = attendance["total"]
+        existing_attendance.weekly = attendance["weekly"]
+        db.session.add(existing_attendance)
+    else:
+        new_att = Attendance(**attendance)
+        db.session.add(new_att)
+    db.session.commit()
+
+
 def main(org_name=None, org_sources=None):
     ''' Run update over all organizations. Optionally, update just one.
     '''
@@ -1032,6 +1078,16 @@ def main(org_name=None, org_sources=None):
             db.session.flush()
             for issue in issues:
                 save_labels(db.session, issue)
+
+            # Get attendance data
+            with connect(os.environ["PEOPLEDB"]) as conn:
+                with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+                    cfapi_url = "https://www.codeforamerica.org/api/organizations/"
+                    organization_url = cfapi_url + organization.api_id()
+                    attendance = get_attendance(peopledb, organization_url, organization.name)
+
+            if attendance:
+                update_attendance(db, organization.name, attendance)
 
             # commit everything
             db.session.commit()

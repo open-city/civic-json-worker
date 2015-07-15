@@ -5,10 +5,13 @@ import unittest
 import datetime
 import logging
 import time
+import json
 from re import match, search, sub
 
 from httmock import response, HTTMock
 from mock import Mock
+
+from psycopg2 import connect, extras
 
 root_logger = logging.getLogger()
 root_logger.disabled = True
@@ -38,9 +41,22 @@ class RunUpdateTestCase(unittest.TestCase):
         import run_update
         run_update.github_throttling = False
 
+        # FAKE PEOPLEDB
+        with connect('postgres:///peopledbtest') as conn:
+            with conn.cursor() as db:
+                with open('test/peopledbtest-destroy.pgsql') as filename:
+                    db.execute(filename.read())
+                with open('test/peopledbtest.pgsql') as filename:
+                    db.execute(filename.read())
+
     def tearDown(self):
         self.db.session.close()
         self.db.drop_all()
+
+        with connect('postgres:///peopledbtest') as conn:
+            with conn.cursor() as db:
+                with open('test/peopledbtest-destroy.pgsql') as filename:
+                    db.execute(filename.read())
 
     def setup_mock_rss_response(self):
         ''' This overwrites urllib2.urlopen to return a mock response, which stops
@@ -1351,6 +1367,62 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(project.tags, u'mapping,transportation,community organizing')
 
         self.results_state = 'before'
+
+
+    def test_attendance(self):
+        ''' Test gathering attendance from the peopledb '''
+        # Mock attendance data
+        cfsf_url = "https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
+        cfsf_name = "Code for San Francisco"
+        oakland_url = "https://www.codeforamerica.org/api/organizations/Open-Oakland"
+        oakland_name = "Open Oakland"
+        cfsf_checkin1 = datetime.datetime.strptime("2015-01-01","%Y-%m-%d")
+        cfsf_checkin2 = datetime.datetime.strptime("2015-01-08","%Y-%m-%d")
+        oakland_checkin1 = datetime.datetime.strptime("2015-01-16","%Y-%m-%d")
+        oakland_checkin2 = datetime.datetime.strptime("2015-01-24","%Y-%m-%d")
+
+        # Access the peopledb
+        PEOPLEDB = 'postgres:///peopledbtest'
+
+        with connect(PEOPLEDB) as conn:
+            with conn.cursor() as db:
+                # Put some fake attendance data in it
+                q = '''INSERT INTO attendance
+                       ( datetime, organization_url)
+                       VALUES ( %s, %s )'''
+                db.execute(q, (cfsf_checkin1, cfsf_url))
+                db.execute(q, (cfsf_checkin2, cfsf_url))
+                db.execute(q, (oakland_checkin1, oakland_url))
+                db.execute(q, (oakland_checkin2, oakland_url))
+
+        # Call a function to pull data out of it
+        with connect(PEOPLEDB) as conn:
+            with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+                import run_update
+                from app import Attendance, Organization
+                from test.factories import OrganizationFactory
+                cfsf = OrganizationFactory(name='Code for San Francisco')
+                oakland = OrganizationFactory(name='Open Oakland')
+
+                cfsf_attendance = run_update.get_attendance(peopledb, cfsf_url, cfsf.name)
+                self.assertEqual(cfsf_attendance["organization_name"], "Code for San Francisco")
+                self.assertEqual(cfsf_attendance["weekly"][1], {'2015 01': 1})
+                self.assertEqual(cfsf_attendance["weekly"][0], {'2015 02': 1})
+
+                oakland_attendance = run_update.get_attendance(peopledb, oakland_url, oakland.name)
+                self.assertEqual(oakland_attendance["organization_name"], "Open Oakland")
+                self.assertEqual(oakland_attendance["weekly"][1], {'2015 03': 1})
+                self.assertEqual(oakland_attendance["weekly"][0], {'2015 04': 1})
+
+        run_update.update_attendance(self.db, cfsf.name, cfsf_attendance)
+        run_update.update_attendance(self.db, oakland.name, oakland_attendance)
+        attendance = self.db.session.query(Attendance).all()
+        self.assertEqual(attendance[0].organization_name, "Code for San Francisco")
+        self.assertEqual(attendance[0].weekly[1], {'2015 01': 1})
+        self.assertEqual(attendance[0].weekly[0], {'2015 02': 1})
+        self.assertEqual(attendance[1].organization_name, "Open Oakland")
+        self.assertEqual(attendance[1].weekly[1], {'2015 03': 1})
+        self.assertEqual(attendance[1].weekly[0], {'2015 04': 1})
 
 if __name__ == '__main__':
     unittest.main()

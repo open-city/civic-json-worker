@@ -10,6 +10,7 @@ class IntegrationTest(unittest.TestCase):
         db.create_all()
         self.app = app.test_client()
 
+
     def tearDown(self):
         db.session.close()
         db.drop_all()
