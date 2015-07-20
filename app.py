@@ -213,6 +213,11 @@ class Organization(db.Model):
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/stories' % (request.scheme, request.host, organization_name)
 
+    def all_attendance(self):
+        ''' API link to orgs attendance '''
+        organization_name = safe_name(self.name)
+        return '%s://%s/api/organizations/%s/attendance' % (request.scheme, request.host, organization_name)
+
     def api_id(self):
         ''' Return organization name made safe for use in a URL.
         '''
@@ -235,7 +240,7 @@ class Organization(db.Model):
         del organization_dict['tsv_body']
 
         for key in ('all_events', 'all_projects', 'all_stories', 'all_issues',
-                    'upcoming_events', 'past_events', 'api_url'):
+                    'upcoming_events', 'past_events', 'api_url', 'all_attendance'):
             organization_dict[key] = getattr(self, key)()
 
         if include_extras:
@@ -885,6 +890,81 @@ def get_orgs_issues(organization_name, labels=None):
 
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)))
     return jsonify(response)
+
+
+@app.route("/api/organizations/<organization_name>/attendance")
+def get_orgs_attendance(organization_name):
+    ''' A clean url to get an organizations attendance '''
+
+    # Get one named organization.
+    organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
+    if not organization:
+        return "Organization not found", 404
+
+    # Get that organization's attendance
+    attendance = Attendance.query.filter_by(organization_name=organization.name).first()
+    weekly = {}
+    for week in attendance.weekly:
+        if week.keys()[0] not in weekly.keys():
+            weekly[week.keys()[0]] = week.values()[0]
+        else:
+            weekly[week.keys()[0]] += week.values()[0]
+    attendance.weekly = weekly
+    return jsonify(attendance)
+
+
+def find(lst, key, value):
+    for i, dic in enumerate(lst):
+        if dic[key] == value:
+            return i
+    return False
+
+
+@app.route("/api/organizations/attendance")
+def get_all_orgs_attendance():
+    ''' A list of all organizations attendance '''
+    all_attendance = Attendance.query.all()
+    response = []
+
+    for org_attendance in all_attendance:
+        weekly = {}
+        for week in org_attendance.weekly:
+            if week.keys()[0] not in weekly.keys():
+                weekly[week.keys()[0]] = week.values()[0]
+            else:
+                weekly[week.keys()[0]] += week.values()[0]
+        attendance_response = {
+            "organization_name" : org_attendance.organization_name,
+            "cfapi_url" : org_attendance.organization_url,
+            "total" : org_attendance.total,
+            "weekly" : weekly
+        }
+        response.append(attendance_response)
+
+    return json.dumps(response)
+
+
+@app.route("/api/attendance")
+def get_all_attendance():
+    ''' All attendance summarized '''
+    all_attendance = Attendance.query.all()
+    total = 0
+    weekly = {}
+    for org_attendance in all_attendance:
+        total += org_attendance.total
+        for week in org_attendance.weekly:
+            if week.keys()[0] not in weekly.keys():
+                weekly[week.keys()[0]] = week.values()[0]
+            else:
+                weekly[week.keys()[0]] += week.values()[0]
+
+    response = {
+        "total" : total,
+        "weekly" : weekly
+    }
+
+    return jsonify(response)
+
 
 @app.route('/api/projects')
 @app.route('/api/projects/<int:id>')

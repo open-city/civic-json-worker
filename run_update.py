@@ -935,8 +935,6 @@ def get_event_group_identifier(events_url):
 
 def get_attendance(peopledb, organization_url, organization_name):
     ''' Get the attendance of an org from the peopledb '''
-    # cfapi_url = "https://www.codeforamerica.org/api/organizations/"
-    # organization_url = cfapi_url + organization.api_id()
 
     # Total attendance
     q = ''' SELECT COUNT(*) AS total FROM attendance
@@ -1031,6 +1029,7 @@ def main(org_name=None, org_sources=None):
                     org_info['longitude'] = None
 
             organization = save_organization_info(db.session, org_info)
+
             organization_names.add(organization.name)
             # flush the organization
             db.session.flush()
