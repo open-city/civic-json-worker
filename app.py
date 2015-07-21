@@ -144,7 +144,7 @@ class Organization(db.Model):
         self.keep = True
         self.last_updated = last_updated
         self.started_on = unicode(date.today())
-        self.id = '-'.join(name.split())
+        self.id = safe_name(raw_name(name))
 
     def current_events(self):
         '''

@@ -17,7 +17,7 @@ from dateutil.tz import tzoffset
 import feedparser
 
 from feeds import get_first_working_feed_link
-from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name
+from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name, safe_name, raw_name
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
@@ -785,6 +785,10 @@ def save_organization_info(session, org_dict):
         new_organization = Organization(**org_dict)
         session.add(new_organization)
         return new_organization
+
+    # Check that the id exists
+    if not existing_org.id:
+        existing_org.id = safe_name(raw_name(existing_org.name))
 
     # Timestamp the existing organization
     existing_org.last_updated = time()
