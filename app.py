@@ -954,11 +954,11 @@ def get_all_attendance():
     weekly = {}
     for org_attendance in all_attendance:
         total += org_attendance.total
-        for week in org_attendance.weekly:
-            if week.keys()[0] not in weekly.keys():
-                weekly[week.keys()[0]] = week.values()[0]
+        for week in org_attendance.weekly.keys():
+            if week in weekly.keys():
+                weekly[week] += org_attendance.weekly[week]
             else:
-                weekly[week.keys()[0]] += week.values()[0]
+                weekly[week] = org_attendance.weekly[week]
 
     response = {
         "total" : total,
