@@ -111,6 +111,7 @@ class TestOrganizations(IntegrationTest):
         assert isinstance(response['latitude'], float)
         assert isinstance(response['longitude'], float)
         assert isinstance(response['name'], unicode)
+        assert isinstance(response['id'], unicode)
         assert isinstance(response['current_projects'], list)
         assert isinstance(response['projects_list_url'], unicode)
         assert isinstance(response['rss'], unicode)
@@ -143,6 +144,7 @@ class TestOrganizations(IntegrationTest):
         assert isinstance(response['objects'][0]['website'], unicode)
         assert isinstance(response['objects'][0]['last_updated'], int)
         assert isinstance(response['objects'][0]['started_on'], unicode)
+        assert isinstance(response['objects'][0]['id'], unicode)
 
     def test_org_projects_dont_include_tsv(self):
         OrganizationFactory(name=u"Code for San Francisco")

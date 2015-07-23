@@ -125,6 +125,7 @@ class Organization(db.Model):
     started_on = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
+    id = db.Column(db.Unicode())
 
     # Relationships
     # can contain events, stories, projects (these relationships are defined in the child objects)
@@ -143,6 +144,7 @@ class Organization(db.Model):
         self.keep = True
         self.last_updated = last_updated
         self.started_on = unicode(date.today())
+        self.id = safe_name(raw_name(name))
 
     def current_events(self):
         '''

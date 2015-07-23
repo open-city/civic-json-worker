@@ -86,6 +86,7 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
     },
     ...
   ],
+  "id" : "Code-for-San-Francisco",
   "events_url": "http://www.meetup.com/Code-for-San-Francisco-Civic-Hack-Night/",
   "last_updated": 1409087294,
   "latitude": 37.7749,
@@ -283,6 +284,9 @@ python -c 'from app import db; db.create_all()'
 ```
 createdb civic_json_worker_test
 python -c 'from app import db; db.create_all()'
+
+creatdb peopledbtest
+psql peopledbtest < test/peopledbtest.pgsql
 ```
 
 `python run_update_test.py` to test the run_update process.
