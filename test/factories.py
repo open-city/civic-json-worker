@@ -86,8 +86,8 @@ class AttendanceFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Attendance
     FACTORY_SESSION = db.session
 
-    organization_name = "Code for San Francisco"
-    organization_url = "https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
+    organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
+    organization_url = "https://www.codeforamerica.org/api/organizations/" + str(factory.LazyAttribute(lambda e: OrganizationFactory().name)).replace(" ","-")
     total = randint(1,1000)
     weekly = {
         "2014 01" : randint(1,50),

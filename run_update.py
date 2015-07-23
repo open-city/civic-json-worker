@@ -19,8 +19,7 @@ import feedparser
 
 from feeds import get_first_working_feed_link
 
-from app import db, Project, Organization, Story, Event, Error, Issue,
-                Label, is_safe_name, safe_name, raw_name, Attendance
+from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name, safe_name, raw_name, Attendance
 
 
 # Logging Setup
@@ -957,8 +956,7 @@ def get_attendance(peopledb, organization_url, organization_name):
             GROUP BY week '''
     peopledb.execute(q,(organization_url,))
     weekly = peopledb.fetchall()
-    weekly = [ {week["week"] : int(week["total"]) } for week in weekly ]
-    weekly = sorted(weekly, key=lambda week: week.keys(), reverse=True)
+    weekly = { week["week"] : int(week["total"]) for week in weekly }
 
     attendance = {
         "organization_name" : organization_name,

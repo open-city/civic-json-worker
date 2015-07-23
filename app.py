@@ -905,14 +905,23 @@ def get_orgs_attendance(organization_name):
 
     # Get that organization's attendance
     attendance = Attendance.query.filter_by(organization_name=organization.name).first()
+
     weekly = {}
-    for week in attendance.weekly:
-        if week.keys()[0] not in weekly.keys():
-            weekly[week.keys()[0]] = week.values()[0]
+    for week in attendance.weekly.keys():
+        if week in weekly.keys():
+            weekly[week] += attendance.weekly[week]
         else:
-            weekly[week.keys()[0]] += week.values()[0]
+            weekly[week] = attendance.weekly[week]
     attendance.weekly = weekly
-    return jsonify(attendance)
+
+    attendance_response = {
+        "organization_name" : attendance.organization_name,
+        "cfapi_url" : attendance.organization_url,
+        "total" : attendance.total,
+        "weekly" : attendance.weekly
+    }
+
+    return json.dumps(attendance_response)
 
 
 def find(lst, key, value):
@@ -930,11 +939,11 @@ def get_all_orgs_attendance():
 
     for org_attendance in all_attendance:
         weekly = {}
-        for week in org_attendance.weekly:
-            if week.keys()[0] not in weekly.keys():
-                weekly[week.keys()[0]] = week.values()[0]
+        for week in org_attendance.weekly.keys():
+            if week in weekly.keys():
+                weekly[week] += org_attendance.weekly[week]
             else:
-                weekly[week.keys()[0]] += week.values()[0]
+                weekly[week] = org_attendance.weekly[week]
         attendance_response = {
             "organization_name" : org_attendance.organization_name,
             "cfapi_url" : org_attendance.organization_url,
