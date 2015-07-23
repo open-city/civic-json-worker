@@ -1,12 +1,12 @@
 # -*- coding: utf8 -*-
 
-from random import choice
+from random import choice, randint
 from datetime import datetime, timedelta
 
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
 
-from app import Organization, Project, Event, Story, db, Issue, Label
+from app import Organization, Project, Event, Story, db, Issue, Label, Attendance
 
 
 class OrganizationFactory(SQLAlchemyModelFactory):
@@ -81,3 +81,17 @@ class LabelFactory(SQLAlchemyModelFactory):
     name = factory.Sequence(lambda n: u'enhancement {0}'.format(n))
     url = factory.Sequence(lambda n: u'https://api.github.com/repos/codeforamerica/cfapi/labels/enhancement{0}'.format(n))
     color = factory.Sequence(lambda n: u'FFF {0}'.format(n))
+
+class AttendanceFactory(SQLAlchemyModelFactory):
+    FACTORY_FOR = Attendance
+    FACTORY_SESSION = db.session
+
+    organization_name = "Code for San Francisco"
+    organization_url = "https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
+    total = randint(1,1000)
+    weekly = {
+        "2014 01" : randint(1,50),
+        "2014 02" : randint(1,50),
+        "2015 01" : randint(1,50),
+        "2015 02" : randint(1,50)
+    }
