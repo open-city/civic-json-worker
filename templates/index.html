@@ -177,7 +177,7 @@
   "features": [
     {
       "type": "Feature",
-      "id": "Open_Oakland",
+      "id": "Open-Oakland",
       "geometry": {
         "type": "Point",
         "coordinates": [ -122.2711, 37.8044 ]
@@ -212,6 +212,8 @@
                 <a id="organization-properties" href="#organization-properties">¶</a>
             </h4>
             <dl>
+                <dt>id</dt>
+                <dd>Code for America API id</dd>
                 <dt>name</dt>
                 <dd>Offical name.</dd>
                 <dt>website</dt>
@@ -251,28 +253,29 @@
         </div>
         <div class="layout-minim">
             <h4>Sample Request</h4>
-            <p><code><a href="{{ api_base }}/api/organizations/Open_Oakland">{{ api_base }}/api/organizations/Open_Oakland</a></code></p>
+            <p><code><a href="{{ api_base }}/api/organizations/Open-Oakland">{{ api_base }}/api/organizations/Open-Oakland</a></code></p>
             <h4>Sample Response</h4>
             <pre><code>{
   "type": "Brigade",
   "name": "Open Oakland",
+  "id" : "Open-Oakland",
   "website": "http://openoakland.org/",
   "city": "Oakland, CA",
   "latitude": 37.8044,
   "longitude": -122.2711,
-  "api_url": "{{ api_base }}/api/organizations/Open_Oakland",
+  "api_url": "{{ api_base }}/api/organizations/Open-Oakland",
   "started_on": "2012-12-25",
 
   "current_events": [ … ],
-  "all_events": "{{ api_base }}/api/organizations/Open_Oakland/events",
+  "all_events": "{{ api_base }}/api/organizations/Open-Oakland/events",
   "events_url": "http://www.meetup.com/OpenOakland/",
 
   "current_projects": [ … ],
-  "all_projects": "{{ api_base }}/api/organizations/Open_Oakland/projects",
+  "all_projects": "{{ api_base }}/api/organizations/Open-Oakland/projects",
   "projects_list_url": "https://docs.google.com/spreadsheet/pub?key=0AgNZYWcpRBQ7dHRnTUJtd3QtYkR5bk5lUmpNMDlpSEE&amp;single=true&amp;gid=0&amp;output=csv",
 
   "current_stories": [ … ],
-  "all_stories": "{{ api_base }}/api/organizations/Open_Oakland/stories",
+  "all_stories": "{{ api_base }}/api/organizations/Open-Oakland/stories",
   "rss": ""
 }</code></pre>
         </div>
