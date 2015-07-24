@@ -2,6 +2,8 @@ language: python
 install: pip install -r requirements.txt --use-mirrors
 before_script:
 - psql -c 'create database civic_json_worker_test;' -U postgres
+- psql -c 'create database peopledbtest;' -U postgres
+- psql -c '\i test/peopledbtest.pgsql' -U postgres
 script:
 - python run_update_test.py
 - green test/integration -vvv --run-coverage
