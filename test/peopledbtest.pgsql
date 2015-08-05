@@ -11,5 +11,5 @@ CREATE TABLE attendance
     event_name          TEXT,
     
     -- Sometimes people answer informational questions when they check in.
-    extras              JSON
+    extras              TEXT
 );
