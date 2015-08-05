@@ -10,6 +10,7 @@ from urlparse import urlparse
 from random import shuffle
 from argparse import ArgumentParser
 from time import time
+from datetime import datetime
 from re import match, sub
 from psycopg2 import connect, extras
 
@@ -957,6 +958,10 @@ def get_attendance(peopledb, organization_url, organization_name):
     peopledb.execute(q,(organization_url,))
     weekly = peopledb.fetchall()
     weekly = { week["week"] : int(week["total"]) for week in weekly }
+
+    this_week = datetime.strftime(datetime.now(), "%Y %U")
+    if this_week not in weekly.keys():
+        weekly[this_week] = 0
 
     attendance = {
         "organization_name" : organization_name,
