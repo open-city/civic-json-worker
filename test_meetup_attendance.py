@@ -27,14 +27,14 @@ class MeetUpAttendanceTests(unittest.TestCase):
                 {
                     "results" : [
                         {
-                            "name" : "Hacks and Hackers",
+                            "urlname" : "hacksandhackers",
                             "self": {
                                 "actions": [ ]
                             },
                             "id": 1552364
                         },
                         {
-                            "name": "Code for Denver",
+                            "urlname": "CodeForDenver",
                             "self": {
                                 "role": "Organizer",
                                 "actions": [ "member_approval" ]
@@ -60,17 +60,17 @@ class MeetUpAttendanceTests(unittest.TestCase):
         ''' Test getting a list of all the groups we have access for '''
 
         with HTTMock(self.response_content):
-            groups = self.meetupclient.get_our_meetup_groups()
+            groups = self.meetupclient.fetch_groups()
             self.assertTrue(len(groups) == 1)
-            self.assertTrue(groups[0] == 6104442)
+            self.assertTrue(groups[0]["id"] == 6104442)
 
 
     def test_get_last_weeks_events(self):
         ''' Test getting the events from the last week '''
         with HTTMock(self.response_content):
-            groupsids = self.meetupclient.get_our_meetup_groups()
-            for groupid in groupsids:
-                events = self.meetupclient.fetch_events(groupid,time_frame="-1w,")
+            groups = self.meetupclient.fetch_groups()
+            for group in groups:
+                events = self.meetupclient.fetch_events(group["id"],time_frame="-1w,")
                 self.assertTrue(len(events) == 1)
                 self.assertTrue(events[0]["name"] == "Project Night")
                 self.assertTrue(events[0]["id"] == "fhfqjlytlbnb")

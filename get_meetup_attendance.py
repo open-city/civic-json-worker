@@ -24,25 +24,25 @@ class MeetupClient(object):
         self.group_urlname = group_urlname
         self.api_key = api_key
 
-    def get_our_meetup_groups(self):
+    def fetch_groups(self):
         ''' Get a list of groups we have permission to get attendance from '''
-        # Found right url to use at https://github.com/meetup/api/issues/81#issuecomment-94778457
 
+        # Found right url to use at https://github.com/meetup/api/issues/81#issuecomment-94778457
         url = 'https://api.meetup.com/2/groups'
         params = {
             'member_id' : 'self',
             'fields' : 'self',
-            'only' : 'id,name,self',
+            'only' : 'id,urlname,self',
             'key': self.api_key
         }
 
         all_groups = requests.get(url, params=params).json()
-        organizer_group_ids = []
+        organizer_groups = []
         for group in all_groups["results"]:
             if "member_approval" in group["self"]["actions"]:
-                organizer_group_ids.append(group["id"])
+                organizer_groups.append(group)
 
-        return organizer_group_ids
+        return organizer_groups
 
 
     def fetch_events(self, group_id=None, time_frame=None, url=None):
