@@ -139,7 +139,7 @@ class MeetUpAttendanceTests(unittest.TestCase):
         with HTTMock(self.response_content):
             groups = self.meetupclient.fetch_groups()
             for group in groups:
-                events = self.meetupclient.fetch_events(group["id"],time_frame="-1w,")
+                events = self.meetupclient.fetch_events(group["id"])
                 self.assertTrue(len(events) == 1)
                 self.assertTrue(events[0]["name"] == "Project Night")
                 self.assertTrue(events[0]["id"] == "fhfqjlytlbnb")
@@ -150,7 +150,7 @@ class MeetUpAttendanceTests(unittest.TestCase):
         with HTTMock(self.response_content):
             groups = self.meetupclient.fetch_groups()
             for group in groups:
-                events = self.meetupclient.fetch_events(group,time_frame="-1w,")
+                events = self.meetupclient.fetch_events(group["id"])
                 for event in events:
                     attendees = self.meetupclient.fetch_attendees(group["urlname"], event["id"])
                     self.assertTrue(len(attendees) == 2)
@@ -163,7 +163,7 @@ class MeetUpAttendanceTests(unittest.TestCase):
             groups = self.meetupclient.fetch_groups()
             for group in groups:
                 cfapi_org = self.cfapiclient.get_cfapi_org_from_meetup_urlname(group["urlname"])
-                events = self.meetupclient.fetch_events(group,time_frame="-1w,")
+                events = self.meetupclient.fetch_events(group["id"])
                 for event in events:
                     attendees = self.meetupclient.fetch_attendees(group["urlname"], event["id"])
                     for attendee in attendees:

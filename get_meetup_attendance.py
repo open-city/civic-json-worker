@@ -45,7 +45,7 @@ class MeetupClient(object):
         return organizer_groups
 
 
-    def fetch_events(self, group_id=None, time_frame=None, url=None):
+    def fetch_events(self, group_id, time_frame="-1d", url=None):
         """ Fetch recent Brigade events from Meetup
 
         :param time_frame: Period of time to fetch events from. Matchs Meetup's
@@ -69,6 +69,9 @@ class MeetupClient(object):
         """
 
         if url is None:
+            if group_id is None or type(group_id) != int:
+                raise ValueError('group_id must be provided if not providing '
+                                 'url') 
 
             # Using Meetup V2 Events API
             # http://www.meetup.com/meetup_api/docs/2/events/
