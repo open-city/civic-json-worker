@@ -41,7 +41,14 @@ class MeetUpAttendanceTests(unittest.TestCase):
                                 "actions": [ "member_approval" ]
                             },
                             "id": 6104442
-
+                        },
+                        {
+                            "urlname": "TESTGROUP",
+                            "self": {
+                                "role": "Organizer",
+                                "actions": [ "member_approval" ]
+                            },
+                            "id": 111111
                         }
                     ]
                 } ''')
@@ -57,7 +64,7 @@ class MeetUpAttendanceTests(unittest.TestCase):
                 } ''')
 
         # Meetup api /attendance
-        if 'https://api.meetup.com/CodeForDenver/events/fhfqjlytlbnb/attendance' in url.geturl():
+        if '/attendance' in url.geturl():
             return response(200, ''' [ {"status": "attended", "member": { "id": 111111, "name": "TESTNAME"}, "rsvp": {"response": "yes", "guests": 0}}, {"status": "attended", "member": { "id": 222222, "name": "TESTNAME 2"}, "rsvp": {"response": "yes", "guests": 0}}] ''')
 
         # cfapi all orgs list
@@ -96,10 +103,18 @@ class MeetUpAttendanceTests(unittest.TestCase):
                         "website": "http://www.codefordenver.org/"
                       }, 
                       "type": "Feature"
-                    }]
+                    },
+                    {
+                      "properties": {
+                        "id": "TESTGROUP",
+                        "events_url": "http://www.meetup.com/TESTGROUP/",
+                        "api_url": "http://www.codeforamerica.org/api/organizations/TESTGROUP"
+                      }
+                    }
+                    ]
                 } ''')
 
-        if url.geturl() == 'https://www.codeforamerica.org/brigade/Code-for-Denver/checkin/':
+        if '/checkin/' in url.geturl():
             return response(200, ''' <p id="flash"><small style="color:#00a175" class="note"><i class="icon-checkmark"></i>Thanks for volunteering</small></p>''')
 
 
@@ -107,8 +122,16 @@ class MeetUpAttendanceTests(unittest.TestCase):
         ''' Test getting a list of all the groups we have access for '''
         with HTTMock(self.response_content):
             groups = self.meetupclient.fetch_groups()
-            self.assertTrue(len(groups) == 1)
+            self.assertTrue(len(groups) == 2)
             self.assertTrue(groups[0]["id"] == 6104442)
+
+
+    def test_get_specific_meetup_group(self):
+        ''' Test getting an individual meetup group '''
+        with HTTMock(self.response_content):
+            groups = self.meetupclient.fetch_groups(meetup_name="TESTGROUP")
+            self.assertTrue(len(groups) == 1)
+            self.assertTrue(groups[0]["id"] == 111111)
 
 
     def test_get_last_weeks_events(self):

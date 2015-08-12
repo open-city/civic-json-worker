@@ -10,21 +10,16 @@ class MeetupClient(object):
     """Very basic client class for fetching event/attendee data.
     """
 
-    def __init__(self, api_key, group_urlname=None):
+    def __init__(self, api_key=None):
         """
-        :param group_urlname: Brigade identifier used in Meetup URLs, e.g.
-            OpenTwinCities. Required if `url` is not provided.
         :param api_key: Key used to authenticate the request to Meetup's API.
             See https://secure.meetup.com/meetup_api/key/. Required if `url` is
             not provided.
         """
-
-        if api_key is None:
-            raise ValueError('api_key must be set')
-        self.group_urlname = group_urlname
         self.api_key = api_key
 
-    def fetch_groups(self):
+
+    def fetch_groups(self, meetup_name=None):
         ''' Get a list of groups we have permission to get attendance from '''
 
         # Found right url to use at https://github.com/meetup/api/issues/81#issuecomment-94778457
@@ -37,8 +32,13 @@ class MeetupClient(object):
         }
 
         all_groups = requests.get(url, params=params).json()
+        # Get the list of groups we have permission for
         organizer_groups = []
         for group in all_groups["results"]:
+            # If a meetup_name is given, just return that group
+            if meetup_name:
+                if meetup_name == group["urlname"]:
+                    return [group]
             if "member_approval" in group["self"]["actions"]:
                 organizer_groups.append(group)
 
