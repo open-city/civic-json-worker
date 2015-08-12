@@ -93,7 +93,7 @@ class MeetupClient(object):
         return events
 
 
-    def fetch_attendees(self, event_id=None, url=None):
+    def fetch_attendees(self, group_urlname=None, event_id=None, url=None):
         """Fetch the attendees of a specific event
 
         :param event_id: Meetup ID string for the event to fetch attendees of.
@@ -122,7 +122,7 @@ class MeetupClient(object):
             url = (
                 'https://api.meetup.com/%(group_urlname)s'
                 '/events/%(event_id)s/attendance' % {
-                    'group_urlname': self.group_urlname,
+                    'group_urlname': group_urlname,
                     'event_id': event_id
                 }
             )

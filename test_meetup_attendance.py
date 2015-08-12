@@ -55,6 +55,10 @@ class MeetUpAttendanceTests(unittest.TestCase):
                     }
                 } ''')
 
+        # Meetup api /attendance
+        if 'https://api.meetup.com/CodeForDenver/events/fhfqjlytlbnb/attendance' in url.geturl():
+            return response(200, ''' [ {"status": "attended", "member": { "id": 111111, "name": "TESTNAME"}, "rsvp": {"response": "yes", "guests": 0}}, {"status": "attended", "member": { "id": 222222, "name": "TESTNAME 2"}, "rsvp": {"response": "yes", "guests": 0}}] ''')
+
 
     def test_get_our_meetup_groups(self):
         ''' Test getting a list of all the groups we have access for '''
@@ -74,6 +78,18 @@ class MeetUpAttendanceTests(unittest.TestCase):
                 self.assertTrue(len(events) == 1)
                 self.assertTrue(events[0]["name"] == "Project Night")
                 self.assertTrue(events[0]["id"] == "fhfqjlytlbnb")
+
+
+    def test_get_attendance(self):
+        ''' Test getting attendance from one event '''
+        with HTTMock(self.response_content):
+            groups = self.meetupclient.fetch_groups()
+            for group in groups:
+                events = self.meetupclient.fetch_events(group,time_frame="-1w,")
+                for event in events:
+                    attendees = self.meetupclient.fetch_attendees(group["urlname"], event["id"])
+                    self.assertTrue(len(attendees) == 2)
+                    self.assertTrue("name" in attendees[0]["member"].keys())
 
 
 
