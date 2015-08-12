@@ -4,7 +4,7 @@ import logging
 import os
 import requests
 from argparse import ArgumentParser
-
+from urlparse import urlparse
 
 class MeetupClient(object):
     """Very basic client class for fetching event/attendee data.
@@ -77,7 +77,7 @@ class MeetupClient(object):
                 'group_id': group_id,
                 'time': time_frame,
                 'status': 'past',
-                'only' : 'id,name',
+                'only' : 'id,name,time',
                 'page': 20,
                 'key': self.api_key
             }
@@ -148,27 +148,62 @@ class CfAPIClient(object):
     """Very basic client class for pushing attendee data.
     """
 
-    def __init__(self, org_id):
-        self.org_id = org_id
+    def __init__(self):
+        self.cfapi_meetup_matches = self.match_org_to_meetup()
 
-    @property
-    def org_url(self):
-        return (
-            'https://www.codeforamerica.org/api/organizations/' + self.org_id
-        )
+    # @property
+    # def org_url(self):
+    #     return (
+    #         'https://www.codeforamerica.org/api/organizations/' + self.org_id
+    #     )
 
-    def push_attendee(self, attendee):
+    def match_org_to_meetup(self):
+        ''' Get a list of org_ids and meetup_urlnames '''
+        orgs = requests.get('https://www.codeforamerica.org/api/organizations.geojson').json()
+        cfapi_meetup_matches = []
+        for org in orgs["features"]:
+            _, host, path, _, _, _ = urlparse(org["properties"]["events_url"])
+            if 'meetup.com' in host:
+                cfapi_meetup = {
+                    "cfapi_org" : {
+                        "url" : org["properties"]["api_url"].replace("http://","https://"),
+                        "id" : org["properties"]["id"]
+                    },
+                    "meetup_urlname" : path.replace("/","")
+                }
+                cfapi_meetup_matches.append(cfapi_meetup)
+
+        return cfapi_meetup_matches
+
+
+    def get_cfapi_org_from_meetup_urlname(self, group_urlname):
+        ''' Get the cfapi_org_url from a groups meetup urlname '''
+        for org in self.cfapi_meetup_matches:
+            if org["meetup_urlname"] == group_urlname:
+                return org["cfapi_org"]
+
+
+    def format_attendee(self, cfapi_org, event, attendee):
+        ''' Format attendee '''
+        expected_format = {
+            "name" : attendee["member"]["name"],
+            "event" : event["name"],
+            "date" : str(datetime.utcfromtimestamp(event['time']/1000.0)),
+            "cfapi_url" : cfapi_org["url"]
+        }
+        return expected_format
+
+
+    def push_attendee(self, cfapi_org, attendee):
         url = (
-            'https://www.codeforamerica.org/brigade/%(org_id)s/checkin/' %
+            'https://www.codeforamerica.org/brigade/%(cfapi_org_id)s/checkin/' %
             {
-                'org_id': self.org_id
+                'cfapi_org_id': cfapi_org["id"]
             }
         )
-        attendee['cfapi_url'] = self.org_url
-        logger.info('Will push this to ' + url)
-        logger.info(attendee)
 
         response = requests.post(url, data=attendee)
+        return response
 
 
 parser = ArgumentParser(description=''' Pulling attendance data from Meetup ''')
