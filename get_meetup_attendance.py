@@ -45,23 +45,21 @@ class MeetupClient(object):
         return organizer_group_ids
 
 
-    def fetch_events(self, time_frame=None, url=None):
-        """Fetch recent Brigade events from Meetup
+    def fetch_events(self, group_id=None, time_frame=None, url=None):
+        """ Fetch recent Brigade events from Meetup
 
         :param time_frame: Period of time to fetch events from. Matchs Meetup's
             time format: `<beginning>,<end>`, with either being absolute time
             in milliseconds since the Unix epoch, or relative dates e.g. `1m`
-            or `-1w`. Required if `url` is not provided.
-        :param url: If provided, the url that will be called to fetch events.
-            If not provided, then the url will be constructed based on
-            `time_frame`, `group_urlname`, and `api_key`.
+            or `-1w`. 
+
         :return: List of events
         :rtype: List of dictionaries
 
         Usage::
             # Fetch events from the last week
             meetup_client = MeetupCient('OpenTwinCities', 'OurKey')
-            events = meetup_client.fetch_events(-1w,')
+            events = meetup_client.fetch_events('-1w,')
             for event in events:
                 print "Event ID:" + event['id']
                 print "Event Name:" + event['name']
@@ -71,16 +69,15 @@ class MeetupClient(object):
         """
 
         if url is None:
-            if time_frame is None:
-                raise ValueError('time_frame must be provided if not '
-                                 'providing url')
+
             # Using Meetup V2 Events API
             # http://www.meetup.com/meetup_api/docs/2/events/
             url = 'https://api.meetup.com/2/events'
             params = {
-                'group_urlname': self.group_urlname,
+                'group_id': group_id,
                 'time': time_frame,
                 'status': 'past',
+                'only' : 'id,name',
                 'page': 20,
                 'key': self.api_key
             }
@@ -94,6 +91,7 @@ class MeetupClient(object):
         if r['meta']['next']:
             events += self.fetch_events(url=r['meta']['next'])
         return events
+
 
     def fetch_attendees(self, event_id=None, url=None):
         """Fetch the attendees of a specific event

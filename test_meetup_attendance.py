@@ -11,7 +11,8 @@ class MeetUpAttendanceTests(unittest.TestCase):
 
 
     def setUp(self):
-        pass
+        from get_meetup_attendance import MeetupClient
+        self.meetupclient = MeetupClient(os.environ["MEETUP_KEY"])
 
 
     def tearDown(self):
@@ -19,7 +20,7 @@ class MeetUpAttendanceTests(unittest.TestCase):
 
 
     def response_content(self, url, request):
-        print url.geturl()
+
         # Meetup api /groups
         if 'https://api.meetup.com/2/groups' in url.geturl():        
             return response(200, '''
@@ -44,15 +45,37 @@ class MeetUpAttendanceTests(unittest.TestCase):
                     ]
                 } ''')
 
+        # Meetup api /events
+        if 'https://api.meetup.com/2/events' in url.geturl():        
+            return response(200, '''  
+                { "results" : 
+                    [ { "name" : "Project Night", "id": "fhfqjlytlbnb" } ],
+                    "meta" : {
+                        "next" : null
+                    }
+                } ''')
+
 
     def test_get_our_meetup_groups(self):
         ''' Test getting a list of all the groups we have access for '''
-        from get_meetup_attendance import MeetupClient
-        meetup = MeetupClient(os.environ["MEETUP_KEY"])
+
         with HTTMock(self.response_content):
-            groups = meetup.get_our_meetup_groups()
+            groups = self.meetupclient.get_our_meetup_groups()
             self.assertTrue(len(groups) == 1)
             self.assertTrue(groups[0] == 6104442)
+
+
+    def test_get_last_weeks_events(self):
+        ''' Test getting the events from the last week '''
+        with HTTMock(self.response_content):
+            groupsids = self.meetupclient.get_our_meetup_groups()
+            for groupid in groupsids:
+                events = self.meetupclient.fetch_events(groupid,time_frame="-1w,")
+                self.assertTrue(len(events) == 1)
+                self.assertTrue(events[0]["name"] == "Project Night")
+                self.assertTrue(events[0]["id"] == "fhfqjlytlbnb")
+
+
 
     # Get all the meetup groups that we have permission to gather attendance for
     # for each group
