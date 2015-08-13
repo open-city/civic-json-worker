@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 from datetime import datetime
-import logging
 import os
 import requests
 from argparse import ArgumentParser
@@ -45,7 +44,7 @@ class MeetupClient(object):
         return organizer_groups
 
 
-    def fetch_events(self, group_id, time_frame="-1d", url=None):
+    def fetch_events(self, group_id=None, time_frame=None, url=None):
         """ Fetch recent Brigade events from Meetup
 
         :param time_frame: Period of time to fetch events from. Matchs Meetup's
@@ -81,7 +80,6 @@ class MeetupClient(object):
                 'time': time_frame,
                 'status': 'past',
                 'only' : 'id,name,time',
-                'page': 20,
                 'key': self.api_key
             }
         else:
@@ -216,43 +214,25 @@ parser.add_argument('--time', dest='time_frame', help='How far back to update. D
 
 if __name__ == '__main__':
 
-    logger = logging.getLogger('CfAPI_Attendance_Sync')
-    logger.setLevel(logging.INFO)
-
     args = parser.parse_args()
-    time_frame = args.time_frame or '-1w'
-    api_key = os.environ['MEETUP_KEY']
+    time_frame = args.time_frame or "-1d,"
+    meetup_name = args.meetup_name or None
+    api_key = os.environ['MEETUP_KEY'] or None
 
-    # Get all the meetup groups that we have permission to gather attendance for
-    # for each group
-        # get event ids for the last week
-        # for each event
-            # get attendance
-                # for each attendee
-                    # push to the checkin tool
+    meetupclient = MeetupClient(api_key=api_key)
+    cfapiclient = CfAPIClient()
 
-
-
-    # cfapi_client = CfAPIClient(cfapi_org_id)
-    # meetup_client = MeetupClient(group_urlname, api_key)
-    # events = meetup_client.fetch_events(time_frame)
-    # logging.info('Fetched %d events from Meetup' % len(events))
-    # for event in events:
-    #     print event
-    #     event_name = event['name']
-    #     event_date = str(datetime.utcfromtimestamp(event['time']/1000.0))
-    #     logger.info("Event ID: " + event['id'])
-    #     logger.info("Event Name: " + event_name)
-    #     logger.info("Event DateTime: " + event_date)
-    #     attendees = meetup_client.fetch_attendees(event['id'])
-    #     print attendees
-    #     logger.info("\tFetc hed %d attendees" % len(attendees))
-    #     for attendee in attendees:
-    #         attendee_name = attendee['member']['name']
-    #         logger.info("\tAttendee Name: " + attendee_name)
-    #         cfapi_client.push_attendee({
-    #             'name': attendee_name,
-    #             'email' : 'test@test.com',
-    #             'event': event_name,
-    #             'date': event_date
-    #         })
+    print "fetching groups: " + str(meetup_name)
+    groups = meetupclient.fetch_groups(meetup_name)
+    for group in groups:
+        print "fetching events for: " + group["urlname"]
+        cfapi_org = cfapiclient.get_cfapi_org_from_meetup_urlname(group["urlname"])
+        events = meetupclient.fetch_events(group["id"],time_frame=time_frame)
+        for event in events:
+            print "fetching attendees from " + event["name"]
+            attendees = meetupclient.fetch_attendees(group["urlname"], event["id"])
+            for attendee in attendees:
+                attendee = cfapiclient.format_attendee(cfapi_org, event, attendee)
+                print "posting " + attendee["name"]
+                response = cfapiclient.push_attendee(cfapi_org, attendee)
+                print response.status_code
