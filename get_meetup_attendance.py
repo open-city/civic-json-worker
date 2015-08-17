@@ -207,9 +207,9 @@ class CfAPIClient(object):
         return response
 
 
-parser = ArgumentParser(description=''' Pulling attendance data from Meetup ''')
-parser.add_argument('--meetup-name', dest='meetup_name', help='A single Meetup group to update')
-parser.add_argument('--time', dest='time_frame', help='How far back to update. Default is "-1w"')
+parser = ArgumentParser(prefix_chars="+", description=''' Pulling attendance data from Meetup ''')
+parser.add_argument('++meetup+name', dest='meetup_name', help='A single Meetup group to update.')
+parser.add_argument('++time', dest='time_frame', help='How far back to update. Default is "-1d,"')
 
 
 if __name__ == '__main__':
