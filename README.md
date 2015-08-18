@@ -105,7 +105,7 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
 ### History
 The need for a way to show off good civic tech projects was apparent. Several Brigades had all started working on ways to track their projects. They were working separately on the same idea at the same time. The CFAPI is a generalization of the great work done by:
 
-<a href="http://opencityapps.org"><img src="http://opengovhacknight.org/images/sponsors/open-city-sm.jpg" alt="Open City"> Open City </a>
+<a href="http://opencityapps.org"><img src="http://chihacknight.org/images/sponsors/open-city-sm.jpg" alt="Open City"> Open City </a>
 
 <a href="http://betanyc.org"><img src="http://betanyc.us/images/apple70Gray.png" alt="Beta NYC"> Beta NYC </a>
 
