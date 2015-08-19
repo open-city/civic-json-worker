@@ -49,8 +49,8 @@ class EventFactory(SQLAlchemyModelFactory):
     location = u'155 9th St., San Francisco, CA'
 
     now = factory.LazyAttribute(lambda o: datetime.utcnow())
-    start_time_notz = factory.LazyAttribute(lambda o: o.now + timedelta(hours=10))
-    end_time_notz = factory.LazyAttribute(lambda o: o.now + timedelta(hours=12))
+    start_time_notz = factory.LazyAttribute(lambda o: o.now - timedelta(hours=10))
+    end_time_notz = factory.LazyAttribute(lambda o: o.now - timedelta(hours=12))
     utc_offset = -28800
     created_at = factory.LazyAttribute(lambda o: o.now)
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)

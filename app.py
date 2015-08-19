@@ -680,6 +680,30 @@ def get_query_params(args):
     return filters, urlencode(filters)
 
 
+def build_rsvps_response(events):
+    ''' Arrange and organize rsvps from a list of event objects '''
+    rsvps = {
+        "total" : 0,
+        "weekly" : {}
+    }
+    for event in events:
+        event = event.asdict()
+        if event["rsvps"]:
+            # 2014-04-30 18:30:00 -0700
+            # Just compare dates
+            event_date = event["start_time"][:10]
+            event_date = datetime.strptime(event_date, "%Y-%m-%d")
+            if datetime.today() > event_date:
+                week = datetime.strftime(event_date, "%Y %W")
+                rsvps["total"] += event["rsvps"]
+                if rsvps["weekly"].get(week):
+                    rsvps["weekly"][week] += event["rsvps"]
+                else:
+                    rsvps["weekly"][week] = event["rsvps"]
+
+    return rsvps
+
+
 @app.route('/api/organizations')
 @app.route('/api/organizations/<name>')
 def get_organizations(name=None):
@@ -790,28 +814,10 @@ def gather_orgs_rsvps(organization_name=None):
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
         return "Organization not found", 404
-    all_events = Event.query.filter(Event.organization_name == organization.name).all()
-    all_rsvps = {
-        "organization_cfapi_url" : organization.api_url(),
-        "total" : 0,
-        "weekly" : {}
-    }
-    for event in all_events:
-        event = event.asdict()
-        if event["rsvps"]:
-            # 2014-04-30 18:30:00 -0700
-            # Just compare dates
-            event_date = event["start_time"][:10]
-            event_date = datetime.strptime(event_date, "%Y-%m-%d")
-            if datetime.today() > event_date:
-                week = datetime.strftime(event_date, "%Y %W")
-                all_rsvps["total"] += event["rsvps"]
-                if all_rsvps["weekly"].get(week):
-                    all_rsvps["weekly"][week] += event["rsvps"]
-                else:
-                    all_rsvps["weekly"][week] = event["rsvps"]
+    orgs_events = Event.query.filter(Event.organization_name == organization.name).all()
+    rsvps = build_rsvps_response(orgs_events)
 
-    return json.dumps(all_rsvps)
+    return json.dumps(rsvps)
 
 
 @app.route("/api/organizations/<organization_name>/stories")
@@ -1230,22 +1236,10 @@ def get_all_past_events():
 @app.route("/api/events/rsvps")
 def gather_all_rsvps():
     ''' All rsvps summarized '''
-    all_events = Event.query.all()
-    all_rsvps = {
-        "total" : 0,
-        "weekly" : {}
-    }
-    for event in all_events:
-        event = event.asdict()
-        if event["rsvps"]:
-            week = get_week_name(event["start_time"])
-            all_rsvps["total"] += event["rsvps"]
-            if all_rsvps["weekly"].get(week):
-                all_rsvps["weekly"][week] += event["rsvps"]
-            else:
-                all_rsvps["weekly"][week] = event["rsvps"]
+    events = Event.query.all()
+    rsvps = build_rsvps_response(events)
 
-    return json.dumps(all_rsvps)
+    return json.dumps(rsvps)
 
 
 @app.route('/api/stories')
