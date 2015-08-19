@@ -680,14 +680,6 @@ def get_query_params(args):
     return filters, urlencode(filters)
 
 
-def get_week_name(timestamp):
-    ''' Get the year and week number from a timestamp '''
-    # 2014-04-30 18:30:00 -0700
-    timestamp = timestamp[:-6]
-    timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
-    return datetime.strftime(timestamp, "%Y %W")
-
-
 @app.route('/api/organizations')
 @app.route('/api/organizations/<name>')
 def get_organizations(name=None):
@@ -807,12 +799,17 @@ def gather_orgs_rsvps(organization_name=None):
     for event in all_events:
         event = event.asdict()
         if event["rsvps"]:
-            week = get_week_name(event["start_time"])
-            all_rsvps["total"] += event["rsvps"]
-            if all_rsvps["weekly"].get(week):
-                all_rsvps["weekly"][week] += event["rsvps"]
-            else:
-                all_rsvps["weekly"][week] = event["rsvps"]
+            # 2014-04-30 18:30:00 -0700
+            # Just compare dates
+            event_date = event["start_time"][:10]
+            event_date = datetime.strptime(event_date, "%Y-%m-%d")
+            if datetime.today() > event_date:
+                week = datetime.strftime(event_date, "%Y %W")
+                all_rsvps["total"] += event["rsvps"]
+                if all_rsvps["weekly"].get(week):
+                    all_rsvps["weekly"][week] += event["rsvps"]
+                else:
+                    all_rsvps["weekly"][week] = event["rsvps"]
 
     return json.dumps(all_rsvps)
 
