@@ -55,6 +55,8 @@ class EventFactory(SQLAlchemyModelFactory):
     created_at = factory.LazyAttribute(lambda o: o.now)
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
 
+    rsvps = 1234
+
 class StoryFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Story
     FACTORY_SESSION = db.session

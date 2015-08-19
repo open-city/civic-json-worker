@@ -497,6 +497,7 @@ class Event(db.Model):
     start_time_notz = db.Column(db.DateTime(False))
     end_time_notz = db.Column(db.DateTime(False))
     utc_offset = db.Column(db.Integer())
+    rsvps = db.Column(db.Integer())
     keep = db.Column(db.Boolean())
 
     # Relationships
@@ -505,7 +506,7 @@ class Event(db.Model):
     organization_name = db.Column(db.Unicode(), db.ForeignKey('organization.name', ondelete='CASCADE'), nullable=False)
 
     def __init__(self, name, event_url, start_time_notz, created_at, utc_offset,
-                 organization_name, location=None, end_time_notz=None, description=None):
+                 organization_name, location=None, end_time_notz=None, description=None, rsvps=None):
         self.name = name
         self.description = description
         self.location = location
@@ -515,6 +516,7 @@ class Event(db.Model):
         self.end_time_notz = end_time_notz
         self.organization_name = organization_name
         self.created_at = created_at
+        self.rsvps = rsvps
         self.keep = True
 
     def start_time(self):
@@ -580,6 +582,7 @@ class Attendance(db.Model):
         self.organization_name = organization_name
         self.total = total
         self.weekly = weekly
+
 
 class Error(db.Model):
     '''
@@ -675,6 +678,15 @@ def get_query_params(args):
         if 'page' not in key:
             filters[key] = value
     return filters, urlencode(filters)
+
+
+def get_week_name(timestamp):
+    ''' Get the year and week number from a timestamp '''
+    # 2014-04-30 18:30:00 -0700
+    timestamp = timestamp[:-6]
+    timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+    return datetime.strftime(timestamp, "%Y %W")
+
 
 @app.route('/api/organizations')
 @app.route('/api/organizations/<name>')
@@ -777,6 +789,34 @@ def get_past_events(organization_name):
         order_by(desc(Event.start_time_notz))
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
     return jsonify(response)
+
+
+@app.route("/api/organizations/<organization_name>/events/rsvps")
+def gather_orgs_rsvps(organization_name=None):
+    ''' Orgs rsvps summarized '''
+    # Check org name
+    organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
+    print dir(organization)
+    if not organization:
+        return "Organization not found", 404
+    all_events = Event.query.filter(Event.organization_name == organization.name).all()
+    all_rsvps = {
+        "organization_cfapi_url" : organization.api_url(),
+        "total" : 0,
+        "weekly" : {}
+    }
+    for event in all_events:
+        event = event.asdict()
+        if event["rsvps"]:
+            week = get_week_name(event["start_time"])
+            all_rsvps["total"] += event["rsvps"]
+            if all_rsvps["weekly"].get(week):
+                all_rsvps["weekly"][week] += event["rsvps"]
+            else:
+                all_rsvps["weekly"][week] = event["rsvps"]
+
+    return json.dumps(all_rsvps)
+
 
 @app.route("/api/organizations/<organization_name>/stories")
 def get_orgs_stories(organization_name):
@@ -1189,6 +1229,28 @@ def get_all_past_events():
 
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
     return jsonify(response)
+
+
+@app.route("/api/events/rsvps")
+def gather_all_rsvps():
+    ''' All rsvps summarized '''
+    all_events = Event.query.all()
+    all_rsvps = {
+        "total" : 0,
+        "weekly" : {}
+    }
+    for event in all_events:
+        event = event.asdict()
+        if event["rsvps"]:
+            week = get_week_name(event["start_time"])
+            all_rsvps["total"] += event["rsvps"]
+            if all_rsvps["weekly"].get(week):
+                all_rsvps["weekly"][week] += event["rsvps"]
+            else:
+                all_rsvps["weekly"][week] = event["rsvps"]
+
+    return json.dumps(all_rsvps)
+
 
 @app.route('/api/stories')
 @app.route('/api/stories/<int:id>')

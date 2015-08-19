@@ -104,7 +104,8 @@ def get_meetup_events(organization, group_urlname):
                              event_url=event['event_url'],
                              start_time_notz=format_date(event['time'], event['utc_offset']),
                              created_at=format_date(event['created'], event['utc_offset']),
-                             utc_offset=event['utc_offset'] / 1000.0)
+                             utc_offset=event['utc_offset'] / 1000.0,
+                             rsvps=event['yes_rsvp_count'])
 
                 # Some events don't have locations.
                 if 'venue' in event:

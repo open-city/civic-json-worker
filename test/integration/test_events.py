@@ -156,6 +156,7 @@ class TestEvents(IntegrationTest):
         assert isinstance(response['objects'][0]['organization'], dict)
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['start_time'], unicode)
+        assert isinstance(response['objects'][0]['rsvps'], int)
 
     def test_past_events(self):
         '''
@@ -218,3 +219,27 @@ class TestEvents(IntegrationTest):
         response = json.loads(response.data)
         self.assertEqual(response['total'], 1)
         self.assertEqual(response['objects'][0]['name'], u'Awesome event')
+
+
+    def test_rsvp_routes(self):
+        org = OrganizationFactory(name=u"Code for San Francisco")
+        another_org = OrganizationFactory(type=u'Code for All')
+        awesome_event = EventFactory(name=u'Awesome event')
+        sad_event = EventFactory(name=u'Sad event', description=u'sad stuff will happen')
+
+        awesome_event.organization = org
+        sad_event.organization = another_org
+
+        db.session.commit()
+
+        # Make sure total number rsvps is 2468
+        response = self.app.get('/api/events/rsvps')
+        response = json.loads(response.data)
+        self.assertEqual(response["total"], 2468)
+
+        # Make sure org number rsvps is 1234
+        response = self.app.get('/api/organizations/Code-for-San-Francisco/events/rsvps')
+        response = json.loads(response.data)
+        self.assertEqual(response["total"], 1234)
+
+
