@@ -796,7 +796,6 @@ def gather_orgs_rsvps(organization_name=None):
     ''' Orgs rsvps summarized '''
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
-    print dir(organization)
     if not organization:
         return "Organization not found", 404
     all_events = Event.query.filter(Event.organization_name == organization.name).all()
