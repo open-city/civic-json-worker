@@ -117,6 +117,18 @@ def get_meetup_events(organization, group_urlname):
             return []
 
 
+def get_meetup_count(organization, identifier):
+    ''' Get the count of meetup members '''
+    MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
+    meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=meetup_key)
+    got = get(meetup_url)
+    response = got.json()
+    members = response["results"][0]["members"]
+    organization.member_count = members
+    db.session.commit()
+
+
+
 def get_organizations(org_sources):
     ''' Collate all organizations from different sources.
     '''
@@ -1075,8 +1087,13 @@ def main(org_name=None, org_sources=None):
                             save_event_info(db.session, event)
                         # flush the events
                         db.session.flush()
+
+                        # Get Meetup member count
+                        get_meetup_count(organization, identifier)
+
                     else:
                         logging.error("%s does not have a valid events url" % organization.name)
+
 
             # Get issues for all of the projects
             logging.info("Gathering all of %s's open GitHub issues." % organization.name)

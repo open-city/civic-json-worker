@@ -123,6 +123,7 @@ class Organization(db.Model):
     longitude = db.Column(db.Float())
     last_updated = db.Column(db.Integer())
     started_on = db.Column(db.Unicode())
+    member_count = db.Column(db.Integer())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
     id = db.Column(db.Unicode())
@@ -130,7 +131,7 @@ class Organization(db.Model):
     # Relationships
     # can contain events, stories, projects (these relationships are defined in the child objects)
 
-    def __init__(self, name, website=None, events_url=None,
+    def __init__(self, name, website=None, events_url=None, members_count=None,
                  rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None, last_updated=time.time()):
         self.name = name
         self.website = website
@@ -145,6 +146,8 @@ class Organization(db.Model):
         self.last_updated = last_updated
         self.started_on = unicode(date.today())
         self.id = safe_name(raw_name(name))
+        self.members_count = members_count
+
 
     def current_events(self):
         '''
