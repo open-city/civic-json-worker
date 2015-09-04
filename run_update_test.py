@@ -154,6 +154,10 @@ class RunUpdateTestCase(unittest.TestCase):
         elif url.geturl() == 'https://api.github.com/user/337792/repos?page=2':
             return response(200, '''[ ]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=1>; rel="prev", <https://api.github.com/user/337792/repos?page=1>; rel="first"'))
 
+        # elif meetup member count
+        elif 'https://api.meetup.com/2/groups?group_urlname=' in url.geturl():
+            return response(200, ''' { "results" : [ { "members" : 100 } ] } ''')
+
         # json of meetup events
         elif 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
             events_filename = 'meetup_events.json'
