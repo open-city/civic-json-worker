@@ -1021,6 +1021,34 @@ def get_all_attendance():
 
     return jsonify(response)
 
+@app.route("/api/member_count")
+def all_member_count():
+    ''' The total Meetup.com member count '''
+    member_count = 0
+    orgs = Organization.query.all()
+    for org in orgs:
+        if org.member_count:
+            member_count += org.member_count
+
+    return '{ "total" : '+ str(member_count) +'}'
+
+
+@app.route("/api/organizations/member_count")
+def orgs_member_count():
+    ''' The Meetup.com member count for each group '''
+    total_member_count = 0
+    orgs_members = {}
+    orgs = Organization.query.all()
+    for org in orgs:
+        if org.member_count:
+            total_member_count += org.member_count
+            orgs_members[org.id] = org.member_count
+    
+    response = { }
+    response["total"] = total_member_count
+    response["organizations"] = orgs_members
+    return json.dumps(response)
+
 
 @app.route('/api/projects')
 @app.route('/api/projects/<int:id>')
