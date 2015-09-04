@@ -159,7 +159,7 @@ class RunUpdateTestCase(unittest.TestCase):
             return response(200, ''' { "results" : [ { "members" : 100 } ] } ''')
 
         # json of meetup events
-        elif 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
+        elif 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
             events_filename = 'meetup_events.json'
             if self.results_state == 'after':
                 events_filename = 'meetup_events_fewer.json'
@@ -170,7 +170,7 @@ class RunUpdateTestCase(unittest.TestCase):
             return response(200, events_content)
 
         # json of alternate meetup events
-        elif 'meetup.com' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
+        elif 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
             events_file = open('meetup_events_another.json')
             events_content = events_file.read()
             events_file.close()
@@ -1132,10 +1132,10 @@ class RunUpdateTestCase(unittest.TestCase):
         self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
-            if 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
+            if 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
                 return response(200, 'no json object can be decoded from me')
 
-            elif 'meetup.com' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
+            elif 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
                 return response(200, None)
 
         with HTTMock(self.response_content):

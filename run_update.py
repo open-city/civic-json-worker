@@ -122,10 +122,12 @@ def get_meetup_count(organization, identifier):
     MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
     meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=meetup_key)
     got = get(meetup_url)
-    response = got.json()
-    members = response["results"][0]["members"]
-    organization.member_count = members
-    db.session.commit()
+    if got:
+        response = got.json()
+        if response:
+            members = response["results"][0]["members"]
+            organization.member_count = members
+            db.session.commit()
 
 
 
