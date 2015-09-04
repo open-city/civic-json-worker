@@ -1424,5 +1424,16 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertTrue("2015 03" in attendance[1].weekly.keys())
 
 
+    def test_meetup_count(self):
+        ''' Test getting membership count from Meetup '''
+        from test.factories import OrganizationFactory
+        org = OrganizationFactory(name="TEST ORG")
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
+        self.assertEqual(org.member_count, 100)
+
+
+
 if __name__ == '__main__':
     unittest.main()
