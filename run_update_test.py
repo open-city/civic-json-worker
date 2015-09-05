@@ -32,6 +32,7 @@ class RunUpdateTestCase(unittest.TestCase):
         os.environ['DATABASE_URL'] = 'postgres:///civic_json_worker_test'
         os.environ['SECRET_KEY'] = '123456'
         os.environ['MEETUP_KEY'] = 'abcdef'
+        os.environ["PEOPLEDB"] = 'postgres:///peopledbtest'
 
         from app import db
 
@@ -42,7 +43,7 @@ class RunUpdateTestCase(unittest.TestCase):
         run_update.github_throttling = False
 
         # FAKE PEOPLEDB
-        with connect('postgres:///peopledbtest') as conn:
+        with connect(os.environ["PEOPLEDB"]) as conn:
             with conn.cursor() as db:
                 with open('test/peopledbtest-destroy.pgsql') as filename:
                     db.execute(filename.read())

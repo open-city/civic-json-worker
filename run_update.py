@@ -54,6 +54,11 @@ if 'MEETUP_KEY' in os.environ:
 else:
     meetup_key = None
 
+if 'PEOPLEDB' in os.environ:
+    PEOPLEDB = os.environ["PEOPLEDB"]
+else:
+    PEOPLEDB = None
+
 github_throttling = False
 
 def get_github_api(url, headers=None):
@@ -1090,7 +1095,7 @@ def main(org_name=None, org_sources=None):
                 save_labels(db.session, issue)
 
             # Get attendance data
-            with connect(os.environ["PEOPLEDB"]) as conn:
+            with connect(PEOPLEDB) as conn:
                 with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
                     cfapi_url = "https://www.codeforamerica.org/api/organizations/"
                     organization_url = cfapi_url + organization.api_id()
