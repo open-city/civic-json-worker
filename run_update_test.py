@@ -155,8 +155,12 @@ class RunUpdateTestCase(unittest.TestCase):
         elif url.geturl() == 'https://api.github.com/user/337792/repos?page=2':
             return response(200, '''[ ]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=1>; rel="prev", <https://api.github.com/user/337792/repos?page=1>; rel="first"'))
 
+        # elif meetup member count
+        elif 'https://api.meetup.com/2/groups?group_urlname=' in url.geturl():
+            return response(200, ''' { "results" : [ { "members" : 100 } ] } ''')
+
         # json of meetup events
-        elif 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
+        elif 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
             events_filename = 'meetup_events.json'
             if self.results_state == 'after':
                 events_filename = 'meetup_events_fewer.json'
@@ -167,7 +171,7 @@ class RunUpdateTestCase(unittest.TestCase):
             return response(200, events_content)
 
         # json of alternate meetup events
-        elif 'meetup.com' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
+        elif 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
             events_file = open('meetup_events_another.json')
             events_content = events_file.read()
             events_file.close()
@@ -1129,10 +1133,10 @@ class RunUpdateTestCase(unittest.TestCase):
         self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
-            if 'meetup.com' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
+            if 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Charlotte' in url.geturl():
                 return response(200, 'no json object can be decoded from me')
 
-            elif 'meetup.com' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
+            elif 'https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname=' in url.geturl() and 'Code-For-Rhode-Island' in url.geturl():
                 return response(200, None)
 
         with HTTMock(self.response_content):
@@ -1419,6 +1423,17 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(attendance[0].organization_name, "Code for San Francisco")
         self.assertEqual(attendance[1].organization_name, "Open Oakland")
         self.assertTrue("2015 03" in attendance[1].weekly.keys())
+
+
+    def test_meetup_count(self):
+        ''' Test getting membership count from Meetup '''
+        from test.factories import OrganizationFactory
+        org = OrganizationFactory(name="TEST ORG")
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
+        self.assertEqual(org.member_count, 100)
+
 
 
 if __name__ == '__main__':

@@ -123,6 +123,7 @@ class Organization(db.Model):
     longitude = db.Column(db.Float())
     last_updated = db.Column(db.Integer())
     started_on = db.Column(db.Unicode())
+    member_count = db.Column(db.Integer())
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
     id = db.Column(db.Unicode())
@@ -130,7 +131,7 @@ class Organization(db.Model):
     # Relationships
     # can contain events, stories, projects (these relationships are defined in the child objects)
 
-    def __init__(self, name, website=None, events_url=None,
+    def __init__(self, name, website=None, events_url=None, members_count=None,
                  rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None, last_updated=time.time()):
         self.name = name
         self.website = website
@@ -145,6 +146,8 @@ class Organization(db.Model):
         self.last_updated = last_updated
         self.started_on = unicode(date.today())
         self.id = safe_name(raw_name(name))
+        self.members_count = members_count
+
 
     def current_events(self):
         '''
@@ -1017,6 +1020,34 @@ def get_all_attendance():
     }
 
     return jsonify(response)
+
+@app.route("/api/member_count")
+def all_member_count():
+    ''' The total Meetup.com member count '''
+    member_count = 0
+    orgs = Organization.query.all()
+    for org in orgs:
+        if org.member_count:
+            member_count += org.member_count
+
+    return '{ "total" : '+ str(member_count) +'}'
+
+
+@app.route("/api/organizations/member_count")
+def orgs_member_count():
+    ''' The Meetup.com member count for each group '''
+    total_member_count = 0
+    orgs_members = {}
+    orgs = Organization.query.all()
+    for org in orgs:
+        if org.member_count:
+            total_member_count += org.member_count
+            orgs_members[org.id] = org.member_count
+    
+    response = { }
+    response["total"] = total_member_count
+    response["organizations"] = orgs_members
+    return json.dumps(response)
 
 
 @app.route('/api/projects')
