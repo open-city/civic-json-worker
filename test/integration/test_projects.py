@@ -268,6 +268,25 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response["objects"]), 2)
         self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
 
+
+    def test_project_search_ranked_order(self):
+        ''' Search results from the project and org/project endpoints are returned
+            with correct ranking values
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, status='TEST', last_updated=datetime.now() - timedelta(10000))
+        ProjectFactory(organization_name=organization.name, description='testing a new thing', last_updated=datetime.now() - timedelta(1))
+        ProjectFactory(organization_name=organization.name, tags='test,tags,what,ever', last_updated=datetime.now() - timedelta(100))
+        ProjectFactory(organization_name=organization.name, last_updated=datetime.now())
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=TEST')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(project_response['total'], 3)
+        self.assertEqual(project_response['objects'][0]['status'], 'TEST')
+        self.assertEqual(project_response['objects'][1]['tags'], 'test,tags,what,ever')
+        self.assertEqual(project_response['objects'][2]['description'], 'testing a new thing')
+
+
     def test_project_return_only_ids(self):
         ''' Search results from the project and org/project endpoints are returned
             as only IDs if requested
@@ -381,39 +400,6 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['name'], 'My Cool Project')
 
-    def test_project_search_includes_type(self):
-        ''' The type field is included in search results from the project and org/project endpoints
-        '''
-        organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, type=u'mobile app')
-        ProjectFactory(organization_name=organization.name, type=u'data portal')
-        db.session.commit()
-        project_response = self.app.get('/api/projects?q=portal')
-        project_response = json.loads(project_response.data)
-        self.assertEqual(len(project_response['objects']), 1)
-        self.assertEqual(project_response['objects'][0]['type'], 'data portal')
-
-        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=portal')
-        org_project_response = json.loads(org_project_response.data)
-        self.assertEqual(len(org_project_response['objects']), 1)
-        self.assertEqual(org_project_response['objects'][0]['type'], 'data portal')
-
-    def test_project_search_includes_categories(self):
-        ''' The categories field is included in search results from the project and org/project endpoints
-        '''
-        organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, categories=u'project management, civic hacking')
-        ProjectFactory(organization_name=organization.name, categories=u'animal control, twitter')
-        db.session.commit()
-        project_response = self.app.get('/api/projects?q=control')
-        project_response = json.loads(project_response.data)
-        self.assertEqual(len(project_response['objects']), 1)
-        self.assertEqual(project_response['objects'][0]['categories'], 'animal control, twitter')
-
-        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=control')
-        org_project_response = json.loads(org_project_response.data)
-        self.assertEqual(len(org_project_response['objects']), 1)
-        self.assertEqual(org_project_response['objects'][0]['categories'], 'animal control, twitter')
 
     def test_project_search_includes_tags(self):
         """
@@ -433,22 +419,6 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['tags'], 'food stamps, health')
 
-    def test_project_search_includes_github_details(self):
-        ''' The github_details field is included in search results from the project and org/project endpoints
-        '''
-        organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, github_details=json.dumps({'panic': 'disco'}))
-        ProjectFactory(organization_name=organization.name, github_details=json.dumps({'button': 'red'}))
-        db.session.commit()
-        project_response = self.app.get('/api/projects?q=disco')
-        project_response = json.loads(project_response.data)
-        self.assertEqual(len(project_response['objects']), 1)
-        self.assertEqual(project_response['objects'][0]['github_details'], '{"panic": "disco"}')
-
-        org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=disco')
-        org_project_response = json.loads(org_project_response.data)
-        self.assertEqual(len(org_project_response['objects']), 1)
-        self.assertEqual(org_project_response['objects'][0]['github_details'], '{"panic": "disco"}')
 
     def test_project_query_filter(self):
         '''
