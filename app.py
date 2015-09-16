@@ -397,6 +397,7 @@ db.Index('index_project_tsv_body', tbl.c.tsv_body, postgresql_using='gin')
 
 # Trigger to populate the search index column
 trig_ddl = DDL("""
+    DROP FUNCTION IF EXISTS project_search_trigger();
     CREATE FUNCTION project_search_trigger() RETURNS trigger AS $$
     begin
       new.tsv_body :=
