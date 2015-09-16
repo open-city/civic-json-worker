@@ -268,6 +268,25 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response["objects"]), 2)
         self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
 
+
+    def test_project_search_ranked_order(self):
+        ''' Search results from the project and org/project endpoints are returned
+            with correct ranking values
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, status='TEST', last_updated=datetime.now() - timedelta(10000))
+        ProjectFactory(organization_name=organization.name, description='testing a new thing', last_updated=datetime.now() - timedelta(1))
+        ProjectFactory(organization_name=organization.name, tags='test,tags,what,ever', last_updated=datetime.now() - timedelta(100))
+        ProjectFactory(organization_name=organization.name, last_updated=datetime.now())
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=TEST')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(project_response['total'], 3)
+        self.assertEqual(project_response['objects'][0]['status'], 'TEST')
+        self.assertEqual(project_response['objects'][1]['tags'], 'test,tags,what,ever')
+        self.assertEqual(project_response['objects'][2]['description'], 'testing a new thing')
+
+
     def test_project_return_only_ids(self):
         ''' Search results from the project and org/project endpoints are returned
             as only IDs if requested
