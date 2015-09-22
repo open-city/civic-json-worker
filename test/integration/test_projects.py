@@ -49,6 +49,7 @@ class TestProjects(IntegrationTest):
         assert isinstance(response['objects'][0]['organization_name'], unicode)
         assert isinstance(response['objects'][0]['type'], unicode)
         assert isinstance(response['objects'][0]['status'], unicode)
+        assert isinstance(response['objects'][0]['languages'], list)
 
     def test_project_search_nonexisting_text(self):
         ''' Searching for non-existing text in the project and org/project

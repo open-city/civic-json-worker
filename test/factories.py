@@ -37,6 +37,7 @@ class ProjectFactory(SQLAlchemyModelFactory):
     github_details = {'repo': u'git@github.com:codeforamerica/civic-project.git'}
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
     status = u'Project status'
+    languages = ['Python','CSS']
 
 class EventFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Event

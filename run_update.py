@@ -1,5 +1,6 @@
 import os
 import logging
+import json
 from csv import DictReader
 from itertools import groupby
 from operator import itemgetter
@@ -458,7 +459,7 @@ def update_project_info(project):
         all_github_attributes = got.json()
         github_details = {}
         for field in ('contributors_url', 'created_at', 'forks_count', 'homepage',
-                      'html_url', 'id', 'language', 'open_issues', 'pushed_at',
+                      'html_url', 'id', 'open_issues', 'pushed_at',
                       'updated_at', 'watchers_count', 'name', 'description', 'stargazers_count'):
             github_details[field] = all_github_attributes[field]
 
@@ -477,6 +478,14 @@ def update_project_info(project):
 
         if 'link_url' not in project or not project['link_url']:
             project['link_url'] = all_github_attributes['homepage']
+
+        # Grab the list of project languages
+        got = get(all_github_attributes['languages_url'])
+        got = got.json()
+        if got.keys():
+            project['languages'] = got.keys()
+        else:
+            project['languages'] = None
 
         #
         # Populate project contributors from github_details[contributors_url]

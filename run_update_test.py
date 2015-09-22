@@ -94,7 +94,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # json of project descriptions
         elif url.geturl() == 'https://api.github.com/users/codeforamerica/repos':
-            return response(200, '''[{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37 }]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=2>; rel="next", <https://api.github.com/user/337792/repos?page=2>; rel="last"'))
+            return response(200, '''[{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37, "languages_url": "https://api.github.com/repos/codeforamerica/cityvoice/languages" }]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=2>; rel="next", <https://api.github.com/user/337792/repos?page=2>; rel="last"'))
+
+        # mock of programming languages
+        elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/languages':
+            return response(200, ''' {  "Ruby": 178825,  "HTML": 80191,  "JavaScript": 16028,  "CSS": 8579,  "Shell": 219 }''')
 
         # csv file of organization descriptions
         # this catches the request for the URL contained in run_update.TEST_ORG_SOURCES_FILENAME
@@ -119,11 +123,11 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # json of project description (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
-            return response(200, '''{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37 }''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
+            return response(200, '''{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "languages_url": "https://api.github.com/repos/codeforamerica/cityvoice/languages", "forks_count": 12, "open_issues": 37 }''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
 
         # json of project description (bizfriendly-web)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/bizfriendly-web':
-            return response(200, ''' { "id": 11137392, "name": "bizfriendly-web", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792?v=3", "html_url": "https://github.com/codeforamerica", "type": "Organization" }, "html_url": "https://github.com/codeforamerica/bizfriendly-web", "description": "An online service that teaches small business owners how to use the internet to better run their businesses.", "url": "https://api.github.com/repos/codeforamerica/bizfriendly-web", "contributors_url": "https://api.github.com/repos/codeforamerica/bizfriendly-web/contributors", "created_at": "2013-07-02T23:14:10Z", "updated_at": "2014-11-02T18:55:33Z", "pushed_at": "2014-10-14T21:55:04Z", "homepage": "http://bizfriend.ly", "stargazers_count": 17, "watchers_count": 17, "language": "JavaScript", "forks_count": 21, "open_issues": 31 } ''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
+            return response(200, ''' { "id": 11137392, "name": "bizfriendly-web", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792?v=3", "html_url": "https://github.com/codeforamerica", "type": "Organization" }, "html_url": "https://github.com/codeforamerica/bizfriendly-web", "description": "An online service that teaches small business owners how to use the internet to better run their businesses.", "url": "https://api.github.com/repos/codeforamerica/bizfriendly-web", "contributors_url": "https://api.github.com/repos/codeforamerica/bizfriendly-web/contributors", "created_at": "2013-07-02T23:14:10Z", "updated_at": "2014-11-02T18:55:33Z", "pushed_at": "2014-10-14T21:55:04Z", "homepage": "http://bizfriend.ly", "stargazers_count": 17, "watchers_count": 17, "language": "JavaScript", "languages_url": "https://api.github.com/repos/codeforamerica/cityvoice/languages", "forks_count": 21, "open_issues": 31 } ''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
 
         # json of project contributors (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/contributors' or url.geturl() == 'https://api.github.com/repos/codeforamerica/bizfriendly-web/contributors':
@@ -1434,6 +1438,30 @@ class RunUpdateTestCase(unittest.TestCase):
             run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
         self.assertEqual(org.member_count, 100)
 
+
+    def test_languages(self):
+        ''' Test pulling languages from Github '''
+        from app import Project
+
+        # Test that languages are returned as list
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+            project = self.db.session.query(Project).first()
+            self.assertEqual(["Shell", "HTML", "Ruby", "JavaScript", "CSS"], project.languages)
+
+        # Test that null languages are handled
+        with HTTMock(self.response_content):
+
+            def overwrite_response(url, request):
+                # mock of programming languages
+                if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/languages':
+                    return response(200, ''' {  } ''')
+
+            with HTTMock(overwrite_response):
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+                project = self.db.session.query(Project).first()
+                self.assertTrue(isinstance(project.languages, type(None)))
 
 
 if __name__ == '__main__':
