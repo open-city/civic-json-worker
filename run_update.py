@@ -458,7 +458,7 @@ def update_project_info(project):
         all_github_attributes = got.json()
         github_details = {}
         for field in ('contributors_url', 'created_at', 'forks_count', 'homepage',
-                      'html_url', 'id', 'language', 'open_issues', 'pushed_at',
+                      'html_url', 'id', 'open_issues', 'pushed_at',
                       'updated_at', 'watchers_count', 'name', 'description', 'stargazers_count'):
             github_details[field] = all_github_attributes[field]
 
@@ -477,6 +477,12 @@ def update_project_info(project):
 
         if 'link_url' not in project or not project['link_url']:
             project['link_url'] = all_github_attributes['homepage']
+
+        # Grab the list of project languages
+        import pdb; pdb.set_trace()
+        got = get(all_github_attributes['languages_url'])
+        got = got.json()
+        project['languages'] = ", ".join(got.keys())
 
         #
         # Populate project contributors from github_details[contributors_url]
