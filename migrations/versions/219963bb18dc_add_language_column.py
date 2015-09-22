@@ -12,10 +12,11 @@ down_revision = '4f685c062cff'
 
 from alembic import op
 import sqlalchemy as sa
+from app import JsonType
 
 
 def upgrade():
-    op.add_column('project', sa.Column('languages', sa.Unicode(), nullable=True))
+    op.add_column('project', sa.Column('languages', JsonType, nullable=True))
 
     droptrigger = "DROP TRIGGER IF EXISTS tsvupdate_projects_trigger ON project"
     droptriggerfunc = "DROP FUNCTION IF EXISTS project_search_trigger()"

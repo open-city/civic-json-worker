@@ -333,7 +333,7 @@ class Project(db.Model):
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
     status = db.Column(db.Unicode())
-    languages = db.Column(db.Unicode())
+    languages = db.Column(JsonType())
 
     # Relationships
     # child
