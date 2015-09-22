@@ -479,7 +479,6 @@ def update_project_info(project):
             project['link_url'] = all_github_attributes['homepage']
 
         # Grab the list of project languages
-        import pdb; pdb.set_trace()
         got = get(all_github_attributes['languages_url'])
         got = got.json()
         project['languages'] = ", ".join(got.keys())
