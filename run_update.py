@@ -480,7 +480,7 @@ def update_project_info(project):
             project['link_url'] = all_github_attributes['homepage']
 
         # Grab the list of project languages
-        got = get(all_github_attributes['languages_url'])
+        got = get_github_api(all_github_attributes['languages_url'])
         got = got.json()
         if got.keys():
             project['languages'] = got.keys()
