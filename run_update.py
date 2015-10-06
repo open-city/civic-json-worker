@@ -327,7 +327,8 @@ def non_github_project_update_time(project):
 
         Set the last_updated timestamp.
     '''
-    existing_project = db.session.query(Project).filter(Project.name == project['name']).first()
+    filters = [Project.name == project['name'], Project.organization_name == project['organization_name']]
+    existing_project = db.session.query(Project).filter(*filters).first()
 
     if existing_project:
         # project gets existing last_updated

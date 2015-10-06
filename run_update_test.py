@@ -604,6 +604,54 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['status'], "active")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
+
+    def test_non_github_projects_same_name(self):
+        ''' Test that non github projects with same name but different groups dont overlap
+        '''
+        self.setup_mock_rss_response()
+
+        from test.factories import OrganizationFactory
+        philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
+        philly2 = OrganizationFactory(name=u'Philly2', projects_list_url=u'http://codeforphilly.org/projects.csv')
+
+        # Get a Philly project into the db
+        with HTTMock(self.response_content):
+            import run_update
+
+            projects = run_update.get_projects(philly)
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+            projects = run_update.get_projects(philly2)
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+            from app import Project
+            projects = self.db.session.query(Project).all()
+            self.assertEqual(projects[0].last_updated, datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+            self.assertEqual(projects[1].last_updated, datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
+
+            time.sleep(1)
+
+            projects = run_update.get_projects(philly)
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+            projects = run_update.get_projects(philly2)
+            for proj_info in projects:
+                run_update.save_project_info(self.db.session, proj_info)
+                self.db.session.flush()
+
+            projects = self.db.session.query(Project).all()
+            from datetime import timedelta
+            one_second_ago = datetime.datetime.now() - timedelta(seconds=1)
+            self.assertEqual(projects[0].last_updated, one_second_ago.strftime("%a, %d %b %Y %H:%M:%S %Z"))
+            self.assertEqual(projects[1].last_updated, one_second_ago.strftime("%a, %d %b %Y %H:%M:%S %Z"))
+
+
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
         '''
