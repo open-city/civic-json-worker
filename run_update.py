@@ -597,6 +597,7 @@ def get_issues_for_project(project):
 
     # Get github issues api url
     _, host, path, _, _, _ = urlparse(project.code_url)
+    path = sub(r"[\ /]+\s*$","",path)
     issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
     # Ping github's api for project issues
@@ -644,6 +645,7 @@ def get_issues(org_name):
         if host != 'github.com':
             continue
 
+        path = sub(r"[\ /]+\s*$","",path)
         issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
         # Ping github's api for project issues
@@ -689,6 +691,7 @@ def get_root_directory_listing_for_project(project_dict, force=False):
 
     # Get the API URL
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
+    path = sub(r"[\ /]+\s*$","",path)
     directory_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='')
 
     # Request the directory listing
@@ -731,6 +734,7 @@ def get_civic_json_for_project(project_dict, force=False):
 
     # Get the API URL (if 'code_url' wasn't in project_dict, it would've been caught upstream)
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
+    path = sub(r"[\ /]+\s*$","",path)
     civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
 
     # Request the contents of the civic.json file
