@@ -85,7 +85,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,,''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice/,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web,,,,''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
