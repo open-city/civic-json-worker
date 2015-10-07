@@ -368,6 +368,7 @@ def update_project_info(project):
 
     # Get the Github attributes
     if host == 'github.com':
+        path = sub(r"[\ /]+\s*$","",path)
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
