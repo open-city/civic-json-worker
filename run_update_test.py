@@ -652,6 +652,26 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[1].last_updated, one_second_ago.strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
 
+    def test_github_latest_update_time(self):
+        import run_update
+        import dateutil.parser
+        # Test that latest date is given
+        newer_time_from_github = u'2015-10-02T15:43:21Z'
+        older_time_from_github = u'2015-10-02T15:43:20Z'
+        github_details = {'pushed_at': newer_time_from_github, 'updated_at': older_time_from_github}
+        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(newer_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
+
+        #Test handling of missing data
+        github_details = {'updated_at': older_time_from_github}
+        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(older_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
+
+        github_details = {'pushed_at': newer_time_from_github}
+        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(newer_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
+
+        github_details = {}
+        self.assertIsNotNone(run_update.github_latest_update_time(github_details))
+
+
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
         '''
