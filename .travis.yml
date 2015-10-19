@@ -1,5 +1,6 @@
 language: python
 install: pip install -r requirements.txt --use-mirrors
+sudo: false
 before_script:
 - psql -c 'create database civic_json_worker_test;' -U postgres
 - psql -c 'create database peopledbtest;' -U postgres
