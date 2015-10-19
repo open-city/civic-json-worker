@@ -7,6 +7,7 @@ before_script:
 - psql -c '\i test/peopledbtest.pgsql' -U postgres
 script:
 - green test/ -vvv --run-coverage
+- flake8 . --exclude=migrations,test --ignore=E501 --exit-zero
 notifications:
   webhooks: http://project-monitor.codeforamerica.org/projects/72d031cc-8f21-4968-8db6-ff7370f5e98b/status
   slack: cfa:IjK8dNdwBJHL0Xc9FqvROliV

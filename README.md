@@ -300,6 +300,13 @@ psql peopledbtest < test/peopledbtest.pgsql
 `green test/integration -vvv --run-coverage` to test the API with code coverage.
 
 
+### Codestyle (PEP8 and co.)
+
+The project ships with flake8 to track style, perform a flake8 check by calling
+
+`flake8 . --exclude=migrations,test --ignore=E501`
+
+
 
 
 ### Migrations
