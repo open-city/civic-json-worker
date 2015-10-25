@@ -13,6 +13,8 @@ from mock import Mock
 
 from psycopg2 import connect, extras
 
+from freezegun import freeze_time
+
 root_logger = logging.getLogger()
 root_logger.disabled = True
 
@@ -618,6 +620,10 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             import run_update
 
+            # mock the time
+            freezer = freeze_time("2012-01-14 12:00:01")
+            freezer.start()
+
             projects = run_update.get_projects(philly)
             for proj_info in projects:
                 run_update.save_project_info(self.db.session, proj_info)
@@ -633,7 +639,9 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0].last_updated, datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
             self.assertEqual(projects[1].last_updated, datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
-            time.sleep(1)
+            freezer.stop()
+            freezer = freeze_time("2012-01-14 12:00:02")
+            freezer.start()
 
             projects = run_update.get_projects(philly)
             for proj_info in projects:
@@ -651,6 +659,7 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0].last_updated, one_second_ago.strftime("%a, %d %b %Y %H:%M:%S %Z"))
             self.assertEqual(projects[1].last_updated, one_second_ago.strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
+            freezer.stop()
 
     def test_github_latest_update_time(self):
         import run_update
