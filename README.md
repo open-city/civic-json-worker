@@ -289,13 +289,16 @@ creatdb peopledbtest
 psql peopledbtest < test/peopledbtest.pgsql
 ```
 
-`python run_update_test.py` to test the run_update process.
+`green -vvv --run-coverage` to run everything at once.
+
+`green test/updater -vvv` to test the run_update process.
+
+`green test/updater -vvv --run-coverage` to test the run_update process with coverage.
 
 `green test/integration -vvv` to test the API.
 
 `green test/integration -vvv --run-coverage` to test the API with code coverage.
 
-`green test/ run_update_test.py -vvv --run-coverage` to run everything at once.
 
 
 

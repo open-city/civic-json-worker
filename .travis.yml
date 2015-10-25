@@ -5,8 +5,7 @@ before_script:
 - psql -c 'create database peopledbtest;' -U postgres
 - psql -c '\i test/peopledbtest.pgsql' -U postgres
 script:
-- python run_update_test.py
-- green test/integration -vvv --run-coverage
+- green test/ -vvv --run-coverage
 notifications:
   webhooks: http://project-monitor.codeforamerica.org/projects/72d031cc-8f21-4968-8db6-ff7370f5e98b/status
   slack: cfa:IjK8dNdwBJHL0Xc9FqvROliV
