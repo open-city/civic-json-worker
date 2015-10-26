@@ -285,7 +285,7 @@ python -c 'from app import db; db.create_all()'
 createdb civic_json_worker_test
 python -c 'from app import db; db.create_all()'
 
-creatdb peopledbtest
+createdb peopledbtest
 psql peopledbtest < test/peopledbtest.pgsql
 ```
 
