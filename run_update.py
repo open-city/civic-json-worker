@@ -1,6 +1,5 @@
 import os
 import logging
-import json
 from csv import DictReader
 from itertools import groupby
 from operator import itemgetter
@@ -11,7 +10,6 @@ from urlparse import urlparse
 from random import shuffle
 from argparse import ArgumentParser
 from time import time
-from datetime import datetime
 from re import match, sub
 from psycopg2 import connect, extras
 
