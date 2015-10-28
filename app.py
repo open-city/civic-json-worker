@@ -23,9 +23,12 @@ from dictalchemy import make_class_dictable
 from flask.ext.script import Manager, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
 from werkzeug.contrib.fixers import ProxyFix
-
 from models import initialize_database, Organization, Event, Issue, Project, Story, Label, Error, Attendance
 from utils import raw_name
+
+# import logging
+# logging.basicConfig()
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # -------------------
 # Init
