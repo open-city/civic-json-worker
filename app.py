@@ -377,6 +377,35 @@ def get_orgs_projects(organization_name):
 
 @app.route("/api/organizations/<organization_name>/issues")
 @app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
+def get_orgs_issues_new(organization_name, labels=None):
+    ''' Trying a raw SQL query instead
+    '''
+    # The organization is in the database
+    organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
+    if not organization:
+        return "Organization not found", 404
+
+    # build a query prefix:
+    issues_query = u'''SELECT issue.id FROM organization JOIN project ON project.organization_name = organization.name JOIN issue ON issue.project_id = project.id WHERE organization.name = \'{organization_name}\''''.format(organization_name=organization.name)
+
+    # add filters for labels if they're sent
+    if labels:
+        label_names = [label.strip() for label in labels.split(',')]
+        for label_name in label_names:
+            label_clause = u'''AND issue.id IN (SELECT issue_id FROM label WHERE name ILIKE '%{label_name}%')'''.format(label_name=label_name)
+            issues_query = u'''{query} {clause}'''.format(query=issues_query, clause=label_clause)
+
+    # group to dedupe, randomize
+    issues_query = u'''{query} GROUP BY issue.id ORDER BY random();'''.format(query=issues_query)
+
+    # run the query
+    matches = Issue.query.from_statement(sql.text(issues_query))
+
+    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
+    return jsonify(response)
+
+@app.route("/api/organizations_old/<organization_name>/issues")
+@app.route("/api/organizations_old/<organization_name>/issues/labels/<labels>")
 def get_orgs_issues(organization_name, labels=None):
     ''' A clean url to get an organizations issues
     '''
