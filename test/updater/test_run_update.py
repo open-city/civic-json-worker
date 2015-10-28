@@ -142,7 +142,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # json of project issues (cityvoice, bizfriendly-web)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/issues' or url.geturl() == 'https://api.github.com/repos/codeforamerica/bizfriendly-web/issues':
             # build issues dynamically based on results_state value
-            issue_lines = ['''{"html_url": "https://github.com/codeforamerica/cityvoice/issue/210","title": "Important cityvoice issue", "labels": [ xxx ], "body" : "WHATEVER"}''', '''{"html_url": "https://github.com/codeforamerica/cityvoice/issue/211","title": "More important cityvoice issue", "labels": [ xxx ], "body" : "WHATEVER"}''']
+            issue_lines = ['''{"html_url": "https://github.com/codeforamerica/cityvoice/issue/210","title": "Important cityvoice issue", "labels": [ xxx ],"created_at": "2015-09-16T05:45:20Z", "updated_at": "2015-10-22T17:26:02Z", "body" : "WHATEVER"}''', '''{"html_url": "https://github.com/codeforamerica/cityvoice/issue/211","title": "More important cityvoice issue", "labels": [ xxx ], "created_at" : "2015-10-26T01:13:03Z", "updated_at" : "2015-10-26T18:06:54Z", "body" : "WHATEVER"}''']
             label_lines = ['''{ "color" : "84b6eb", "name" : "enhancement", "url": "https://api.github.com/repos/codeforamerica/cityvoice/labels/enhancement"}''', '''{ "color" : "84b6eb", "name" : "question", "url": "https://api.github.com/repos/codeforamerica/cityvoice/labels/question"}''']
             issue_lines_before = [sub('xxx', ','.join(label_lines[0:2]), issue_lines[0]), sub('xxx', ','.join(label_lines[0:2]), issue_lines[1])]
             issue_lines_after = [sub('xxx', ','.join(label_lines[0:1]), issue_lines[0])]
@@ -715,12 +715,12 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues':
-                content = '''[{"number": 2,"title": "TEST TITLE 2","body": "TEST BODY 2","labels": [], "html_url":""}]'''
+                content = '''[{"number": 2,"title": "TEST TITLE 2", "created_at":"2015-10-26T18:00:00Z", "updated_at":"2015-10-26T18:06:54Z", "body": "TEST BODY 2","labels": [], "html_url":""}]'''
                 headers = {"Link": '<https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2>"; rel="next"', 'ETag': '8456bc53d4cf6b78779ded3408886f82'}
                 return response(200, content, headers)
 
             elif url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues?page=2':
-                content = '''[{"number": 2,"title": "TEST TITLE 2","body": "TEST BODY 2","labels": [], "html_url":""}]'''
+                content = '''[{"number": 2,"title": "TEST TITLE 2", "created_at":"2015-10-26T18:00:00Z", "updated_at":"2015-10-26T18:06:54Z","body": "TEST BODY 2","labels": [], "html_url":""}]'''
                 return response(200, content)
 
         with HTTMock(self.response_content):

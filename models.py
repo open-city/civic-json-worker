@@ -395,6 +395,8 @@ class Issue(db.Model):
     html_url = db.Column(db.Unicode())
     body = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
+    created_at = db.Column(db.DateTime())
+    updated_at = db.Column(db.DateTime())
 
     # Relationships
     # child
@@ -403,11 +405,13 @@ class Issue(db.Model):
 
     # can contain labels (this relationship is defined in the child object)
 
-    def __init__(self, title, project_id=None, html_url=None, labels=None, body=None):
+    def __init__(self, title, project_id=None, html_url=None, labels=None, body=None, created_at=None, updated_at=None):
         self.title = title
         self.html_url = html_url
         self.body = body
         self.project_id = project_id
+        self.created_at = created_at
+        self.updated_at = updated_at
         self.keep = True
 
     def api_url(self):

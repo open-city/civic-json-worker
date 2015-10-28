@@ -18,7 +18,7 @@ class TestIssues(IntegrationTest):
         project = ProjectFactory(organization_name=organization.name)
         db.session.add(project)
         db.session.commit()
-        issue = IssueFactory(project_id=project.id, title=u'TEST ISSUE', body=u'TEST ISSUE BODY')
+        issue = IssueFactory(project_id=project.id, title=u'TEST ISSUE', body=u'TEST ISSUE BODY',created_at="2013-06-06T00:12:30Z", updated_at="2014-02-21T20:43:16Z")
         db.session.add(issue)
         db.session.commit()
 
@@ -29,6 +29,8 @@ class TestIssues(IntegrationTest):
         self.assertEqual(response['total'], 1)
         self.assertEqual(response['objects'][0]['title'], u'TEST ISSUE')
         self.assertEqual(response['objects'][0]['body'], u'TEST ISSUE BODY')
+        self.assertEqual(response['objects'][0]['created_at'], u'Thu, 06 Jun 2013 00:12:30 GMT')
+        self.assertEqual(response['objects'][0]['updated_at'], u'Fri, 21 Feb 2014 20:43:16 GMT')
 
         # Check for linked issues in linked project
         self.assertTrue('project' in response['objects'][0])
