@@ -19,6 +19,7 @@ from flask.ext.heroku import Heroku
 from sqlalchemy import desc
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
+from sqlalchemy import sql
 from dictalchemy import make_class_dictable
 from flask.ext.script import Manager, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
@@ -145,26 +146,6 @@ def paged_results(query, page=1, per_page=10, querystring=''):
             obj = o.asdict(True)
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
-
-def is_safe_name(name):
-    ''' Return True if the string is a safe name.
-    '''
-    return raw_name(safe_name(name)) == name
-
-def safe_name(name):
-    ''' Return URL-safe organization name with spaces replaced by dashes.
-
-        Slashes will be removed, which is incompatible with raw_name().
-    '''
-    return name.replace(' ', '-').replace('/', '-').replace('?', '-').replace('#', '-')
-
-def raw_name(name):
-    ''' Return raw organization name with dashes replaced by spaces.
-
-        Also replace old-style underscores with spaces.
-    '''
-    return name.replace('_', ' ').replace('-', ' ')
->>>>>>> new paged_results doesn't use count, limit, offset
 
 def get_query_params(args):
     filters = {}
@@ -653,11 +634,35 @@ def get_issues(id=None):
 
 
 @app.route('/api/issues/labels/<labels>')
+def get_issues_by_labels_new(labels):
+    '''
+    A clean url to filter issues by a comma-separated list of labels
+    '''
+    issues_query = u'''SELECT issue.id FROM issue'''
+
+    # add filters for labels if they're sent
+    if labels:
+        label_names = [label.strip() for label in labels.split(',')]
+        issues_query = u'''{query} WHERE'''.format(query=issues_query)
+        clauses = []
+        for label_name in label_names:
+            clauses.append(u'''issue.id IN (SELECT issue_id FROM label WHERE name ILIKE '%{label_name}%')'''.format(label_name=label_name))
+        issues_query = u'''{query} {clauses}'''.format(query=issues_query, clauses=' AND '.join(clauses))
+
+    # randomize
+    issues_query = u'''{query} ORDER BY random();'''.format(query=issues_query)
+
+    # run the query
+    matches = Issue.query.from_statement(sql.text(issues_query))
+
+    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
+    return jsonify(response)
+
+@app.route('/api/issues_old/labels/<labels>')
 def get_issues_by_labels(labels):
     '''
     A clean url to filter issues by a comma-separated list of labels
     '''
-
     # Create a labels list by comma separating the argument
     labels = [label.strip() for label in labels.split(',')]
 
