@@ -19,7 +19,8 @@ import feedparser
 
 from feeds import get_first_working_feed_link
 
-from app import db, Project, Organization, Story, Event, Error, Issue, Label, is_safe_name, safe_name, raw_name, Attendance
+from app import db, Project, Organization, Story, Event, Error, Issue, Label, Attendance
+from utils import is_safe_name, safe_name, raw_name
 
 
 # Logging Setup
