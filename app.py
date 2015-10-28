@@ -75,11 +75,9 @@ app.after_request(add_cors_header)
 # API
 # -------------------
 
-def page_info(query, page, limit):
-    ''' Return last page and offset for a query.
+def page_info(total, page, limit):
+    ''' Return last page and offset for a query total.
     '''
-    # Get a bunch of projects.
-    total = query.count()
     last = int(ceil(total / limit))
     offset = (page - 1) * limit
 
@@ -123,7 +121,7 @@ def paged_results(query, page, per_page, querystring=''):
     '''
     '''
     total = query.count()
-    last, offset = page_info(query, page, per_page)
+    last, offset = page_info(total, page, per_page)
     if querystring.find("only_ids") != -1:
         model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
     else:
