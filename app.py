@@ -116,8 +116,7 @@ def pages_dict(page, last, querystring):
 
     return pages
 
-
-def paged_results(query, page, per_page, querystring=''):
+def paged_results_old(query, page, per_page, querystring=''):
     '''
     '''
     total = query.count()
@@ -131,6 +130,41 @@ def paged_results(query, page, per_page, querystring=''):
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
+def paged_results(query, page=1, per_page=10, querystring=''):
+    '''
+    '''
+    items = [item for item in query]
+    total = len(items)
+    last, offset = page_info(total, page, per_page)
+    page_of_items = items[offset:offset + per_page]
+    if(querystring.find("only_ids") != -1):
+        model_dicts = [o.id for o in page_of_items]
+    else:
+        model_dicts = []
+        for o in page_of_items:
+            obj = o.asdict(True)
+            model_dicts.append(obj)
+    return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
+
+def is_safe_name(name):
+    ''' Return True if the string is a safe name.
+    '''
+    return raw_name(safe_name(name)) == name
+
+def safe_name(name):
+    ''' Return URL-safe organization name with spaces replaced by dashes.
+
+        Slashes will be removed, which is incompatible with raw_name().
+    '''
+    return name.replace(' ', '-').replace('/', '-').replace('?', '-').replace('#', '-')
+
+def raw_name(name):
+    ''' Return raw organization name with dashes replaced by spaces.
+
+        Also replace old-style underscores with spaces.
+    '''
+    return name.replace('_', ' ').replace('-', ' ')
+>>>>>>> new paged_results doesn't use count, limit, offset
 
 def get_query_params(args):
     filters = {}
@@ -398,7 +432,7 @@ def get_orgs_issues(organization_name, labels=None):
         # Get all issues belonging to these projects
         query = Issue.query.filter(Issue.project_id.in_(project_ids)).order_by(func.random())
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)))
+    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
     return jsonify(response)
 
 
@@ -653,7 +687,7 @@ def get_issues_by_labels(labels):
     query = base_query.intersect(*label_queries).order_by(func.random())
 
     # Return the paginated reponse
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)))
+    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
     return jsonify(response)
 
 
