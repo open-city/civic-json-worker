@@ -730,7 +730,11 @@ def get_issues_by_labels(labels):
             org_attr = attr.split('_')[1]
             base_query = base_query.join(Issue.project).join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
         else:
-            base_query = base_query.filter(getattr(Issue, attr).ilike('%%%s%%' % value))
+            try:
+                filter_attr = getattr(Issue, attr)
+                base_query = base_query.filter(filter_attr.ilike('%%%s%%' % value))
+            except AttributeError:
+                pass
 
     # Filter for issues with each individual label
     label_queries = [base_query.filter(L) for L in labels]
