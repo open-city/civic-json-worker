@@ -134,8 +134,11 @@ def paged_results_old(query, page, per_page, querystring=''):
 def paged_results(query, page=1, per_page=10, querystring=''):
     '''
     '''
-    return dict(hello=u'world')
+    # import pdb; pdb.set_trace()
     items = [item for item in query]
+    for check in range(0, 5):
+        items[check].asdict(True)
+    return dict(converted=check + 1)
     total = len(items)
     last, offset = page_info(total, page, per_page)
     page_of_items = items[offset:offset + per_page]
