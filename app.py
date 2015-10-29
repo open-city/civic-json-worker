@@ -137,10 +137,15 @@ def paged_results(query, page=1, per_page=10, querystring=''):
     # import pdb; pdb.set_trace()
     items = [item for item in query]
     jsonify_us = dict(items=[])
-    for check in range(0, 5):
-        jsonify_us['items'].append(items[check].asdict(True))
-    jsonify(jsonify_us)
-    return dict(dictified=check + 1, jsonified=check + 1)
+    return_dict = dict(dictified=0, jsonified=0)
+    if 'dictify' in querystring:
+        for check in range(0, 5):
+            jsonify_us['items'].append(items[check].asdict(True))
+        return_dict['dictified'] = check + 1
+    if 'jsonify' in querystring:
+        jsonify(jsonify_us)
+        return_dict['jsonified'] = check + 1
+    return return_dict
     total = len(items)
     last, offset = page_info(total, page, per_page)
     page_of_items = items[offset:offset + per_page]
@@ -407,7 +412,8 @@ def get_orgs_issues_new(organization_name, labels=None):
     # run the query
     matches = Issue.query.from_statement(sql.text(issues_query))
 
-    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
+    filters, querystring = get_query_params(request.args)
+    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 @app.route("/api/organizations_old/<organization_name>/issues")
@@ -448,7 +454,8 @@ def get_orgs_issues(organization_name, labels=None):
         # Get all issues belonging to these projects
         query = Issue.query.filter(Issue.project_id.in_(project_ids)).order_by(func.random())
 
-    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
+    filters, querystring = get_query_params(request.args)
+    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
@@ -690,7 +697,8 @@ def get_issues_by_labels_new(labels):
     # run the query
     matches = Issue.query.from_statement(sql.text(issues_query))
 
-    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
+    filters, querystring = get_query_params(request.args)
+    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 @app.route('/api/issues_old/labels/<labels>')
@@ -727,7 +735,8 @@ def get_issues_by_labels(labels):
     query = base_query.intersect(*label_queries).order_by(func.random())
 
     # Return the paginated reponse
-    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)))
+    filters, querystring = get_query_params(request.args)
+    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
