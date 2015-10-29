@@ -134,6 +134,7 @@ def paged_results_old(query, page, per_page, querystring=''):
 def paged_results(query, page=1, per_page=10, querystring=''):
     '''
     '''
+    return dict(hello=u'world')
     items = [item for item in query]
     total = len(items)
     last, offset = page_info(total, page, per_page)
