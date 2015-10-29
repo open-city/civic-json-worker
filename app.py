@@ -136,9 +136,11 @@ def paged_results(query, page=1, per_page=10, querystring=''):
     '''
     # import pdb; pdb.set_trace()
     items = [item for item in query]
+    jsonify_us = dict(items=[])
     for check in range(0, 5):
-        items[check].asdict(True)
-    return dict(converted=check + 1)
+        jsonify_us['items'].append(items[check].asdict(True))
+    jsonify(jsonify_us)
+    return dict(dictified=check + 1, jsonified=check + 1)
     total = len(items)
     last, offset = page_info(total, page, per_page)
     page_of_items = items[offset:offset + per_page]
