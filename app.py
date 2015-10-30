@@ -416,7 +416,6 @@ def get_orgs_issues_new(organization_name, labels=None):
 
     # group to dedupe, randomize
     issues_query = u'''{query} GROUP BY issue.id ORDER BY random() LIMIT {limit};'''.format(query=issues_query, limit=per_page)
-
     # run the query
     issues_result = db.session.execute(issues_query)
     # issues_result is a ResultProxy object
@@ -428,6 +427,7 @@ def get_orgs_issues_new(organization_name, labels=None):
         issues_dicts.append(get_issue_dict_from_rowproxy(row))
 
     response = dict(objects=issues_dicts)
+
     return jsonify(response)
 
 def get_issue_dict_from_rowproxy(issue_row):
@@ -450,8 +450,18 @@ def get_issue_dict_from_rowproxy(issue_row):
     project_query = u'''SELECT * FROM project WHERE id = {project_id};'''.format(project_id=issue_dict['project_id'])
     project_result = db.session.execute(project_query)
     project_dict = dict(project_result.fetchone())
-    project_dict['languages'] = json.loads(project_dict['languages'])
-    project_dict['github_details'] = json.loads(project_dict['github_details'])
+    project_result.close()
+
+    try:
+        project_dict['languages'] = json.loads(project_dict['languages'])
+    except TypeError:
+        project_dict['languages'] = None
+
+    try:
+        project_dict['github_details'] = json.loads(project_dict['github_details'])
+    except TypeError:
+        project_dict['github_details'] = None
+
     del project_dict['keep']
     del project_dict['tsv_body']
     del project_dict['last_updated_issues']
