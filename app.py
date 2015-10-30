@@ -136,21 +136,23 @@ def paged_results(query, page=1, per_page=10, querystring=''):
     '''
     items = [item for item in query]
     total = len(items)
-    jsonify_us = dict(items=[])
-    return_dict = dict(dictified=0, jsonified=0)
-    howmany = 5
-    if 'howmany' in querystring:
-        howmany = int(request.args['howmany'])
-    if howmany > total:
-        howmany = total
-    if 'dictify' in querystring:
-        for check in range(0, howmany):
-            jsonify_us['items'].append(items[check].asdict(True))
-        return_dict['dictified'] = check + 1
-    if 'jsonify' in querystring:
-        jsonify(jsonify_us)
-        return_dict['jsonified'] = check + 1
-    return return_dict
+
+    # jsonify_us = dict(items=[])
+    # return_dict = dict(dictified=0, jsonified=0)
+    # howmany = 5
+    # if 'howmany' in querystring:
+    #     howmany = int(request.args['howmany'])
+    # if howmany > total:
+    #     howmany = total
+    # if 'dictify' in querystring:
+    #     for check in range(0, howmany):
+    #         jsonify_us['items'].append(items[check].asdict(True))
+    #     return_dict['dictified'] = check + 1
+    # if 'jsonify' in querystring:
+    #     jsonify(jsonify_us)
+    #     return_dict['jsonified'] = check + 1
+    # return return_dict
+
     last, offset = page_info(total, page, per_page)
     page_of_items = items[offset:offset + per_page]
     if(querystring.find("only_ids") != -1):
