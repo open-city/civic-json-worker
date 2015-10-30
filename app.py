@@ -397,13 +397,15 @@ def get_orgs_projects(organization_name):
 def get_orgs_issues_new(organization_name, labels=None):
     ''' Trying a raw SQL query instead
     '''
+    per_page = int(request.args.get('per_page', 10))
+
     # The organization is in the database
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
         return "Organization not found", 404
 
     # build a query prefix:
-    issues_query = u'''SELECT issue.id FROM organization JOIN project ON project.organization_name = organization.name JOIN issue ON issue.project_id = project.id WHERE organization.name = \'{organization_name}\''''.format(organization_name=organization.name)
+    issues_query = u'''SELECT issue.* FROM organization JOIN project ON project.organization_name = organization.name JOIN issue ON issue.project_id = project.id WHERE organization.name = \'{organization_name}\''''.format(organization_name=organization.name)
 
     # add filters for labels if they're sent
     if labels:
@@ -413,14 +415,55 @@ def get_orgs_issues_new(organization_name, labels=None):
             issues_query = u'''{query} {clause}'''.format(query=issues_query, clause=label_clause)
 
     # group to dedupe, randomize
-    issues_query = u'''{query} GROUP BY issue.id ORDER BY random();'''.format(query=issues_query)
+    issues_query = u'''{query} GROUP BY issue.id ORDER BY random() LIMIT {limit};'''.format(query=issues_query, limit=per_page)
 
     # run the query
-    matches = Issue.query.from_statement(sql.text(issues_query))
+    issues_result = db.session.execute(issues_query)
+    # issues_result is a ResultProxy object
+    # http://docs.sqlalchemy.org/en/rel_1_0/core/connections.html#sqlalchemy.engine.ResultProxy
+    issues_dicts = []
+    for row in issues_result:
+        # each row is a RowProxy object
+        # http://docs.sqlalchemy.org/en/rel_1_0/core/connections.html#sqlalchemy.engine.RowProxy
+        issues_dicts.append(get_issue_dict_from_rowproxy(row))
 
-    filters, querystring = get_query_params(request.args)
-    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = dict(objects=issues_dicts)
     return jsonify(response)
+
+def get_issue_dict_from_rowproxy(issue_row):
+    ''' Take a RowProxy object representing an issue and return a complete dict of the issue.
+    '''
+    # start with a dict of the issue row
+    issue_dict = dict(issue_row)
+
+    # append the labels associated with this issue
+    label_query = u'''SELECT * FROM label WHERE issue_id = {issue_id};'''.format(issue_id=issue_dict['id'])
+    label_result = db.session.execute(label_query)
+    issue_dict['labels'] = []
+    for label_row in label_result:
+        label_dict = dict(label_row)
+        del label_dict['id']
+        del label_dict['issue_id']
+        issue_dict['labels'].append(label_dict)
+
+    # append details about the project associated with this issue
+    project_query = u'''SELECT * FROM project WHERE id = {project_id};'''.format(project_id=issue_dict['project_id'])
+    project_result = db.session.execute(project_query)
+    project_dict = dict(project_result.fetchone())
+    project_dict['languages'] = json.loads(project_dict['languages'])
+    project_dict['github_details'] = json.loads(project_dict['github_details'])
+    del project_dict['keep']
+    del project_dict['tsv_body']
+    del project_dict['last_updated_issues']
+    del project_dict['last_updated_civic_json']
+    del project_dict['last_updated_root_files']
+    issue_dict['project'] = project_dict
+
+    # delete unneeded fields
+    del issue_dict['keep']
+    del issue_dict['project_id']
+
+    return issue_dict
 
 @app.route("/api/organizations_old/<organization_name>/issues")
 @app.route("/api/organizations_old/<organization_name>/issues/labels/<labels>")
