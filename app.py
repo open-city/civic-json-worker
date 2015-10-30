@@ -41,14 +41,17 @@ migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 
+
 @manager.command
 def dropdb():
     if prompt_bool("Are you sure you want to lose all your data?"):
         db.drop_all()
 
+
 @manager.command
 def createdb():
     db.create_all()
+
 
 make_class_dictable(db.Model)
 
@@ -58,11 +61,13 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 # Settings
 # -------------------
 
+
 def add_cors_header(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
     response.headers['Access-Control-Allow-Methods'] = 'POST, GET, PUT, PATCH, DELETE, OPTIONS'
     return response
+
 
 app.after_request(add_cors_header)
 
@@ -72,12 +77,12 @@ app.after_request(add_cors_header)
 # -------------------
 
 class JsonType(Mutable, types.TypeDecorator):
-    ''' JSON wrapper type for TEXT database storage.
+    """ JSON wrapper type for TEXT database storage.
 
         References:
         http://stackoverflow.com/questions/4038314/sqlalchemy-json-as-blob-text
         http://docs.sqlalchemy.org/en/rel_0_9/orm/extensions/mutable.html
-    '''
+    """
     impl = types.Unicode
 
     def process_bind_param(self, value, engine):
@@ -90,13 +95,15 @@ class JsonType(Mutable, types.TypeDecorator):
             # default can also be a list
             return {}
 
+
 class TSVectorType(types.TypeDecorator):
-    ''' TSVECTOR wrapper type for database storage.
+    """ TSVECTOR wrapper type for database storage.
 
         References:
         http://stackoverflow.com/questions/13837111/tsvector-in-sqlalchemy
-    '''
+    """
     impl = types.UnicodeText
+
 
 @compiles(TSVectorType, 'postgresql')
 def compile_tsvector(element, compiler, **kw):
@@ -108,9 +115,9 @@ def compile_tsvector(element, compiler, **kw):
 # -------------------
 
 class Organization(db.Model):
-    '''
+    """
         Brigades and other civic tech organizations
-    '''
+    """
     # Columns
     name = db.Column(db.Unicode(), primary_key=True)
     website = db.Column(db.Unicode())
@@ -148,11 +155,10 @@ class Organization(db.Model):
         self.id = safe_name(raw_name(name))
         self.members_count = members_count
 
-
     def current_events(self):
-        '''
+        """
             Return the two soonest upcoming events
-        '''
+        """
         filter_old = Event.start_time_notz >= datetime.utcnow()
         current_events = Event.query.filter_by(organization_name=self.name)\
             .filter(filter_old).order_by(Event.start_time_notz.asc()).limit(2).all()
@@ -160,84 +166,84 @@ class Organization(db.Model):
         return current_events_json
 
     def current_projects(self):
-        '''
+        """
             Return the three most current projects
-        '''
+        """
         current_projects = Project.query.filter_by(organization_name=self.name).order_by(desc(Project.last_updated)).limit(3)
         current_projects_json = [project.asdict(include_issues=False) for project in current_projects]
 
         return current_projects_json
 
     def current_stories(self):
-        '''
+        """
             Return the two most current stories
-        '''
+        """
         current_stories = Story.query.filter_by(organization_name=self.name).order_by(desc(Story.id)).limit(2).all()
         current_stories_json = [row.asdict() for row in current_stories]
         return current_stories_json
 
     def all_events(self):
-        ''' API link to all an orgs events
-        '''
+        """ API link to all an orgs events
+        """
         # Make a nice org name
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/events' % (request.scheme, request.host, organization_name)
 
     def upcoming_events(self):
-        ''' API link to an orgs upcoming events
-        '''
+        """ API link to an orgs upcoming events
+        """
         # Make a nice org name
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/upcoming_events' % (request.scheme, request.host, organization_name)
 
     def past_events(self):
-        ''' API link to an orgs past events
-        '''
+        """ API link to an orgs past events
+        """
         # Make a nice org name
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/past_events' % (request.scheme, request.host, organization_name)
 
     def all_projects(self):
-        ''' API link to all an orgs projects
-        '''
+        """ API link to all an orgs projects
+        """
         # Make a nice org name
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/projects' % (request.scheme, request.host, organization_name)
 
     def all_issues(self):
-        '''API link to all an orgs issues
-        '''
+        """API link to all an orgs issues
+        """
         # Make a nice org name
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/issues' % (request.scheme, request.host, organization_name)
 
     def all_stories(self):
-        ''' API link to all an orgs stories
-        '''
+        """ API link to all an orgs stories
+        """
         # Make a nice org name
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/stories' % (request.scheme, request.host, organization_name)
 
     def all_attendance(self):
-        ''' API link to orgs attendance '''
+        """ API link to orgs attendance """
         organization_name = safe_name(self.name)
         return '%s://%s/api/organizations/%s/attendance' % (request.scheme, request.host, organization_name)
 
     def api_id(self):
-        ''' Return organization name made safe for use in a URL.
-        '''
+        """ Return organization name made safe for use in a URL.
+        """
         return safe_name(self.name)
 
     def api_url(self):
-        ''' API link to itself
-        '''
+        """ API link to itself
+        """
         return '%s://%s/api/organizations/%s' % (request.scheme, request.host, self.api_id())
 
     def asdict(self, include_extras=False):
-        ''' Return Organization as a dictionary, with some properties tweaked.
+        """ Return Organization as a dictionary, with some properties tweaked.
 
             Optionally include linked projects, events, and stories.
-        '''
+        """
         organization_dict = db.Model.asdict(self)
 
         # remove fields that don't need to be public
@@ -268,9 +274,9 @@ event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
 
 
 class Story(db.Model):
-    '''
+    """
         Blog posts from a Brigade.
-    '''
+    """
     # Columns
     id = db.Column(db.Integer(), primary_key=True)
     title = db.Column(db.Unicode())
@@ -291,15 +297,15 @@ class Story(db.Model):
         self.keep = True
 
     def api_url(self):
-        ''' API link to itself
-        '''
+        """ API link to itself
+        """
         return '%s://%s/api/stories/%s' % (request.scheme, request.host, str(self.id))
 
     def asdict(self, include_organization=False):
-        ''' Return Story as a dictionary, with some properties tweaked.
+        """ Return Story as a dictionary, with some properties tweaked.
 
             Optionally include linked organization.
-        '''
+        """
         story_dict = db.Model.asdict(self)
 
         # remove fields that don't need to be public
@@ -312,10 +318,11 @@ class Story(db.Model):
 
         return story_dict
 
+
 class Project(db.Model):
-    '''
+    """
         Civic tech projects on GitHub
-    '''
+    """
     # Columns
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.Unicode())
@@ -365,15 +372,15 @@ class Project(db.Model):
         self.languages = languages
 
     def api_url(self):
-        ''' API link to itself
-        '''
+        """ API link to itself
+        """
         return '%s://%s/api/projects/%s' % (request.scheme, request.host, str(self.id))
 
     def asdict(self, include_organization=False, include_issues=True):
-        ''' Return Project as a dictionary, with some properties tweaked.
+        """ Return Project as a dictionary, with some properties tweaked.
 
             Optionally include linked organization.
-        '''
+        """
         project_dict = db.Model.asdict(self)
 
         # remove fields that don't need to be public
@@ -419,9 +426,9 @@ event.listen(tbl, 'after_create', trig_ddl.execute_if(dialect='postgresql'))
 
 
 class Issue(db.Model):
-    '''
+    """
         Issues of Civic Tech Projects on Github
-    '''
+    """
     # Columns
     id = db.Column(db.Integer(), primary_key=True)
     title = db.Column(db.Unicode())
@@ -444,14 +451,14 @@ class Issue(db.Model):
         self.keep = True
 
     def api_url(self):
-        ''' API link to itself
-        '''
+        """ API link to itself
+        """
         return '%s://%s/api/issues/%s' % (request.scheme, request.host, str(self.id))
 
     def asdict(self, include_project=False):
-        '''
+        """
             Return issue as a dictionary with some properties tweaked
-        '''
+        """
         issue_dict = db.Model.asdict(self)
 
         # TODO: Also paged_results assumes asdict takes this argument, should be checked and fixed later
@@ -468,10 +475,11 @@ class Issue(db.Model):
 
         return issue_dict
 
+
 class Label(db.Model):
-    '''
+    """
         Issue labels for projects on Github
-    '''
+    """
     # Columns
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.Unicode())
@@ -490,9 +498,9 @@ class Label(db.Model):
         self.issue_id = issue_id
 
     def asdict(self):
-        '''
+        """
             Return label as a dictionary with some properties tweaked
-        '''
+        """
         label_dict = db.Model.asdict(self)
 
         # remove fields that don't need to be public
@@ -501,10 +509,11 @@ class Label(db.Model):
 
         return label_dict
 
+
 class Event(db.Model):
-    '''
+    """
         Organizations events from Meetup
-    '''
+    """
     # Columns
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.Unicode())
@@ -538,8 +547,8 @@ class Event(db.Model):
         self.keep = True
 
     def start_time(self):
-        ''' Get a string representation of the start time with UTC offset.
-        '''
+        """ Get a string representation of the start time with UTC offset.
+        """
         if self.start_time_notz is None:
             return None
         tz = tzoffset(None, self.utc_offset)
@@ -548,8 +557,8 @@ class Event(db.Model):
         return dt.strftime('%Y-%m-%d %H:%M:%S %z')
 
     def end_time(self):
-        ''' Get a string representation of the end time with UTC offset.
-        '''
+        """ Get a string representation of the end time with UTC offset.
+        """
         if self.end_time_notz is None:
             return None
         tz = tzoffset(None, self.utc_offset)
@@ -558,15 +567,15 @@ class Event(db.Model):
         return dt.strftime('%Y-%m-%d %H:%M:%S %z')
 
     def api_url(self):
-        ''' API link to itself
-        '''
+        """ API link to itself
+        """
         return '%s://%s/api/events/%s' % (request.scheme, request.host, str(self.id))
 
     def asdict(self, include_organization=False):
-        ''' Return Event as a dictionary, with some properties tweaked.
+        """ Return Event as a dictionary, with some properties tweaked.
 
             Optionally include linked organization.
-        '''
+        """
         event_dict = db.Model.asdict(self)
 
         # remove fields that don't need to be public
@@ -583,9 +592,9 @@ class Event(db.Model):
 
 
 class Attendance(db.Model):
-    ''' Attendance at organization events
+    """ Attendance at organization events
         sourced from the peopledb
-    '''
+    """
     # Columns
     organization_url = db.Column(db.Unicode(), primary_key=True)
     total = db.Column(db.Integer())
@@ -603,9 +612,9 @@ class Attendance(db.Model):
 
 
 class Error(db.Model):
-    '''
+    """
         Errors from run_update.py
-    '''
+    """
     # Columns
     id = db.Column(db.Integer(), primary_key=True)
     error = db.Column(db.Unicode())
@@ -615,9 +624,10 @@ class Error(db.Model):
 # API
 # -------------------
 
+
 def page_info(query, page, limit):
-    ''' Return last page and offset for a query.
-    '''
+    """ Return last page and offset for a query.
+    """
     # Get a bunch of projects.
     total = query.count()
     last = int(ceil(total / limit))
@@ -625,9 +635,10 @@ def page_info(query, page, limit):
 
     return last, offset
 
+
 def pages_dict(page, last, querystring):
-    ''' Return a dictionary of pages to return in API responses.
-    '''
+    """ Return a dictionary of pages to return in API responses.
+    """
     url = '%s://%s%s' % (request.scheme, request.host, request.path)
 
     pages = dict()
@@ -657,12 +668,13 @@ def pages_dict(page, last, querystring):
 
     return pages
 
+
 def paged_results(query, page, per_page, querystring=''):
-    '''
-    '''
+    """
+    """
     total = query.count()
     last, offset = page_info(query, page, per_page)
-    if(querystring.find("only_ids") != -1):
+    if querystring.find("only_ids") != -1:
         model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
     else:
         model_dicts = []
@@ -671,24 +683,28 @@ def paged_results(query, page, per_page, querystring=''):
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
+
 def is_safe_name(name):
-    ''' Return True if the string is a safe name.
-    '''
+    """ Return True if the string is a safe name.
+    """
     return raw_name(safe_name(name)) == name
 
+
 def safe_name(name):
-    ''' Return URL-safe organization name with spaces replaced by dashes.
+    """ Return URL-safe organization name with spaces replaced by dashes.
 
         Slashes will be removed, which is incompatible with raw_name().
-    '''
+    """
     return name.replace(' ', '-').replace('/', '-').replace('?', '-').replace('#', '-')
 
+
 def raw_name(name):
-    ''' Return raw organization name with dashes replaced by spaces.
+    """ Return raw organization name with dashes replaced by spaces.
 
         Also replace old-style underscores with spaces.
-    '''
+    """
     return name.replace('_', ' ').replace('-', ' ')
+
 
 def get_query_params(args):
     filters = {}
@@ -699,25 +715,26 @@ def get_query_params(args):
 
 
 def build_rsvps_response(events):
-    ''' Arrange and organize rsvps from a list of event objects '''
+    """ Arrange and organize rsvps from a list of event objects """
     rsvps = {
-        "total" : 0,
-        "weekly" : {}
+        "total": 0,
+        "weekly": {}
     }
-    for event in events:
-        event = event.asdict()
-        if event["rsvps"]:
+    for fetched_event in events:
+        event_dict = fetched_event.asdict()
+
+        if event_dict["rsvps"]:
             # 2014-04-30 18:30:00 -0700
             # Just compare dates
-            event_date = event["start_time"][:10]
+            event_date = event_dict["start_time"][:10]
             event_date = datetime.strptime(event_date, "%Y-%m-%d")
             if datetime.today() > event_date:
                 week = datetime.strftime(event_date, "%Y %W")
-                rsvps["total"] += event["rsvps"]
+                rsvps["total"] += event_dict["rsvps"]
                 if rsvps["weekly"].get(week):
-                    rsvps["weekly"][week] += event["rsvps"]
+                    rsvps["weekly"][week] += event_dict["rsvps"]
                 else:
-                    rsvps["weekly"][week] = event["rsvps"]
+                    rsvps["weekly"][week] = event_dict["rsvps"]
 
     return rsvps
 
@@ -725,16 +742,15 @@ def build_rsvps_response(events):
 @app.route('/api/organizations')
 @app.route('/api/organizations/<name>')
 def get_organizations(name=None):
-    ''' Regular response option for organizations.
-    '''
+    """ Regular response option for organizations.
+    """
 
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if name:
         # Get one named organization.
-        filter = Organization.name == raw_name(name)
-        org = db.session.query(Organization).filter(filter).first()
+        org_filter = Organization.name == raw_name(name)
+        org = db.session.query(Organization).filter(org_filter).first()
         if org:
             return jsonify(org.asdict(True))
         else:
@@ -758,10 +774,11 @@ def get_organizations(name=None):
 
     return jsonify(response)
 
+
 @app.route('/api/organizations.geojson')
 def get_organizations_geojson():
-    ''' GeoJSON response option for organizations.
-    '''
+    """ GeoJSON response option for organizations.
+    """
     geojson = dict(type='FeatureCollection', features=[])
 
     for org in db.session.query(Organization):
@@ -779,12 +796,13 @@ def get_organizations_geojson():
 
     return jsonify(geojson)
 
+
 @app.route("/api/organizations/<organization_name>/events")
 def get_orgs_events(organization_name):
-    '''
+    """
         A cleaner url for getting an organizations events
         Better than /api/events?q={"filters":[{"name":"organization_name","op":"eq","val":"Code for San Francisco"}]}
-    '''
+    """
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -795,11 +813,12 @@ def get_orgs_events(organization_name):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
     return jsonify(response)
 
+
 @app.route("/api/organizations/<organization_name>/upcoming_events")
 def get_upcoming_events(organization_name):
-    '''
+    """
         Get events that occur in the future. Order asc.
-    '''
+    """
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -809,11 +828,12 @@ def get_upcoming_events(organization_name):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
     return jsonify(response)
 
+
 @app.route("/api/organizations/<organization_name>/past_events")
 def get_past_events(organization_name):
-    '''
+    """
         Get events that occur in the past. Order desc.
-    '''
+    """
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -827,7 +847,7 @@ def get_past_events(organization_name):
 
 @app.route("/api/organizations/<organization_name>/events/rsvps")
 def gather_orgs_rsvps(organization_name=None):
-    ''' Orgs rsvps summarized '''
+    """ Orgs rsvps summarized """
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -840,9 +860,9 @@ def gather_orgs_rsvps(organization_name=None):
 
 @app.route("/api/organizations/<organization_name>/stories")
 def get_orgs_stories(organization_name):
-    '''
+    """
         A cleaner url for getting an organizations stories
-    '''
+    """
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -853,11 +873,12 @@ def get_orgs_stories(organization_name):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
     return jsonify(response)
 
+
 @app.route("/api/organizations/<organization_name>/projects")
 def get_orgs_projects(organization_name):
-    '''
+    """
         A cleaner url for getting an organizations projects
-    '''
+    """
     # Check org name
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -886,24 +907,24 @@ def get_orgs_projects(organization_name):
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
         elif 'sort_by' in attr:
-            if(value == 'relevance'):
+            if value == 'relevance':
                 ordering_filter_name = 'relevance'
             else:
                 ordering_filter_name = 'last_updated'
         elif 'sort_dir' in attr:
-            if(value == 'asc'):
+            if value == 'asc':
                 ordering_dir = 'asc'
             else:
                 ordering_dir = 'desc'
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
-    if(ordering_filter_name == 'last_updated'):
+    if ordering_filter_name == 'last_updated':
         ordering_filter = last_updated_ordering_filter
-    elif(ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None)):
+    elif ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None):
         ordering_filter = relevance_ordering_filter
 
-    if(ordering_dir == 'desc'):
+    if ordering_dir == 'desc':
         ordering = ordering_filter.desc()
     else:
         ordering = ordering_filter.asc()
@@ -912,11 +933,12 @@ def get_orgs_projects(organization_name):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 
+
 @app.route("/api/organizations/<organization_name>/issues")
 @app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
 def get_orgs_issues(organization_name, labels=None):
-    ''' A clean url to get an organizations issues
-    '''
+    """ A clean url to get an organizations issues
+    """
 
     # Get one named organization.
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
@@ -956,7 +978,7 @@ def get_orgs_issues(organization_name, labels=None):
 
 @app.route("/api/organizations/<organization_name>/attendance")
 def get_orgs_attendance(organization_name):
-    ''' A clean url to get an organizations attendance '''
+    """ A clean url to get an organizations attendance """
 
     # Get one named organization.
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
@@ -975,10 +997,10 @@ def get_orgs_attendance(organization_name):
     attendance.weekly = weekly
 
     attendance_response = {
-        "organization_name" : attendance.organization_name,
-        "cfapi_url" : attendance.organization_url,
-        "total" : attendance.total,
-        "weekly" : attendance.weekly
+        "organization_name": attendance.organization_name,
+        "cfapi_url": attendance.organization_url,
+        "total": attendance.total,
+        "weekly": attendance.weekly
     }
 
     return json.dumps(attendance_response)
@@ -993,7 +1015,7 @@ def find(lst, key, value):
 
 @app.route("/api/organizations/attendance")
 def get_all_orgs_attendance():
-    ''' A list of all organizations attendance '''
+    """ A list of all organizations attendance """
     all_attendance = Attendance.query.all()
     response = []
 
@@ -1005,10 +1027,10 @@ def get_all_orgs_attendance():
             else:
                 weekly[week] = org_attendance.weekly[week]
         attendance_response = {
-            "organization_name" : org_attendance.organization_name,
-            "cfapi_url" : org_attendance.organization_url,
-            "total" : org_attendance.total,
-            "weekly" : weekly
+            "organization_name": org_attendance.organization_name,
+            "cfapi_url": org_attendance.organization_url,
+            "total": org_attendance.total,
+            "weekly": weekly
         }
         response.append(attendance_response)
 
@@ -1017,7 +1039,7 @@ def get_all_orgs_attendance():
 
 @app.route("/api/attendance")
 def get_all_attendance():
-    ''' All attendance summarized '''
+    """ All attendance summarized """
     all_attendance = Attendance.query.all()
     total = 0
     weekly = {}
@@ -1030,27 +1052,28 @@ def get_all_attendance():
                 weekly[week] = org_attendance.weekly[week]
 
     response = {
-        "total" : total,
-        "weekly" : weekly
+        "total": total,
+        "weekly": weekly
     }
 
     return jsonify(response)
 
+
 @app.route("/api/member_count")
 def all_member_count():
-    ''' The total Meetup.com member count '''
+    """ The total Meetup.com member count """
     member_count = 0
     orgs = Organization.query.all()
     for org in orgs:
         if org.member_count:
             member_count += org.member_count
 
-    return '{ "total" : '+ str(member_count) +'}'
+    return jsonify({"total": member_count})
 
 
 @app.route("/api/organizations/member_count")
 def orgs_member_count():
-    ''' The Meetup.com member count for each group '''
+    """ The Meetup.com member count for each group """
     total_member_count = 0
     orgs_members = {}
     orgs = Organization.query.all()
@@ -1059,17 +1082,18 @@ def orgs_member_count():
             total_member_count += org.member_count
             orgs_members[org.id] = org.member_count
 
-    response = { }
-    response["total"] = total_member_count
-    response["organizations"] = orgs_members
+    response = {
+        "total": total_member_count,
+        "organizations": orgs_members
+    }
     return json.dumps(response)
 
 
 @app.route('/api/projects')
 @app.route('/api/projects/<int:id>')
 def get_projects(id=None):
-    ''' Regular response option for projects.
-    '''
+    """ Regular response option for projects.
+    """
 
     filters, querystring = get_query_params(request.args)
 
@@ -1106,24 +1130,24 @@ def get_projects(id=None):
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
         elif 'sort_by' in attr:
-            if(value == 'relevance'):
+            if value == 'relevance':
                 ordering_filter_name = 'relevance'
             else:
                 ordering_filter_name = 'last_updated'
         elif 'sort_dir' in attr:
-            if(value == 'asc'):
+            if value == 'asc':
                 ordering_dir = 'asc'
             else:
                 ordering_dir = 'desc'
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
-    if(ordering_filter_name == 'last_updated'):
+    if ordering_filter_name == 'last_updated':
         ordering_filter = last_updated_ordering_filter
-    elif(ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None)):
+    elif ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None):
         ordering_filter = relevance_ordering_filter
 
-    if(ordering_dir == 'desc'):
+    if ordering_dir == 'desc':
         ordering = ordering_filter.desc()
     else:
         ordering = ordering_filter.asc()
@@ -1132,11 +1156,12 @@ def get_projects(id=None):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 
+
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
 def get_issues(id=None):
-    '''Regular response option for issues.
-    '''
+    """Regular response option for issues.
+    """
 
     filters = request.args
     filters, querystring = get_query_params(request.args)
@@ -1167,11 +1192,12 @@ def get_issues(id=None):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
     return jsonify(response)
 
+
 @app.route('/api/issues/labels/<labels>')
 def get_issues_by_labels(labels):
-    '''
+    """
     A clean url to filter issues by a comma-separated list of labels
-    '''
+    """
 
     # Create a labels list by comma separating the argument
     labels = [label.strip() for label in labels.split(',')]
@@ -1183,7 +1209,6 @@ def get_issues_by_labels(labels):
     base_query = db.session.query(Issue).join(Issue.labels)
 
     # Check for parameters
-    filters = request.args
     filters, querystring = get_query_params(request.args)
     for attr, value in filters.iteritems():
         if 'project' in attr:
@@ -1205,13 +1230,13 @@ def get_issues_by_labels(labels):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)))
     return jsonify(response)
 
+
 @app.route('/api/events')
 @app.route('/api/events/<int:id>')
 def get_events(id=None):
-    ''' Regular response option for events.
-    '''
+    """ Regular response option for events.
+    """
 
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if id:
@@ -1237,11 +1262,12 @@ def get_events(id=None):
     response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)), querystring)
     return jsonify(response)
 
+
 @app.route('/api/events/upcoming_events')
 def get_all_upcoming_events():
-    ''' Show all upcoming events.
+    """ Show all upcoming events.
         Return them in chronological order.
-    '''
+    """
     filters = request.args
     filters, querystring = get_query_params(request.args)
 
@@ -1260,10 +1286,9 @@ def get_all_upcoming_events():
 
 @app.route('/api/events/past_events')
 def get_all_past_events():
-    ''' Show all past events.
+    """ Show all past events.
         Return them in reverse chronological order.
-    '''
-    filters = request.args
+    """
     filters, querystring = get_query_params(request.args)
 
     query = db.session.query(Event).filter(Event.start_time_notz <= datetime.utcnow()).order_by(desc(Event.start_time_notz))
@@ -1281,7 +1306,7 @@ def get_all_past_events():
 
 @app.route("/api/events/rsvps")
 def gather_all_rsvps():
-    ''' All rsvps summarized '''
+    """ All rsvps summarized """
     events = Event.query.all()
     rsvps = build_rsvps_response(events)
 
@@ -1291,8 +1316,8 @@ def gather_all_rsvps():
 @app.route('/api/stories')
 @app.route('/api/stories/<int:id>')
 def get_stories(id=None):
-    ''' Regular response option for stories.
-    '''
+    """ Regular response option for stories.
+    """
 
     filters = request.args
     filters, querystring = get_query_params(request.args)
@@ -1324,12 +1349,13 @@ def get_stories(id=None):
 # Routes
 # -------------------
 
+
 @app.route('/api/.well-known/status')
 def well_known_status():
-    ''' Return status information for Engine Light.
+    """ Return status information for Engine Light.
 
         http://engine-light.codeforamerica.org
-    '''
+    """
     if 'GITHUB_TOKEN' in os.environ:
         github_auth = (os.environ['GITHUB_TOKEN'], '')
     else:
@@ -1364,7 +1390,7 @@ def well_known_status():
             if recent_error.time.date() == date.today():
                 status = recent_error.error
             else:
-                status = 'ok' # is this really okay?
+                status = 'ok'  # is this really okay?
 
         elif time_since_updated > 16 * 60 * 60:
             status = 'Oldest organization (%s) updated more than 16 hours ago' % org.name
@@ -1386,11 +1412,13 @@ def well_known_status():
 
     return jsonify(state)
 
+
 @app.route("/")
 def index():
     response = make_response('Look in /api', 302)
     response.headers['Location'] = '/api'
     return response
+
 
 @app.route("/api")
 @app.route("/api/")
@@ -1409,6 +1437,7 @@ def api_index():
 
     return render_template('index.html', api_base='%s://%s' % (request.scheme, request.host))
 
+
 @app.route("/api/static/<path:path>")
 def api_static_file(path):
     local_path = join('static', path)
@@ -1417,9 +1446,11 @@ def api_static_file(path):
     response.headers['Content-Type'] = mime_type
     return response
 
+
 @app.errorhandler(404)
 def page_not_found(error):
     return jsonify({"status": "Resource Not Found"}), 404
+
 
 @app.errorhandler(500)
 def internal_error(error):

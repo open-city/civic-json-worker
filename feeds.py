@@ -87,7 +87,7 @@ def get_first_working_feed_link(url):
     # parse the html extracted from the url, and get all the potiential
     # links from it then try them one by one
     for link in extract_feed_links(html):
-        if '://' not in link: # if we got a relative URL, make it absolute
+        if '://' not in link:  # if we got a relative URL, make it absolute
             link = site_url + link
         feed = feedparser.parse(link)
         if not feed.get("bozo", 1):
