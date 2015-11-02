@@ -25,6 +25,7 @@ db = SQLAlchemy()
 def initialize_database(app):
     """ Takes an initalized flask application and binds a database context to allow query execution
     """
+    # see https://github.com/mitsuhiko/flask-sqlalchemy/issues/82
     db.app = app
     db.init_app(app)
 
