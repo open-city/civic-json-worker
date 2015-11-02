@@ -121,7 +121,7 @@ def paged_results(query, page, per_page, querystring=''):
     '''
     total = query.count()
     last, offset = page_info(query, page, per_page)
-    if(querystring.find("only_ids") != -1):
+    if querystring.find("only_ids") != -1:
         model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
     else:
         model_dicts = []
@@ -145,20 +145,20 @@ def build_rsvps_response(events):
         "total": 0,
         "weekly": {}
     }
-    for event in events:
-        event = event.asdict()
-        if event["rsvps"]:
+    for fetched_event in events:
+        event_dict = fetched_event.asdict()
+        if event_dict["rsvps"]:
             # 2014-04-30 18:30:00 -0700
             # Just compare dates
-            event_date = event["start_time"][:10]
+            event_date = event_dict["start_time"][:10]
             event_date = datetime.strptime(event_date, "%Y-%m-%d")
             if datetime.today() > event_date:
                 week = datetime.strftime(event_date, "%Y %W")
-                rsvps["total"] += event["rsvps"]
+                rsvps["total"] += event_dict["rsvps"]
                 if rsvps["weekly"].get(week):
-                    rsvps["weekly"][week] += event["rsvps"]
+                    rsvps["weekly"][week] += event_dict["rsvps"]
                 else:
-                    rsvps["weekly"][week] = event["rsvps"]
+                    rsvps["weekly"][week] = event_dict["rsvps"]
 
     return rsvps
 
@@ -174,8 +174,8 @@ def get_organizations(name=None):
 
     if name:
         # Get one named organization.
-        filter = Organization.name == raw_name(name)
-        org = db.session.query(Organization).filter(filter).first()
+        org_filter = Organization.name == raw_name(name)
+        org = db.session.query(Organization).filter(org_filter).first()
         if org:
             return jsonify(org.asdict(True))
         else:
@@ -332,24 +332,24 @@ def get_orgs_projects(organization_name):
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
         elif 'sort_by' in attr:
-            if(value == 'relevance'):
+            if value == 'relevance':
                 ordering_filter_name = 'relevance'
             else:
                 ordering_filter_name = 'last_updated'
         elif 'sort_dir' in attr:
-            if(value == 'asc'):
+            if value == 'asc':
                 ordering_dir = 'asc'
             else:
                 ordering_dir = 'desc'
         else:
             query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
 
-    if(ordering_filter_name == 'last_updated'):
+    if ordering_filter_name == 'last_updated':
         ordering_filter = last_updated_ordering_filter
-    elif(ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None)):
+    elif ordering_filter_name == 'relevance' and dir(relevance_ordering_filter) != dir(None):
         ordering_filter = relevance_ordering_filter
 
-    if(ordering_dir == 'desc'):
+    if ordering_dir == 'desc':
         ordering = ordering_filter.desc()
     else:
         ordering = ordering_filter.asc()
@@ -556,12 +556,12 @@ def get_projects(id=None):
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
         elif 'sort_by' in attr:
-            if(value == 'relevance'):
+            if value == 'relevance':
                 ordering_filter_name = 'relevance'
             else:
                 ordering_filter_name = 'last_updated'
         elif 'sort_dir' in attr:
-            if(value == 'asc'):
+            if value == 'asc':
                 ordering_dir = 'asc'
             else:
                 ordering_dir = 'desc'
@@ -588,8 +588,6 @@ def get_projects(id=None):
 def get_issues(id=None):
     '''Regular response option for issues.
     '''
-
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if id:
@@ -663,8 +661,6 @@ def get_issues_by_labels(labels):
 def get_events(id=None):
     ''' Regular response option for events.
     '''
-
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if id:
@@ -819,7 +815,8 @@ def well_known_status():
             if recent_error.time.date() == date.today():
                 status = recent_error.error
             else:
-                status = 'ok' # is this really okay?
+                # is this really okay?
+                status = 'ok'
 
         elif time_since_updated > 16 * 60 * 60:
             status = 'Oldest organization (%s) updated more than 16 hours ago' % org.name
