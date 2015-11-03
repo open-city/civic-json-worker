@@ -38,8 +38,6 @@ def upgrade():
     op.execute(droptriggerfunc)
     op.execute(createtriggerfunc)
     op.execute(createtrigger)
-    ### end Alembic commands ###
-
 
 def downgrade():
     droptrigger = "DROP TRIGGER IF EXISTS tsvupdate_projects_trigger ON project"

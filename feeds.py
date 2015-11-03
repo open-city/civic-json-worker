@@ -47,7 +47,6 @@ def extract_feed_links(html, feed_links_attributes=FEED_LINKS_ATTRIBUTES):
     """
     soup = BeautifulSoup(html)
     head = soup.find('head')
-    links = []
     for attrs in feed_links_attributes:
         if head:
             for link in head.findAll('link', dict(attrs)):
