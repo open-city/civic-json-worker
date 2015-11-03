@@ -11,8 +11,6 @@ revision = '4f685c062cff'
 down_revision = '8081a5906af'
 
 from alembic import op
-import sqlalchemy as sa
-
 
 def upgrade():
     droptrigger = "DROP TRIGGER IF EXISTS tsvupdate_projects_trigger ON project"
@@ -43,4 +41,3 @@ def downgrade():
     op.execute(droptrigger)
     op.execute(droptriggerfunc)
     op.execute(createtrigger)
-

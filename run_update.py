@@ -134,8 +134,6 @@ def get_meetup_count(organization, identifier):
             organization.member_count = members
             db.session.commit()
 
-
-
 def get_organizations(org_sources):
     ''' Collate all organizations from different sources.
     '''
@@ -388,7 +386,7 @@ def update_project_info(project):
 
     # Get the Github attributes
     if host == 'github.com':
-        path = sub(r"[\ /]+\s*$","",path)
+        path = sub(r"[\ /]+\s*$", "", path)
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
@@ -479,7 +477,7 @@ def update_project_info(project):
         github_details = {}
         for field in ('contributors_url', 'created_at', 'forks_count', 'homepage',
                       'html_url', 'id', 'open_issues', 'pushed_at',
-                      'updated_at', 'watchers_count', 'name', 'description', 
+                      'updated_at', 'watchers_count', 'name', 'description',
                       'stargazers_count', 'subscribers_count'):
             github_details[field] = all_github_attributes[field]
 
@@ -617,7 +615,7 @@ def get_issues_for_project(project):
 
     # Get github issues api url
     _, host, path, _, _, _ = urlparse(project.code_url)
-    path = sub(r"[\ /]+\s*$","",path)
+    path = sub(r"[\ /]+\s*$", "", path)
     issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
     # Ping github's api for project issues
@@ -665,7 +663,7 @@ def get_issues(org_name):
         if host != 'github.com':
             continue
 
-        path = sub(r"[\ /]+\s*$","",path)
+        path = sub(r"[\ /]+\s*$", "", path)
         issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
         # Ping github's api for project issues
@@ -711,7 +709,7 @@ def get_root_directory_listing_for_project(project_dict, force=False):
 
     # Get the API URL
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
-    path = sub(r"[\ /]+\s*$","",path)
+    path = sub(r"[\ /]+\s*$", "", path)
     directory_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='')
 
     # Request the directory listing
@@ -754,7 +752,7 @@ def get_civic_json_for_project(project_dict, force=False):
 
     # Get the API URL (if 'code_url' wasn't in project_dict, it would've been caught upstream)
     _, host, path, _, _, _ = urlparse(project_dict['code_url'])
-    path = sub(r"[\ /]+\s*$","",path)
+    path = sub(r"[\ /]+\s*$", "", path)
     civic_url = GITHUB_CONTENT_API_URL.format(repo_path=path, file_path='civic.json')
 
     # Request the contents of the civic.json file
@@ -1001,7 +999,7 @@ def get_attendance(peopledb, organization_url, organization_name):
     # Total attendance
     q = ''' SELECT COUNT(*) AS total FROM attendance
             WHERE organization_url = %s '''
-    peopledb.execute(q,(organization_url,))
+    peopledb.execute(q, (organization_url,))
     total = int(peopledb.fetchone()["total"])
 
     # weekly attendance
@@ -1010,19 +1008,19 @@ def get_attendance(peopledb, organization_url, organization_name):
             FROM attendance
             WHERE organization_url = %s
             GROUP BY week '''
-    peopledb.execute(q,(organization_url,))
+    peopledb.execute(q, (organization_url,))
     weekly = peopledb.fetchall()
-    weekly = { week["week"] : int(week["total"]) for week in weekly }
+    weekly = {week["week"]: int(week["total"]) for week in weekly}
 
     this_week = datetime.strftime(datetime.now(), "%Y %U")
     if this_week not in weekly.keys():
         weekly[this_week] = 0
 
     attendance = {
-        "organization_name" : organization_name,
-        "organization_url" : organization_url,
-        "total" : total,
-        "weekly" : weekly
+        "organization_name": organization_name,
+        "organization_url": organization_url,
+        "total": total,
+        "weekly": weekly
     }
 
     return attendance
@@ -1135,7 +1133,6 @@ def main(org_name=None, org_sources=None):
 
                     else:
                         logging.error("%s does not have a valid events url" % organization.name)
-
 
             # Get issues for all of the projects
             logging.info("Gathering all of %s's open GitHub issues." % organization.name)
