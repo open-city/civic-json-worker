@@ -691,7 +691,8 @@ def get_issues(org_name):
                     if "/pull/" in issue['html_url']:
                         continue
                     issue_dict = dict(title=issue['title'], html_url=issue['html_url'],
-                                      body=issue['body'], project_id=project.id, labels=issue['labels'])
+                                      body=issue['body'], project_id=project.id, labels=issue['labels'], 
+                                      created_at=issue['created_at'], updated_at=issue['updated_at'])
                     issues.append(issue_dict)
                 else:
                     logging.error('Issue for project %s is not a dictionary', project.name)

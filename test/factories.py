@@ -74,6 +74,8 @@ class IssueFactory(SQLAlchemyModelFactory):
     title = factory.Sequence(lambda n: u'Civic Issue {0}'.format(n))
     html_url = factory.Sequence(lambda n: u'http://www.github.com/codeforamerica/cfapi/issues/{0}'.format(n))
     body = factory.Sequence(lambda n: u'Civic Issue blah blah blah {0}'.format(n))
+    created_at = factory.LazyAttribute(lambda o: datetime.utcnow())
+    updated_at = factory.LazyAttribute(lambda o: datetime.utcnow())
 
     project_id = factory.LazyAttribute(lambda e: ProjectFactory().id)
 
