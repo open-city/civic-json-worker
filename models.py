@@ -13,7 +13,7 @@ from sqlalchemy import event, DDL
 from dateutil.tz import tzoffset
 
 from flask.ext.sqlalchemy import SQLAlchemy
-from utils import raw_name, safe_name
+from utils import raw_name, safe_name, convert_datetime_to_iso_8601
 
 db = SQLAlchemy()
 
@@ -433,6 +433,10 @@ class Issue(db.Model):
 
         # remove fields that don't need to be public
         del issue_dict['keep']
+
+        # manually convert dates to ISO 8601
+        issue_dict['created_at'] = convert_datetime_to_iso_8601(issue_dict['created_at'])
+        issue_dict['updated_at'] = convert_datetime_to_iso_8601(issue_dict['updated_at'])
 
         issue_dict['api_url'] = self.api_url()
         issue_dict['labels'] = [l.asdict() for l in self.labels]
