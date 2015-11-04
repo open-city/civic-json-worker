@@ -13,7 +13,7 @@ from sqlalchemy import event, DDL
 from dateutil.tz import tzoffset
 
 from flask.ext.sqlalchemy import SQLAlchemy
-from utils import raw_name, safe_name
+from utils import raw_name, safe_name, convert_datetime_to_iso_8601
 
 db = SQLAlchemy()
 
@@ -395,6 +395,8 @@ class Issue(db.Model):
     html_url = db.Column(db.Unicode())
     body = db.Column(db.Unicode())
     keep = db.Column(db.Boolean())
+    created_at = db.Column(db.DateTime())
+    updated_at = db.Column(db.DateTime())
 
     # Relationships
     # child
@@ -403,11 +405,13 @@ class Issue(db.Model):
 
     # can contain labels (this relationship is defined in the child object)
 
-    def __init__(self, title, project_id=None, html_url=None, labels=None, body=None):
+    def __init__(self, title, project_id=None, html_url=None, labels=None, body=None, created_at=None, updated_at=None):
         self.title = title
         self.html_url = html_url
         self.body = body
         self.project_id = project_id
+        self.created_at = created_at
+        self.updated_at = updated_at
         self.keep = True
 
     def api_url(self):
@@ -429,6 +433,10 @@ class Issue(db.Model):
 
         # remove fields that don't need to be public
         del issue_dict['keep']
+
+        # manually convert dates to ISO 8601
+        issue_dict['created_at'] = convert_datetime_to_iso_8601(issue_dict['created_at'])
+        issue_dict['updated_at'] = convert_datetime_to_iso_8601(issue_dict['updated_at'])
 
         issue_dict['api_url'] = self.api_url()
         issue_dict['labels'] = [l.asdict() for l in self.labels]
