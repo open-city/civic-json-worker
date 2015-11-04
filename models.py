@@ -37,12 +37,12 @@ def initialize_database(app):
 
 
 class JsonType(Mutable, types.TypeDecorator):
-    """ JSON wrapper type for TEXT database storage.
+    ''' JSON wrapper type for TEXT database storage.
 
         References:
         http://stackoverflow.com/questions/4038314/sqlalchemy-json-as-blob-text
         http://docs.sqlalchemy.org/en/rel_0_9/orm/extensions/mutable.html
-    """
+    '''
     impl = types.Unicode
 
     def process_bind_param(self, value, engine):
@@ -419,16 +419,14 @@ class Issue(db.Model):
         '''
         return '%s://%s/api/issues/%s' % (request.scheme, request.host, str(self.id))
 
-    def asdict(self, include_project=False):
+    def asdict(self, include_project=False, include_labels=True):
         '''
             Return issue as a dictionary with some properties tweaked
         '''
         issue_dict = db.Model.asdict(self)
 
-        # TODO: Also paged_results assumes asdict takes this argument, should be checked and fixed later
         if include_project:
-            issue_dict['project'] = db.session.query(Project).filter(Project.id == self.project_id).first().asdict()
-            del issue_dict['project']['issues']
+            issue_dict['project'] = db.session.query(Project).filter(Project.id == self.project_id).first().asdict(include_organization=False, include_issues=False)
             del issue_dict['project_id']
 
         # remove fields that don't need to be public
@@ -438,8 +436,11 @@ class Issue(db.Model):
         issue_dict['created_at'] = convert_datetime_to_iso_8601(issue_dict['created_at'])
         issue_dict['updated_at'] = convert_datetime_to_iso_8601(issue_dict['updated_at'])
 
+        # set the API URL
         issue_dict['api_url'] = self.api_url()
-        issue_dict['labels'] = [l.asdict() for l in self.labels]
+
+        if include_labels:
+            issue_dict['labels'] = [l.asdict() for l in self.labels]
 
         return issue_dict
 
@@ -476,7 +477,6 @@ class Label(db.Model):
         del label_dict['issue_id']
 
         return label_dict
-
 
 class Event(db.Model):
     '''
@@ -558,7 +558,6 @@ class Event(db.Model):
 
         return event_dict
 
-
 class Attendance(db.Model):
     ''' Attendance at organization events
         sourced from the peopledb
@@ -577,7 +576,6 @@ class Attendance(db.Model):
         self.organization_name = organization_name
         self.total = total
         self.weekly = weekly
-
 
 class Error(db.Model):
     '''
