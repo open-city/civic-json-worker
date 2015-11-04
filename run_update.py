@@ -1148,11 +1148,13 @@ def main(org_name=None, org_sources=None):
                 save_labels(db.session, issue)
 
             # Get attendance data
-            with connect(PEOPLEDB) as conn:
-                with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
-                    cfapi_url = "https://www.codeforamerica.org/api/organizations/"
-                    organization_url = cfapi_url + organization.api_id()
-                    attendance = get_attendance(peopledb, organization_url, organization.name)
+            attendance = None
+            if PEOPLEDB:
+                with connect(PEOPLEDB) as conn:
+                    with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+                        cfapi_url = "https://www.codeforamerica.org/api/organizations/"
+                        organization_url = cfapi_url + organization.api_id()
+                        attendance = get_attendance(peopledb, organization_url, organization.name)
 
             if attendance:
                 update_attendance(db, organization.name, attendance)
