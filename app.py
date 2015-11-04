@@ -418,19 +418,20 @@ def get_orgs_issues_new(organization_name, labels=None):
     issues_query = u'''{query} GROUP BY issue.id ORDER BY random() LIMIT {limit};'''.format(query=issues_query, limit=per_page)
     # run the query
     issues_result = db.session.execute(issues_query)
+
     # issues_result is a ResultProxy object
     # http://docs.sqlalchemy.org/en/rel_1_0/core/connections.html#sqlalchemy.engine.ResultProxy
     issues_dicts = []
     for row in issues_result:
         # each row is a RowProxy object
         # http://docs.sqlalchemy.org/en/rel_1_0/core/connections.html#sqlalchemy.engine.RowProxy
-        issues_dicts.append(get_issue_dict_from_rowproxy(row))
+        issues_dicts.append(make_issue_dict_from_rowproxy(row))
 
     response = dict(objects=issues_dicts)
 
     return jsonify(response)
 
-def get_issue_dict_from_rowproxy(issue_row):
+def make_issue_dict_from_rowproxy(issue_row):
     ''' Take a RowProxy object representing an issue and return a complete dict of the issue.
     '''
     # start with a dict of the issue row
