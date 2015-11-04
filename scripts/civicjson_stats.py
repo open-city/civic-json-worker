@@ -1,5 +1,4 @@
 from requests import get
-from time import sleep
 import json
 
 civicjson_urls = [

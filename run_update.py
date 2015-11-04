@@ -61,6 +61,7 @@ else:
 
 github_throttling = False
 
+
 def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
@@ -71,6 +72,7 @@ def get_github_api(url, headers=None):
 
     return got
 
+
 def format_date(time_in_milliseconds, utc_offset_msec):
     '''
         Create a datetime object from a time in milliseconds from the epoch
@@ -79,15 +81,17 @@ def format_date(time_in_milliseconds, utc_offset_msec):
     dt = datetime.fromtimestamp(time_in_milliseconds / 1000.0, tz)
     return datetime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
 
+
 def format_location(venue):
     address = venue['address_1']
-    if('address_2' in venue and venue['address_2'] != ''):
+    if 'address_2' in venue and venue['address_2'] != '':
         address = address + ', ' + venue['address_2']
 
     if 'state' in venue:
         return "{address}, {city}, {state}, {country}".format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
     else:
         return "{address}, {city}, {country}".format(address=address, city=venue['city'], country=venue['country'])
+
 
 def get_meetup_events(organization, group_urlname):
     '''
@@ -134,6 +138,7 @@ def get_meetup_count(organization, identifier):
             organization.member_count = members
             db.session.commit()
 
+
 def get_organizations(org_sources):
     ''' Collate all organizations from different sources.
     '''
@@ -144,6 +149,7 @@ def get_organizations(org_sources):
                 organizations.extend(get_organizations_from_spreadsheet(org_source))
 
     return organizations
+
 
 def get_organizations_from_spreadsheet(org_source):
     '''
@@ -163,6 +169,7 @@ def get_organizations_from_spreadsheet(org_source):
                                      for (k, v) in org.items()])
 
     return organizations
+
 
 def get_stories(organization):
     ''' Get two recent stories from an rss feed.
@@ -197,6 +204,7 @@ def get_stories(organization):
     #
     return [dict(title=e.title, link=e.link, type=u'blog', organization_name=organization.name)
             for e in d.entries[:2]]
+
 
 def get_adjoined_json_lists(response, headers=None):
     ''' Github uses the Link header (RFC 5988) to do pagination.
@@ -318,6 +326,7 @@ def get_projects(organization):
 
     return projects
 
+
 def github_latest_update_time(github_details):
     ''' Issue 245 Choose most recent time for last_update from GitHub
         * pushed_at: time of last commit
@@ -338,6 +347,7 @@ def github_latest_update_time(github_details):
     else:
         logger.error("GitHub Project details has neither pushed_at or updated_at, using current time.")
         return datetime.now().strftime(datetime_format)
+
 
 def non_github_project_update_time(project):
     ''' If its a non-github project, we should check if any of the fields
@@ -362,6 +372,7 @@ def non_github_project_update_time(project):
         project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
 
     return project
+
 
 def update_project_info(project):
     ''' Update info from Github, if it's missing.
@@ -548,6 +559,7 @@ def update_project_info(project):
 
     return project
 
+
 def extract_tag_value(tag_candidate):
     ''' Extract the value of a tag from a string or object. tag_candidate must
         be in the form of either u'tag value' or {'tag': u'tag value'}
@@ -566,6 +578,7 @@ def extract_tag_value(tag_candidate):
 
     return None
 
+
 def get_tags_from_civic_json_object(tags_in):
     ''' Extract and return tags in the correct format from the passed object
     '''
@@ -579,6 +592,7 @@ def get_tags_from_civic_json_object(tags_in):
     stripped = [item for item in extracted if item is not None]
     # return as a string
     return u','.join(stripped) if len(stripped) else None
+
 
 def update_project_from_civic_json(project_dict, force=False):
     ''' Update and return the passed project dict with values from civic.json
@@ -603,6 +617,7 @@ def update_project_from_civic_json(project_dict, force=False):
     # add other attributes from civic.json here
 
     return project_dict, is_updated
+
 
 def get_issues_for_project(project):
     ''' get the issues for a single project in dict format
@@ -637,6 +652,7 @@ def get_issues_for_project(project):
             logging.error('Issue for project %s is not a dictionary', project.name)
 
     return issues
+
 
 def get_issues(org_name):
     '''
@@ -699,6 +715,7 @@ def get_issues(org_name):
                     logging.error('Issue for project %s is not a dictionary', project.name)
     return issues
 
+
 def get_root_directory_listing_for_project(project_dict, force=False):
     ''' Get a listing of the project's github repo root directory. Will return
         an empty list if the listing hasn't changed since the last time we asked
@@ -736,12 +753,14 @@ def get_root_directory_listing_for_project(project_dict, force=False):
 
     return listing
 
+
 def get_civic_json_exists_for_project(project_dict, force=False):
     ''' Return True if the passed project has a civic.json file in its root directory.
     '''
     directory_listing = get_root_directory_listing_for_project(project_dict, force)
     exists = 'civic.json' in [item['name'] for item in directory_listing]
     return exists
+
 
 def get_civic_json_for_project(project_dict, force=False):
     ''' Get the contents of the civic.json at the project's github repo root, if it exists.
@@ -783,6 +802,7 @@ def get_civic_json_for_project(project_dict, force=False):
         logging.info('No civic.json at {}'.format(civic_url))
 
     return civic
+
 
 def count_people_totals(all_projects):
     ''' Create a list of people details based on project details.
@@ -829,6 +849,7 @@ def count_people_totals(all_projects):
 
     return users
 
+
 def save_organization_info(session, org_dict):
     ''' Save a dictionary of organization info to the datastore session.
 
@@ -860,6 +881,7 @@ def save_organization_info(session, org_dict):
 
     return existing_org
 
+
 def save_project_info(session, proj_dict):
     ''' Save a dictionary of project info to the datastore session.
 
@@ -885,6 +907,7 @@ def save_project_info(session, proj_dict):
 
     return existing_project
 
+
 def save_issue(session, issue):
     '''
         Save a dictionary of issue info to the datastore session.
@@ -907,6 +930,7 @@ def save_issue(session, issue):
         existing_issue.body = issue['body']
         existing_issue.html_url = issue['html_url']
         existing_issue.project_id = issue['project_id']
+
 
 def save_labels(session, issue):
     '''
@@ -934,6 +958,7 @@ def save_labels(session, issue):
     for label_name in delete_label_names:
         session.query(Label).filter(Label.issue_id == existing_issue.id, Label.name == label_name).delete()
 
+
 def save_event_info(session, event_dict):
     '''
         Save a dictionary of event into to the datastore session then return
@@ -957,6 +982,7 @@ def save_event_info(session, event_dict):
     # Update existing event details
     for (field, value) in event_dict.items():
         setattr(existing_event, field, value)
+
 
 def save_story_info(session, story_dict):
     '''
@@ -982,6 +1008,7 @@ def save_story_info(session, story_dict):
     # Update existing story details
     for (field, value) in story_dict.items():
         setattr(existing_story, field, value)
+
 
 def get_event_group_identifier(events_url):
     parse_result = urlparse(events_url)
@@ -1026,6 +1053,7 @@ def get_attendance(peopledb, organization_url, organization_name):
     }
 
     return attendance
+
 
 def update_attendance(db, organization_name, attendance):
     ''' Update exisiting attendance '''
@@ -1072,8 +1100,6 @@ def main(org_name=None, org_sources=None):
             continue
 
         try:
-            filter = Organization.name == org_info['name']
-            existing_org = db.session.query(Organization).filter(filter).first()
             organization_names.add(org_info['name'])
 
             # Mark everything associated with this organization for deletion at first.
