@@ -375,9 +375,8 @@ def get_orgs_projects(organization_name):
     response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
-
-@app.route("/api/organizations/<organization_name>/issues")
-@app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
+@app.route("/api/organizations_test/<organization_name>/issues")
+@app.route("/api/organizations_test/<organization_name>/issues/labels/<labels>")
 def get_orgs_issues_new(organization_name, labels=None):
     ''' Trying a raw SQL query instead
     '''
@@ -460,8 +459,8 @@ def make_issue_dict_from_rowproxy(issue_row):
 
     return issue_dict
 
-@app.route("/api/organizations_old/<organization_name>/issues")
-@app.route("/api/organizations_old/<organization_name>/issues/labels/<labels>")
+@app.route("/api/organizations/<organization_name>/issues")
+@app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
 def get_orgs_issues(organization_name, labels=None):
     ''' A clean url to get an organizations issues
     '''
@@ -718,8 +717,7 @@ def get_issues(id=None):
     response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
-
-@app.route('/api/issues/labels/<labels>')
+@app.route('/api/issues_test/labels/<labels>')
 def get_issues_by_labels_new(labels):
     '''
     A clean url to filter issues by a comma-separated list of labels
@@ -745,7 +743,7 @@ def get_issues_by_labels_new(labels):
     response = paged_results(query=matches, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
-@app.route('/api/issues_old/labels/<labels>')
+@app.route('/api/issues/labels/<labels>')
 def get_issues_by_labels(labels):
     '''
     A clean url to filter issues by a comma-separated list of labels
