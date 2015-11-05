@@ -117,20 +117,6 @@ def pages_dict(page, last, querystring):
 
     return pages
 
-def paged_results_old(query, page, per_page, querystring=''):
-    '''
-    '''
-    total = query.count()
-    last, offset = page_info(total, page, per_page)
-    if querystring.find("only_ids") != -1:
-        model_dicts = [o.id for o in query.limit(per_page).offset(offset)]
-    else:
-        model_dicts = []
-        for o in query.limit(per_page).offset(offset):
-            obj = o.asdict(True)
-            model_dicts.append(obj)
-    return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
-
 def paged_results(query, include_args=None, page=1, per_page=10, querystring=''):
     ''' Return a dict representing one page-worth of results
     '''
@@ -375,41 +361,11 @@ def get_orgs_projects(organization_name):
     response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
-@app.route("/api/organizations_test/<organization_name>/issues")
-@app.route("/api/organizations_test/<organization_name>/issues/labels/<labels>")
-def get_orgs_issues_new(organization_name, labels=None):
-    ''' Trying a raw SQL query instead
-    '''
-    # The organization is in the database
-    organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
-    if not organization:
-        return "Organization not found", 404
-
-    # build a query prefix:
-    query_text = u'''SELECT issue.id FROM organization JOIN project ON project.organization_name = organization.name JOIN issue ON issue.project_id = project.id WHERE organization.name = \'{organization_name}\''''.format(organization_name=organization.name)
-
-    # add filters for labels if they're sent
-    if labels:
-        label_names = [label.strip() for label in labels.split(',')]
-        for label_name in label_names:
-            label_clause = u'''AND issue.id IN (SELECT issue_id FROM label WHERE name ILIKE '%{label_name}%')'''.format(label_name=label_name)
-            query_text = u'''{query} {clause}'''.format(query=query_text, clause=label_clause)
-
-    # group to dedupe, randomize
-    query_text = u'''{query} GROUP BY issue.id ORDER BY random();'''.format(query=query_text)
-    # run the query
-    issues_query = Issue.query.from_statement(sql.text(query_text))
-
-    filters, querystring = get_query_params(request.args)
-    response = paged_results(query=issues_query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
-    return jsonify(response)
-
 @app.route("/api/organizations/<organization_name>/issues")
 @app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
 def get_orgs_issues(organization_name, labels=None):
     ''' A clean url to get an organizations issues
     '''
-
     # Get one named organization.
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
@@ -427,7 +383,7 @@ def get_orgs_issues(organization_name, labels=None):
         labels = [label.strip() for label in labels.split(',')]
 
         # Create the filter for each label
-        labels = [Label.name.ilike('%%%s%%' % label) for label in labels]
+        labels = [Label.name.ilike('%{}%'.format(label)) for label in labels]
 
         # Create the base query object by joining on Issue.labels
         query = query.join(Issue.labels)
@@ -445,7 +401,6 @@ def get_orgs_issues(organization_name, labels=None):
     filters, querystring = get_query_params(request.args)
     response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
-
 
 @app.route("/api/organizations/<organization_name>/attendance")
 def get_orgs_attendance(organization_name):
@@ -660,32 +615,6 @@ def get_issues(id=None):
             query = query.filter(getattr(Issue, attr).ilike('%%%s%%' % value))
 
     response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
-    return jsonify(response)
-
-@app.route('/api/issues_test/labels/<labels>')
-def get_issues_by_labels_new(labels):
-    '''
-    A clean url to filter issues by a comma-separated list of labels
-    '''
-    query_text = u'''SELECT issue.id FROM issue'''
-
-    # add filters for labels if they're sent
-    if labels:
-        label_names = [label.strip() for label in labels.split(',')]
-        query_text = u'''{query} WHERE'''.format(query=query_text)
-        clauses = []
-        for label_name in label_names:
-            clauses.append(u'''issue.id IN (SELECT issue_id FROM label WHERE name ILIKE '%{label_name}%')'''.format(label_name=label_name))
-        query_text = u'''{query} {clauses}'''.format(query=query_text, clauses=' AND '.join(clauses))
-
-    # randomize
-    query_text = u'''{query} ORDER BY random();'''.format(query=query_text)
-
-    # run the query
-    issues_query = Issue.query.from_statement(sql.text(query_text))
-
-    filters, querystring = get_query_params(request.args)
-    response = paged_results(query=issues_query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 @app.route('/api/issues/labels/<labels>')
