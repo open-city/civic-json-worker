@@ -55,7 +55,6 @@ class JsonType(Mutable, types.TypeDecorator):
             # default can also be a list
             return {}
 
-
 class TSVectorType(types.TypeDecorator):
     ''' TSVECTOR wrapper type for database storage.
 
@@ -63,7 +62,6 @@ class TSVectorType(types.TypeDecorator):
         http://stackoverflow.com/questions/13837111/tsvector-in-sqlalchemy
     '''
     impl = types.UnicodeText
-
 
 @compiles(TSVectorType, 'postgresql')
 def compile_tsvector(element, compiler, **kw):
@@ -356,7 +354,7 @@ class Project(db.Model):
             project_dict['organization'] = self.organization.asdict()
 
         if include_issues:
-            project_dict['issues'] = [o.asdict() for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
+            project_dict['issues'] = [o.asdict(include_project=False, include_labels=True) for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
 
         return project_dict
 
@@ -550,11 +548,12 @@ class Event(db.Model):
         for key in ('keep', 'start_time_notz', 'end_time_notz', 'utc_offset'):
             del event_dict[key]
 
+        # add custom fields not in database
         for key in ('start_time', 'end_time', 'api_url'):
             event_dict[key] = getattr(self, key)()
 
         if include_organization:
-            event_dict['organization'] = self.organization.asdict()
+            event_dict['organization'] = self.organization.asdict(include_extras=False)
 
         return event_dict
 

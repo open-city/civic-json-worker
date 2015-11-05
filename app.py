@@ -131,36 +131,20 @@ def paged_results_old(query, page, per_page, querystring=''):
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
-def paged_results(query, page=1, per_page=10, querystring=''):
-    '''
+def paged_results(query, include_args=None, page=1, per_page=10, querystring=''):
+    ''' Return a dict representing one page-worth of results
     '''
     items = [item for item in query]
     total = len(items)
 
-    # jsonify_us = dict(items=[])
-    # return_dict = dict(dictified=0, jsonified=0)
-    # howmany = 5
-    # if 'howmany' in querystring:
-    #     howmany = int(request.args['howmany'])
-    # if howmany > total:
-    #     howmany = total
-    # if 'dictify' in querystring:
-    #     for check in range(0, howmany):
-    #         jsonify_us['items'].append(items[check].asdict(True))
-    #     return_dict['dictified'] = check + 1
-    # if 'jsonify' in querystring:
-    #     jsonify(jsonify_us)
-    #     return_dict['jsonified'] = check + 1
-    # return return_dict
-
     last, offset = page_info(total, page, per_page)
     page_of_items = items[offset:offset + per_page]
-    if(querystring.find("only_ids") != -1):
+    if 'only_ids' in querystring:
         model_dicts = [o.id for o in page_of_items]
     else:
         model_dicts = []
         for o in page_of_items:
-            obj = o.asdict(True)
+            obj = o.asdict(**include_args) if include_args else o.asdict()
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
 
@@ -228,7 +212,7 @@ def get_organizations(name=None):
             query = query.filter(getattr(Organization, attr).ilike('%%%s%%' % value))
 
     query = query.order_by(ordering)
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
+    response = paged_results(query=query, include_args=dict(include_extras=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
 
     return jsonify(response)
 
@@ -268,7 +252,7 @@ def get_orgs_events(organization_name):
 
     # Get event objects
     query = Event.query.filter_by(organization_name=organization.name)
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
 
@@ -283,7 +267,7 @@ def get_upcoming_events(organization_name):
         return "Organization not found", 404
     # Get upcoming event objects
     query = Event.query.filter(Event.organization_name == organization.name, Event.start_time_notz >= datetime.utcnow())
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
 
@@ -299,7 +283,7 @@ def get_past_events(organization_name):
     # Get past event objects
     query = Event.query.filter(Event.organization_name == organization.name, Event.start_time_notz < datetime.utcnow()).\
         order_by(desc(Event.start_time_notz))
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
 
@@ -328,7 +312,7 @@ def get_orgs_stories(organization_name):
 
     # Get story objects
     query = Story.query.filter_by(organization_name=organization.name).order_by(desc(Story.id))
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
 
@@ -388,7 +372,7 @@ def get_orgs_projects(organization_name):
         ordering = ordering_filter.asc()
     query = query.order_by(ordering)
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
+    response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
@@ -515,7 +499,7 @@ def get_orgs_issues(organization_name, labels=None):
         query = Issue.query.filter(Issue.project_id.in_(project_ids)).order_by(func.random())
 
     filters, querystring = get_query_params(request.args)
-    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
@@ -697,7 +681,7 @@ def get_projects(id=None):
         ordering = ordering_filter.asc()
     query = query.order_by(ordering)
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
+    response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
@@ -731,7 +715,7 @@ def get_issues(id=None):
         else:
             query = query.filter(getattr(Issue, attr).ilike('%%%s%%' % value))
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 10)), querystring)
+    response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
@@ -758,7 +742,7 @@ def get_issues_by_labels_new(labels):
     matches = Issue.query.from_statement(sql.text(issues_query))
 
     filters, querystring = get_query_params(request.args)
-    response = paged_results(query=matches, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = paged_results(query=matches, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 @app.route('/api/issues_old/labels/<labels>')
@@ -800,7 +784,7 @@ def get_issues_by_labels(labels):
 
     # Return the paginated reponse
     filters, querystring = get_query_params(request.args)
-    response = paged_results(query=query, page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
@@ -831,7 +815,7 @@ def get_events(id=None):
         else:
             query = query.filter(getattr(Event, attr).ilike('%%%s%%' % value))
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)), querystring)
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)), querystring=querystring)
     return jsonify(response)
 
 
@@ -852,7 +836,7 @@ def get_all_upcoming_events():
         else:
             query = query.filter(getattr(Event, attr).ilike('%%%s%%' % value))
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
 
@@ -873,7 +857,7 @@ def get_all_past_events():
         else:
             query = query.filter(getattr(Event, attr).ilike('%%%s%%' % value))
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)))
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
 
@@ -915,7 +899,7 @@ def get_stories(id=None):
         else:
             query = query.filter(getattr(Story, attr).ilike('%%%s%%' % value))
 
-    response = paged_results(query, int(request.args.get('page', 1)), int(request.args.get('per_page', 25)), querystring)
+    response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)), querystring=querystring)
     return jsonify(response)
 
 # -------------------
