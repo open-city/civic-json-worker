@@ -380,84 +380,29 @@ def get_orgs_projects(organization_name):
 def get_orgs_issues_new(organization_name, labels=None):
     ''' Trying a raw SQL query instead
     '''
-    per_page = int(request.args.get('per_page', 10))
-
     # The organization is in the database
     organization = Organization.query.filter_by(name=raw_name(organization_name)).first()
     if not organization:
         return "Organization not found", 404
 
     # build a query prefix:
-    issues_query = u'''SELECT issue.* FROM organization JOIN project ON project.organization_name = organization.name JOIN issue ON issue.project_id = project.id WHERE organization.name = \'{organization_name}\''''.format(organization_name=organization.name)
+    query_text = u'''SELECT issue.id FROM organization JOIN project ON project.organization_name = organization.name JOIN issue ON issue.project_id = project.id WHERE organization.name = \'{organization_name}\''''.format(organization_name=organization.name)
 
     # add filters for labels if they're sent
     if labels:
         label_names = [label.strip() for label in labels.split(',')]
         for label_name in label_names:
             label_clause = u'''AND issue.id IN (SELECT issue_id FROM label WHERE name ILIKE '%{label_name}%')'''.format(label_name=label_name)
-            issues_query = u'''{query} {clause}'''.format(query=issues_query, clause=label_clause)
+            query_text = u'''{query} {clause}'''.format(query=query_text, clause=label_clause)
 
     # group to dedupe, randomize
-    issues_query = u'''{query} GROUP BY issue.id ORDER BY random() LIMIT {limit};'''.format(query=issues_query, limit=per_page)
+    query_text = u'''{query} GROUP BY issue.id ORDER BY random();'''.format(query=query_text)
     # run the query
-    issues_result = db.session.execute(issues_query)
+    issues_query = Issue.query.from_statement(sql.text(query_text))
 
-    # issues_result is a ResultProxy object
-    # http://docs.sqlalchemy.org/en/rel_1_0/core/connections.html#sqlalchemy.engine.ResultProxy
-    issues_dicts = []
-    for row in issues_result:
-        # each row is a RowProxy object
-        # http://docs.sqlalchemy.org/en/rel_1_0/core/connections.html#sqlalchemy.engine.RowProxy
-        issues_dicts.append(make_issue_dict_from_rowproxy(row))
-
-    response = dict(objects=issues_dicts)
-
+    filters, querystring = get_query_params(request.args)
+    response = paged_results(query=issues_query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
-
-def make_issue_dict_from_rowproxy(issue_row):
-    ''' Take a RowProxy object representing an issue and return a complete dict of the issue.
-    '''
-    # start with a dict of the issue row
-    issue_dict = dict(issue_row)
-
-    # append the labels associated with this issue
-    label_query = u'''SELECT * FROM label WHERE issue_id = {issue_id};'''.format(issue_id=issue_dict['id'])
-    label_result = db.session.execute(label_query)
-    issue_dict['labels'] = []
-    for label_row in label_result:
-        label_dict = dict(label_row)
-        del label_dict['id']
-        del label_dict['issue_id']
-        issue_dict['labels'].append(label_dict)
-
-    # append details about the project associated with this issue
-    project_query = u'''SELECT * FROM project WHERE id = {project_id};'''.format(project_id=issue_dict['project_id'])
-    project_result = db.session.execute(project_query)
-    project_dict = dict(project_result.fetchone())
-    project_result.close()
-
-    try:
-        project_dict['languages'] = json.loads(project_dict['languages'])
-    except TypeError:
-        project_dict['languages'] = None
-
-    try:
-        project_dict['github_details'] = json.loads(project_dict['github_details'])
-    except TypeError:
-        project_dict['github_details'] = None
-
-    del project_dict['keep']
-    del project_dict['tsv_body']
-    del project_dict['last_updated_issues']
-    del project_dict['last_updated_civic_json']
-    del project_dict['last_updated_root_files']
-    issue_dict['project'] = project_dict
-
-    # delete unneeded fields
-    del issue_dict['keep']
-    del issue_dict['project_id']
-
-    return issue_dict
 
 @app.route("/api/organizations/<organization_name>/issues")
 @app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
@@ -722,25 +667,25 @@ def get_issues_by_labels_new(labels):
     '''
     A clean url to filter issues by a comma-separated list of labels
     '''
-    issues_query = u'''SELECT issue.id FROM issue'''
+    query_text = u'''SELECT issue.id FROM issue'''
 
     # add filters for labels if they're sent
     if labels:
         label_names = [label.strip() for label in labels.split(',')]
-        issues_query = u'''{query} WHERE'''.format(query=issues_query)
+        query_text = u'''{query} WHERE'''.format(query=query_text)
         clauses = []
         for label_name in label_names:
             clauses.append(u'''issue.id IN (SELECT issue_id FROM label WHERE name ILIKE '%{label_name}%')'''.format(label_name=label_name))
-        issues_query = u'''{query} {clauses}'''.format(query=issues_query, clauses=' AND '.join(clauses))
+        query_text = u'''{query} {clauses}'''.format(query=query_text, clauses=' AND '.join(clauses))
 
     # randomize
-    issues_query = u'''{query} ORDER BY random();'''.format(query=issues_query)
+    query_text = u'''{query} ORDER BY random();'''.format(query=query_text)
 
     # run the query
-    matches = Issue.query.from_statement(sql.text(issues_query))
+    issues_query = Issue.query.from_statement(sql.text(query_text))
 
     filters, querystring = get_query_params(request.args)
-    response = paged_results(query=matches, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = paged_results(query=issues_query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 @app.route('/api/issues/labels/<labels>')
