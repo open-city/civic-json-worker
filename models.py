@@ -37,12 +37,12 @@ def initialize_database(app):
 
 
 class JsonType(Mutable, types.TypeDecorator):
-    """ JSON wrapper type for TEXT database storage.
+    ''' JSON wrapper type for TEXT database storage.
 
         References:
         http://stackoverflow.com/questions/4038314/sqlalchemy-json-as-blob-text
         http://docs.sqlalchemy.org/en/rel_0_9/orm/extensions/mutable.html
-    """
+    '''
     impl = types.Unicode
 
     def process_bind_param(self, value, engine):
@@ -55,7 +55,6 @@ class JsonType(Mutable, types.TypeDecorator):
             # default can also be a list
             return {}
 
-
 class TSVectorType(types.TypeDecorator):
     ''' TSVECTOR wrapper type for database storage.
 
@@ -63,7 +62,6 @@ class TSVectorType(types.TypeDecorator):
         http://stackoverflow.com/questions/13837111/tsvector-in-sqlalchemy
     '''
     impl = types.UnicodeText
-
 
 @compiles(TSVectorType, 'postgresql')
 def compile_tsvector(element, compiler, **kw):
@@ -356,7 +354,7 @@ class Project(db.Model):
             project_dict['organization'] = self.organization.asdict()
 
         if include_issues:
-            project_dict['issues'] = [o.asdict() for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
+            project_dict['issues'] = [o.asdict(include_project=False, include_labels=True) for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
 
         return project_dict
 
@@ -419,16 +417,14 @@ class Issue(db.Model):
         '''
         return '%s://%s/api/issues/%s' % (request.scheme, request.host, str(self.id))
 
-    def asdict(self, include_project=False):
+    def asdict(self, include_project=False, include_labels=True):
         '''
             Return issue as a dictionary with some properties tweaked
         '''
         issue_dict = db.Model.asdict(self)
 
-        # TODO: Also paged_results assumes asdict takes this argument, should be checked and fixed later
         if include_project:
-            issue_dict['project'] = db.session.query(Project).filter(Project.id == self.project_id).first().asdict()
-            del issue_dict['project']['issues']
+            issue_dict['project'] = db.session.query(Project).filter(Project.id == self.project_id).first().asdict(include_organization=False, include_issues=False)
             del issue_dict['project_id']
 
         # remove fields that don't need to be public
@@ -438,8 +434,11 @@ class Issue(db.Model):
         issue_dict['created_at'] = convert_datetime_to_iso_8601(issue_dict['created_at'])
         issue_dict['updated_at'] = convert_datetime_to_iso_8601(issue_dict['updated_at'])
 
+        # set the API URL
         issue_dict['api_url'] = self.api_url()
-        issue_dict['labels'] = [l.asdict() for l in self.labels]
+
+        if include_labels:
+            issue_dict['labels'] = [l.asdict() for l in self.labels]
 
         return issue_dict
 
@@ -476,7 +475,6 @@ class Label(db.Model):
         del label_dict['issue_id']
 
         return label_dict
-
 
 class Event(db.Model):
     '''
@@ -550,14 +548,14 @@ class Event(db.Model):
         for key in ('keep', 'start_time_notz', 'end_time_notz', 'utc_offset'):
             del event_dict[key]
 
+        # add custom fields not in database
         for key in ('start_time', 'end_time', 'api_url'):
             event_dict[key] = getattr(self, key)()
 
         if include_organization:
-            event_dict['organization'] = self.organization.asdict()
+            event_dict['organization'] = self.organization.asdict(include_extras=False)
 
         return event_dict
-
 
 class Attendance(db.Model):
     ''' Attendance at organization events
@@ -577,7 +575,6 @@ class Attendance(db.Model):
         self.organization_name = organization_name
         self.total = total
         self.weekly = weekly
-
 
 class Error(db.Model):
     '''
