@@ -19,7 +19,6 @@ from flask.ext.heroku import Heroku
 from sqlalchemy import desc
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
-from sqlalchemy import sql
 from dictalchemy import make_class_dictable
 from flask.ext.script import Manager, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
@@ -117,6 +116,7 @@ def pages_dict(page, last, querystring):
 
     return pages
 
+
 def paged_results(query, include_args=None, page=1, per_page=10, querystring=''):
     ''' Return a dict representing one page-worth of results
     '''
@@ -133,6 +133,7 @@ def paged_results(query, include_args=None, page=1, per_page=10, querystring='')
             obj = o.asdict(**include_args) if include_args else o.asdict()
             model_dicts.append(obj)
     return dict(total=total, pages=pages_dict(page, last, querystring), objects=model_dicts)
+
 
 def get_query_params(args):
     filters = {}
@@ -361,6 +362,7 @@ def get_orgs_projects(organization_name):
     response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
+
 @app.route("/api/organizations/<organization_name>/issues")
 @app.route("/api/organizations/<organization_name>/issues/labels/<labels>")
 def get_orgs_issues(organization_name, labels=None):
@@ -401,6 +403,7 @@ def get_orgs_issues(organization_name, labels=None):
     filters, querystring = get_query_params(request.args)
     response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
+
 
 @app.route("/api/organizations/<organization_name>/attendance")
 def get_orgs_attendance(organization_name):
@@ -616,6 +619,7 @@ def get_issues(id=None):
 
     response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
+
 
 @app.route('/api/issues/labels/<labels>')
 def get_issues_by_labels(labels):

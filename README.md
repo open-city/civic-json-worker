@@ -304,7 +304,7 @@ psql peopledbtest < test/peopledbtest.pgsql
 
 The project ships with flake8 to track style, perform a flake8 check by calling
 
-`flake8 . --exclude=migrations,test --ignore=E501`
+`flake8 . --exclude=migrations,test --ignore=E501,E711,E712`
 
 
 
