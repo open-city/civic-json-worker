@@ -1100,6 +1100,8 @@ def main(org_name=None, org_sources=None):
             continue
 
         try:
+            filter = Organization.name == org_info['name']
+            existing_org = db.session.query(Organization).filter(filter).first()
             organization_names.add(org_info['name'])
 
             # Mark everything associated with this organization for deletion at first.
