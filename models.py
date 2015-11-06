@@ -55,6 +55,7 @@ class JsonType(Mutable, types.TypeDecorator):
             # default can also be a list
             return {}
 
+
 class TSVectorType(types.TypeDecorator):
     ''' TSVECTOR wrapper type for database storage.
 
@@ -62,6 +63,7 @@ class TSVectorType(types.TypeDecorator):
         http://stackoverflow.com/questions/13837111/tsvector-in-sqlalchemy
     '''
     impl = types.UnicodeText
+
 
 @compiles(TSVectorType, 'postgresql')
 def compile_tsvector(element, compiler, **kw):
@@ -71,6 +73,7 @@ def compile_tsvector(element, compiler, **kw):
 # -------------------
 # Models
 # -------------------
+
 
 class Organization(db.Model):
     '''
@@ -476,6 +479,7 @@ class Label(db.Model):
 
         return label_dict
 
+
 class Event(db.Model):
     '''
         Organizations events from Meetup
@@ -557,6 +561,7 @@ class Event(db.Model):
 
         return event_dict
 
+
 class Attendance(db.Model):
     ''' Attendance at organization events
         sourced from the peopledb
@@ -575,6 +580,7 @@ class Attendance(db.Model):
         self.organization_name = organization_name
         self.total = total
         self.weekly = weekly
+
 
 class Error(db.Model):
     '''
