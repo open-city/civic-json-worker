@@ -66,9 +66,28 @@ def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
     '''
+    global github_throttling
     logging.info('Asking Github for {}{}'.format(url, ' ({})'.format(headers) if headers and headers != {} else ''))
 
     got = get(url, auth=github_auth, headers=headers)
+
+    # check for throttling
+    if got.status_code == 403:
+        # we've been throttled
+        github_throttling = True
+
+        # log the error
+        logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
+
+        # save the error in the db
+        error_dict = {
+            "error": u'IOError: We done got throttled by GitHub',
+            "time": datetime.now()
+        }
+        new_error = Error(**error_dict)
+        # commit the error
+        db.session.add(new_error)
+        db.session.commit()
 
     return got
 
@@ -446,17 +465,9 @@ def update_project_info(project):
                 logging.error(repo_url + ' doesn\'t exist.')
                 # If its a bad GitHub link, don't return it at all.
                 return None
+
             elif got.status_code == 403:
-                logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
-                error_dict = {
-                    "error": u'IOError: We done got throttled by GitHub',
-                    "time": datetime.now()
-                }
-                new_error = Error(**error_dict)
-                db.session.add(new_error)
-                # commit the error
-                db.session.commit()
-                github_throttling = True
+                # Throttled by GitHub
                 return project
 
             else:
