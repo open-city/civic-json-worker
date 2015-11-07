@@ -233,12 +233,17 @@ def get_adjoined_json_lists(response, headers=None):
     '''
     result = response.json()
 
+    status_code = response.status_code
     if type(result) is list:
         while 'next' in response.links:
             response = get_github_api(response.links['next']['url'], headers=headers)
+            status_code = response.status_code
+            # Consider any status other than 2xx an error
+            if not status_code // 100 == 2:
+                break
             result += response.json()
 
-    return result
+    return result, status_code
 
 
 def get_projects(organization):
@@ -261,13 +266,13 @@ def get_projects(organization):
         projects_url = GITHUB_USER_REPOS_API_URL.format(username=matched.group('name'))
 
         try:
-            response = get_github_api(projects_url)
+            got = get_github_api(projects_url)
 
             # Consider any status other than 2xx an error
-            if not response.status_code // 100 == 2:
+            if not got.status_code // 100 == 2:
                 return []
 
-            projects = get_adjoined_json_lists(response)
+            projects, status_code = get_adjoined_json_lists(got)
 
         except exceptions.RequestException:
             # Something has gone wrong, probably a bad URL or site is down.
@@ -648,7 +653,7 @@ def get_issues_for_project(project):
     got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
 
     # Save each issue in response
-    responses = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+    responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
     for issue in responses:
         # Type check the issue, we are expecting a dictionary
         if isinstance(issue, dict):
@@ -709,7 +714,7 @@ def get_issues(org_name):
             project.last_updated_issues = unicode(got.headers['ETag'])
             db.session.add(project)
 
-            responses = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+            responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
 
             # Save each issue in response
             for issue in responses:
