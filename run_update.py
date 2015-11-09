@@ -272,7 +272,7 @@ def get_projects(organization):
             if not got.status_code // 100 == 2:
                 return []
 
-            projects, status_code = get_adjoined_json_lists(got)
+            projects, _ = get_adjoined_json_lists(got)
 
         except exceptions.RequestException:
             # Something has gone wrong, probably a bad URL or site is down.
@@ -500,6 +500,7 @@ def update_project_info(project):
             db.session.commit()
             return None
 
+        # the project has been modified
         all_github_attributes = got.json()
         github_details = {}
         for field in ('contributors_url', 'created_at', 'forks_count', 'homepage',
@@ -539,10 +540,9 @@ def update_project_info(project):
         #
         project['github_details']['contributors'] = []
         got = get_github_api(all_github_attributes['contributors_url'])
-
-        # Check if there are contributors
         try:
-            for contributor in got.json():
+            contributors_json = got.json()
+            for contributor in contributors_json:
                 # we don't want people without email addresses?
                 if contributor['login'] == 'invalid-email-address':
                     break
@@ -564,7 +564,8 @@ def update_project_info(project):
         #
         got = get_github_api(all_github_attributes['url'] + '/stats/participation')
         try:
-            project['github_details']['participation'] = got.json()['all']
+            participation_json = got.json()
+            project['github_details']['participation'] = participation_json['all']
         except:
             project['github_details']['participation'] = [0] * 50
 
