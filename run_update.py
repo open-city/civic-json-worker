@@ -425,7 +425,6 @@ def update_project_info(project):
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
-        global github_throttling
         if github_throttling:
             return project
 
