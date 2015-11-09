@@ -662,9 +662,13 @@ def get_issues_for_project(project):
             # Pull requests are returned along with issues. Skip them.
             if "/pull/" in issue['html_url']:
                 continue
-            issue_dict = dict(title=issue['title'], html_url=issue['html_url'],
-                              body=issue['body'], project_id=project.id, labels=issue['labels'],
-                              created_at=issue['created_at'], updated_at=issue['updated_at'])
+
+            issue_dict = dict(project_id=project.id)
+            for field in (
+                    'title', 'html_url', 'body',
+                    'labels', 'created_at', 'updated_at'):
+                issue_dict[field] = issue.get(field, None)
+
             issues.append(issue_dict)
         else:
             logging.error('Issue for project %s is not a dictionary', project.name)
@@ -725,9 +729,13 @@ def get_issues(org_name):
                     # Pull requests are returned along with issues. Skip them.
                     if "/pull/" in issue['html_url']:
                         continue
-                    issue_dict = dict(title=issue['title'], html_url=issue['html_url'],
-                                      body=issue['body'], project_id=project.id, labels=issue['labels'],
-                                      created_at=issue['created_at'], updated_at=issue['updated_at'])
+
+                    issue_dict = dict(project_id=project.id)
+                    for field in (
+                            'title', 'html_url', 'body',
+                            'labels', 'created_at', 'updated_at'):
+                        issue_dict[field] = issue.get(field, None)
+
                     issues.append(issue_dict)
                 else:
                     logging.error('Issue for project %s is not a dictionary', project.name)
