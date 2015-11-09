@@ -528,9 +528,9 @@ def update_project_info(project):
 
         # Grab the list of project languages
         got = get_github_api(all_github_attributes['languages_url'])
-        got = got.json()
-        if got.keys():
-            project['languages'] = got.keys()
+        languages_json = got.json()
+        if got.status_code // 100 == 2 and languages_json.keys():
+            project['languages'] = languages_json.keys()
         else:
             project['languages'] = None
 
@@ -651,6 +651,8 @@ def get_issues_for_project(project):
 
     # Ping github's api for project issues
     got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
+    if got.status_code // 100 != 2:
+        return issues
 
     # Save each issue in response
     responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
