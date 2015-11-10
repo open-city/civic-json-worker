@@ -164,8 +164,11 @@ def get_organizations(org_sources):
     organizations = []
     with open(org_sources) as file:
         for org_source in file.read().splitlines():
+            scheme, netloc, path, _, _, _ = urlparse(org_source)
             if 'docs.google.com' in org_source:
                 organizations.extend(get_organizations_from_spreadsheet(org_source))
+            elif not scheme and not netloc:
+                organizations.extend(get_organizations_from_local_file(org_source))
 
     return organizations
 
@@ -182,7 +185,22 @@ def get_organizations_from_spreadsheet(org_source):
     # Use response.content to plain bytes, then decode everything.
     #
     organizations = list(DictReader(StringIO(got.content)))
+    return decode_organizations_list(organizations)
 
+
+def get_organizations_from_local_file(org_source):
+    '''
+        Get a row for each organization from a local file.
+        Return a list of dictionaries, one for each row past the header.
+    '''
+    organizations = list(DictReader(open(org_source, 'rb')))
+    return decode_organizations_list(organizations)
+
+
+def decode_organizations_list(organizations):
+    '''
+        Decode keys and values in a list of organizations
+    '''
     for (index, org) in enumerate(organizations):
         organizations[index] = dict([(k.decode('utf8'), v.decode('utf8'))
                                      for (k, v) in org.items()])
