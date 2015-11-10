@@ -1266,9 +1266,13 @@ def main(org_name=None, org_sources=None):
 
 parser = ArgumentParser(description='''Update database from CSV source URL.''')
 parser.add_argument('--name', dest='name', help='Single organization name to update.')
-parser.add_argument('--test', action='store_const', dest='org_sources', const=TEST_ORG_SOURCES_FILENAME, help='Use the testing list of organizations.')
+parser.add_argument('--sources', dest='sources', help='URL of an organization sources CSV file.')
+parser.add_argument('--test', action='store_const', dest='test_sources', const=TEST_ORG_SOURCES_FILENAME, help='Use the testing list of organizations.')
 
 if __name__ == "__main__":
     args = parser.parse_args()
     org_name = args.name and args.name.decode('utf8') or ''
-    main(org_name=org_name, org_sources=args.org_sources)
+    org_sources = args.sources and args.sources.decode('utf8') or ''
+    if args.test_sources and not org_sources:
+        org_sources = args.test_sources
+    main(org_name=org_name, org_sources=org_sources)
