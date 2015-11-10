@@ -554,3 +554,26 @@ class TestOrganizations(IntegrationTest):
             if org['current_projects']:
                 self.assertFalse('issues' in org['current_projects'][0])
                 break
+
+    def test_geojson(self):
+        ''' Test that /organization.geojson works '''
+
+        organization = OrganizationFactory()
+        org2 = OrganizationFactory()
+        del org2.latitude
+        del org2.longitude
+
+        db.session.flush()
+
+        response = self.app.get('/api/organizations.geojson')
+        response = json.loads(response.data)
+
+        # Test that features have expected attributes
+        org = response['features'][0]
+        self.assertTrue('geometry' in org.keys())
+        self.assertTrue('coordinates' in org['geometry'])
+        self.assertTrue('properties' in org.keys())
+        self.assertTrue('id' in org.keys())
+
+        # Test that only orgs with location data showed up
+        self.assertEqual(len(response['features']),1)
