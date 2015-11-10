@@ -211,17 +211,21 @@ def get_organizations_geojson():
     geojson = dict(type='FeatureCollection', features=[])
 
     for org in db.session.query(Organization):
-        # The unique identifier of an organization.
-        id = org.api_id()
 
-        # Pick out all the properties that aren't part of the location.
-        props = org.asdict()
+        # geojson should only return orgs with location data
+        if org.latitude and org.longitude:
 
-        # GeoJSON Point geometry, http://geojson.org/geojson-spec.html#point
-        geom = dict(type='Point', coordinates=[org.longitude, org.latitude])
+            # The unique identifier of an organization.
+            id = org.api_id()
 
-        feature = dict(type='Feature', id=id, properties=props, geometry=geom)
-        geojson['features'].append(feature)
+            # Pick out all the properties that aren't part of the location.
+            props = org.asdict()
+
+            # GeoJSON Point geometry, http://geojson.org/geojson-spec.html#point
+            geom = dict(type='Point', coordinates=[org.longitude, org.latitude])
+
+            feature = dict(type='Feature', id=id, properties=props, geometry=geom)
+            geojson['features'].append(feature)
 
     return jsonify(geojson)
 
