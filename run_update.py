@@ -66,9 +66,28 @@ def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
     '''
+    global github_throttling
     logging.info('Asking Github for {}{}'.format(url, ' ({})'.format(headers) if headers and headers != {} else ''))
 
     got = get(url, auth=github_auth, headers=headers)
+
+    # check for throttling
+    if got.status_code == 403:
+        # we've been throttled
+        github_throttling = True
+
+        # log the error
+        logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
+
+        # save the error in the db
+        error_dict = {
+            "error": u'IOError: We done got throttled by GitHub',
+            "time": datetime.now()
+        }
+        new_error = Error(**error_dict)
+        # commit the error
+        db.session.add(new_error)
+        db.session.commit()
 
     return got
 
@@ -214,12 +233,17 @@ def get_adjoined_json_lists(response, headers=None):
     '''
     result = response.json()
 
+    status_code = response.status_code
     if type(result) is list:
         while 'next' in response.links:
             response = get_github_api(response.links['next']['url'], headers=headers)
+            status_code = response.status_code
+            # Consider any status other than 2xx an error
+            if not status_code // 100 == 2:
+                break
             result += response.json()
 
-    return result
+    return result, status_code
 
 
 def get_projects(organization):
@@ -242,13 +266,13 @@ def get_projects(organization):
         projects_url = GITHUB_USER_REPOS_API_URL.format(username=matched.group('name'))
 
         try:
-            response = get_github_api(projects_url)
+            got = get_github_api(projects_url)
 
             # Consider any status other than 2xx an error
-            if not response.status_code // 100 == 2:
+            if not got.status_code // 100 == 2:
                 return []
 
-            projects = get_adjoined_json_lists(response)
+            projects, _ = get_adjoined_json_lists(got)
 
         except exceptions.RequestException:
             # Something has gone wrong, probably a bad URL or site is down.
@@ -401,7 +425,6 @@ def update_project_info(project):
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
-        global github_throttling
         if github_throttling:
             return project
 
@@ -446,17 +469,9 @@ def update_project_info(project):
                 logging.error(repo_url + ' doesn\'t exist.')
                 # If its a bad GitHub link, don't return it at all.
                 return None
+
             elif got.status_code == 403:
-                logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
-                error_dict = {
-                    "error": u'IOError: We done got throttled by GitHub',
-                    "time": datetime.now()
-                }
-                new_error = Error(**error_dict)
-                db.session.add(new_error)
-                # commit the error
-                db.session.commit()
-                github_throttling = True
+                # Throttled by GitHub
                 return project
 
             else:
@@ -484,6 +499,7 @@ def update_project_info(project):
             db.session.commit()
             return None
 
+        # the project has been modified
         all_github_attributes = got.json()
         github_details = {}
         for field in ('contributors_url', 'created_at', 'forks_count', 'homepage',
@@ -512,9 +528,9 @@ def update_project_info(project):
 
         # Grab the list of project languages
         got = get_github_api(all_github_attributes['languages_url'])
-        got = got.json()
-        if got.keys():
-            project['languages'] = got.keys()
+        languages_json = got.json()
+        if got.status_code // 100 == 2 and languages_json.keys():
+            project['languages'] = languages_json.keys()
         else:
             project['languages'] = None
 
@@ -523,10 +539,9 @@ def update_project_info(project):
         #
         project['github_details']['contributors'] = []
         got = get_github_api(all_github_attributes['contributors_url'])
-
-        # Check if there are contributors
         try:
-            for contributor in got.json():
+            contributors_json = got.json()
+            for contributor in contributors_json:
                 # we don't want people without email addresses?
                 if contributor['login'] == 'invalid-email-address':
                     break
@@ -548,7 +563,8 @@ def update_project_info(project):
         #
         got = get_github_api(all_github_attributes['url'] + '/stats/participation')
         try:
-            project['github_details']['participation'] = got.json()['all']
+            participation_json = got.json()
+            project['github_details']['participation'] = participation_json['all']
         except:
             project['github_details']['participation'] = [0] * 50
 
@@ -635,18 +651,24 @@ def get_issues_for_project(project):
 
     # Ping github's api for project issues
     got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
+    if got.status_code // 100 != 2:
+        return issues
 
     # Save each issue in response
-    responses = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+    responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
     for issue in responses:
         # Type check the issue, we are expecting a dictionary
         if isinstance(issue, dict):
             # Pull requests are returned along with issues. Skip them.
             if "/pull/" in issue['html_url']:
                 continue
-            issue_dict = dict(title=issue['title'], html_url=issue['html_url'],
-                              body=issue['body'], project_id=project.id, labels=issue['labels'],
-                              created_at=issue['created_at'], updated_at=issue['updated_at'])
+
+            issue_dict = dict(project_id=project.id)
+            for field in (
+                    'title', 'html_url', 'body',
+                    'labels', 'created_at', 'updated_at'):
+                issue_dict[field] = issue.get(field, None)
+
             issues.append(issue_dict)
         else:
             logging.error('Issue for project %s is not a dictionary', project.name)
@@ -698,7 +720,7 @@ def get_issues(org_name):
             project.last_updated_issues = unicode(got.headers['ETag'])
             db.session.add(project)
 
-            responses = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+            responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
 
             # Save each issue in response
             for issue in responses:
@@ -707,9 +729,13 @@ def get_issues(org_name):
                     # Pull requests are returned along with issues. Skip them.
                     if "/pull/" in issue['html_url']:
                         continue
-                    issue_dict = dict(title=issue['title'], html_url=issue['html_url'],
-                                      body=issue['body'], project_id=project.id, labels=issue['labels'],
-                                      created_at=issue['created_at'], updated_at=issue['updated_at'])
+
+                    issue_dict = dict(project_id=project.id)
+                    for field in (
+                            'title', 'html_url', 'body',
+                            'labels', 'created_at', 'updated_at'):
+                        issue_dict[field] = issue.get(field, None)
+
                     issues.append(issue_dict)
                 else:
                     logging.error('Issue for project %s is not a dictionary', project.name)
