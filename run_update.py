@@ -1135,7 +1135,7 @@ def update_attendance(db, organization_name, attendance):
 
 
 def main(org_name=None, org_sources=None):
-    ''' Run update over all organizations. Optionally, update just one.
+    ''' Update the API's database
     '''
     # set org_sources
     org_sources = org_sources or ORG_SOURCES_FILENAME
@@ -1147,10 +1147,11 @@ def main(org_name=None, org_sources=None):
     orgs_info = get_organizations(org_sources)
     shuffle(orgs_info)
 
+    # If an organization name was passed, filter.
     if org_name:
         orgs_info = [org for org in orgs_info if org['name'] == org_name]
 
-    # Iterate over organizations and projects, saving them to db.session.
+    # Retreive and save all information about the organizations
     for org_info in orgs_info:
 
         if not is_safe_name(org_info['name']):
@@ -1165,25 +1166,21 @@ def main(org_name=None, org_sources=None):
             continue
 
         try:
-            filter = Organization.name == org_info['name']
-            existing_org = db.session.query(Organization).filter(filter).first()
-            organization_names.add(org_info['name'])
-
-            # Mark everything associated with this organization for deletion at first.
+            # Mark everything associated with this organization for deletion
             # :::here (event/false, story/false, project/false, organization/false)
             db.session.execute(db.update(Event, values={'keep': False}).where(Event.organization_name == org_info['name']))
             db.session.execute(db.update(Story, values={'keep': False}).where(Story.organization_name == org_info['name']))
             db.session.execute(db.update(Project, values={'keep': False}).where(Project.organization_name == org_info['name']))
             db.session.execute(db.update(Organization, values={'keep': False}).where(Organization.name == org_info['name']))
-            # commit the false keeps
+
+            # Save or update the organization
+            organization = save_organization_info(db.session, org_info)
+            organization_names.add(organization.name)
+
+            # commit the organization and the false keeps
             db.session.commit()
 
-            organization = save_organization_info(db.session, org_info)
-
-            organization_names.add(organization.name)
-            # flush the organization
-            db.session.flush()
-
+            # STORIES
             if organization.rss or organization.website:
                 logging.info("Gathering all of %s's stories." % organization.name)
                 stories = get_stories(organization)
@@ -1193,6 +1190,7 @@ def main(org_name=None, org_sources=None):
                     # flush the stories
                     db.session.flush()
 
+            # PROJECTS
             if organization.projects_list_url:
                 logging.info("Gathering all of %s's projects." % organization.name)
                 projects = get_projects(organization)
@@ -1201,6 +1199,7 @@ def main(org_name=None, org_sources=None):
                 # flush the projects
                 db.session.flush()
 
+            # EVENTS
             if organization.events_url:
                 if not meetup_key:
                     logging.error("No Meetup.com key set.")
@@ -1221,7 +1220,7 @@ def main(org_name=None, org_sources=None):
                     else:
                         logging.error("%s does not have a valid events url" % organization.name)
 
-            # Get issues for all of the projects
+            # ISSUES
             logging.info("Gathering all of %s's open GitHub issues." % organization.name)
             issues = get_issues(organization.name)
             for issue in issues:
@@ -1232,7 +1231,7 @@ def main(org_name=None, org_sources=None):
             for issue in issues:
                 save_labels(db.session, issue)
 
-            # Get attendance data
+            # ATTENDANCE
             attendance = None
             if PEOPLEDB:
                 with connect(PEOPLEDB) as conn:
