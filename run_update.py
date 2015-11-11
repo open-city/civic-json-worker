@@ -912,19 +912,22 @@ def count_people_totals(all_projects):
     return users
 
 
-def save_organization_info(session, org_dict):
+def save_organization_info(session, org_info):
     ''' Save a dictionary of organization info to the datastore session.
 
         Return an app.Organization instance.
     '''
+    # Set any empty strings in org_info to None
+    org_info = {key: None if not value else value for (key, value) in org_info.iteritems()}
+
     # Select an existing organization by name.
-    filter = Organization.name == org_dict['name']
+    filter = Organization.name == org_info['name']
     existing_org = session.query(Organization).filter(filter).first()
 
     # :::here (organization/true)
     # If this is a new organization, save and return it. The keep parameter is True by default.
     if not existing_org:
-        new_organization = Organization(**org_dict)
+        new_organization = Organization(**org_info)
         session.add(new_organization)
         return new_organization
 
@@ -938,7 +941,7 @@ def save_organization_info(session, org_dict):
     existing_org.keep = True
 
     # Update existing organization details.
-    for (field, value) in org_dict.items():
+    for (field, value) in org_info.items():
         setattr(existing_org, field, value)
 
     return existing_org
@@ -1174,14 +1177,6 @@ def main(org_name=None, org_sources=None):
             db.session.execute(db.update(Organization, values={'keep': False}).where(Organization.name == org_info['name']))
             # commit the false keeps
             db.session.commit()
-
-            # Empty lat longs are okay.
-            if 'latitude' in org_info:
-                if not org_info['latitude']:
-                    org_info['latitude'] = None
-            if 'longitude' in org_info:
-                if not org_info['longitude']:
-                    org_info['longitude'] = None
 
             organization = save_organization_info(db.session, org_info)
 
