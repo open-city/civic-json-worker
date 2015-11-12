@@ -123,7 +123,7 @@ def get_meetup_events(organization, group_urlname):
 
     got = get(meetup_url)
     if got.status_code in range(400, 499):
-        logging.error("%s's meetup page cannot be found" % organization.name)
+        logging.error("{}'s meetup page cannot be found".format(organization.name))
         return events
     else:
         try:
@@ -768,6 +768,7 @@ def get_issues(project):
                 issues.append(issue_dict)
             else:
                 logging.error('Issue for project %s is not a dictionary', project.name)
+
     return issues
 
 
@@ -1166,13 +1167,12 @@ def main(org_name=None, org_sources=None):
     if org_name:
         orgs_info = [org for org in orgs_info if org['name'] == org_name]
 
-
-    # Retreive and save all information about the organizations
+    # Retrieve and save all information about the organizations
     for org_info in orgs_info:
 
         if not is_safe_name(org_info['name']):
             error_dict = {
-                "error": unicode('ValueError: Bad organization name: "%s"' % org_info['name']),
+                "error": unicode('ValueError: Bad organization name: "{}"'.format(org_info['name'])),
                 "time": datetime.now()
             }
             new_error = Error(**error_dict)
@@ -1198,7 +1198,7 @@ def main(org_name=None, org_sources=None):
 
             # STORIES
             if organization.rss or organization.website:
-                logging.info("Gathering all of %s's stories." % organization.name)
+                logging.info("Gathering all of {}'s stories.".format(organization.name))
                 stories = get_stories(organization)
                 # build and commit stories
                 for story_info in stories:
@@ -1207,7 +1207,7 @@ def main(org_name=None, org_sources=None):
 
             # PROJECTS, ISSUES and LABELS
             if organization.projects_list_url:
-                logging.info("Gathering all of %s's projects." % organization.name)
+                logging.info("Gathering all of {}'s projects.".format(organization.name))
                 projects = get_projects(organization)
                 # build and commit projects
                 for proj_dict in projects:
@@ -1225,7 +1225,7 @@ def main(org_name=None, org_sources=None):
 
             # EVENTS
             if organization.events_url:
-                logging.info("Gathering all of %s's events." % organization.name)
+                logging.info("Gathering all of {}'s events.".format(organization.name))
                 identifier = get_event_group_identifier(organization.events_url)
                 if identifier:
                     # build and commit events
@@ -1241,7 +1241,7 @@ def main(org_name=None, org_sources=None):
                         db.session.commit()
 
                 else:
-                    logging.error("%s does not have a valid events url" % organization.name)
+                    logging.error("{} does not have a valid events url".format(organization.name))
 
             # ATTENDANCE
             attendance = None
