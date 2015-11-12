@@ -5,7 +5,6 @@ import unittest
 import datetime
 import logging
 import time
-import json
 from re import match, search, sub
 
 from httmock import response, HTTMock
@@ -355,7 +354,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # Thu, 16 Jan 2014 19:00:00 -05:00
         self.assertEqual(first_event.utc_offset, -5 * 3600)
         self.assertEqual(first_event.start_time_notz, datetime.datetime(2014, 1, 16, 19, 0, 0))
-        self.assertEqual(first_event.name,u'Organizational meeting')
+        self.assertEqual(first_event.name, u'Organizational meeting')
 
         second_event = events.pop(0)
         # Thu, 20 Feb 2014 18:30:00 -05:00
@@ -631,7 +630,6 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['status'], "active")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
-
     def test_non_github_projects_same_name(self):
         ''' Test that non github projects with same name but different groups dont overlap
         '''
@@ -695,7 +693,7 @@ class RunUpdateTestCase(unittest.TestCase):
         github_details = {'pushed_at': newer_time_from_github, 'updated_at': older_time_from_github}
         self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(newer_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
-        #Test handling of missing data
+        # Test handling of missing data
         github_details = {'updated_at': older_time_from_github}
         self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(older_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
@@ -704,7 +702,6 @@ class RunUpdateTestCase(unittest.TestCase):
 
         github_details = {}
         self.assertIsNotNone(run_update.github_latest_update_time(github_details))
-
 
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
@@ -1517,7 +1514,6 @@ class RunUpdateTestCase(unittest.TestCase):
 
         self.results_state = 'before'
 
-
     def test_attendance(self):
         ''' Test gathering attendance from the peopledb '''
         # Mock attendance data
@@ -1525,10 +1521,10 @@ class RunUpdateTestCase(unittest.TestCase):
         cfsf_name = "Code for San Francisco"
         oakland_url = "https://www.codeforamerica.org/api/organizations/Open-Oakland"
         oakland_name = "Open Oakland"
-        cfsf_checkin1 = datetime.datetime.strptime("2015-01-01","%Y-%m-%d")
-        cfsf_checkin2 = datetime.datetime.strptime("2015-01-08","%Y-%m-%d")
-        oakland_checkin1 = datetime.datetime.strptime("2015-01-16","%Y-%m-%d")
-        oakland_checkin2 = datetime.datetime.strptime("2015-01-24","%Y-%m-%d")
+        cfsf_checkin1 = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
+        cfsf_checkin2 = datetime.datetime.strptime("2015-01-08", "%Y-%m-%d")
+        oakland_checkin1 = datetime.datetime.strptime("2015-01-16", "%Y-%m-%d")
+        oakland_checkin2 = datetime.datetime.strptime("2015-01-24", "%Y-%m-%d")
 
         # Access the peopledb
         PEOPLEDB = 'postgres:///peopledbtest'
@@ -1548,27 +1544,26 @@ class RunUpdateTestCase(unittest.TestCase):
         with connect(PEOPLEDB) as conn:
             with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
                 import run_update
-                from app import Attendance, Organization
+                from app import Attendance
                 from test.factories import OrganizationFactory
                 cfsf = OrganizationFactory(name='Code for San Francisco')
                 oakland = OrganizationFactory(name='Open Oakland')
 
                 cfsf_attendance = run_update.get_attendance(peopledb_cursor, cfsf_url, cfsf.name)
-                self.assertEqual(cfsf_attendance["organization_name"], "Code for San Francisco")
+                self.assertEqual(cfsf_attendance["organization_name"], cfsf_name)
                 self.assertTrue("2015 01" in cfsf_attendance["weekly"].keys())
 
                 oakland_attendance = run_update.get_attendance(peopledb_cursor, oakland_url, oakland.name)
-                self.assertEqual(oakland_attendance["organization_name"], "Open Oakland")
+                self.assertEqual(oakland_attendance["organization_name"], oakland_name)
                 self.assertTrue("2015 03" in oakland_attendance["weekly"].keys())
 
         run_update.update_attendance(self.db.session, cfsf.name, cfsf_attendance)
         run_update.update_attendance(self.db.session, oakland.name, oakland_attendance)
         self.db.session.commit()
         attendance = self.db.session.query(Attendance).all()
-        self.assertEqual(attendance[0].organization_name, "Code for San Francisco")
-        self.assertEqual(attendance[1].organization_name, "Open Oakland")
+        self.assertEqual(attendance[0].organization_name, cfsf_name)
+        self.assertEqual(attendance[1].organization_name, oakland_name)
         self.assertTrue("2015 03" in attendance[1].weekly.keys())
-
 
     def test_meetup_count(self):
         ''' Test getting membership count from Meetup
@@ -1580,7 +1575,6 @@ class RunUpdateTestCase(unittest.TestCase):
             org.member_count = run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
 
         self.assertEqual(org.member_count, 100)
-
 
     def test_languages(self):
         ''' Test pulling languages from Github '''
