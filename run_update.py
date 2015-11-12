@@ -39,42 +39,40 @@ TEST_ORG_SOURCES_FILENAME = 'test_org_sources.csv'
 
 # API URL templates
 MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}"
+MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
 GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
 GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
 GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{repo_path}/issues'
 GITHUB_CONTENT_API_URL = 'https://api.github.com/repos{repo_path}/contents/{file_path}'
 
+GITHUB_AUTH = None
 if 'GITHUB_TOKEN' in os.environ:
-    github_auth = (os.environ['GITHUB_TOKEN'], '')
-else:
-    github_auth = None
+    GITHUB_AUTH = (os.environ['GITHUB_TOKEN'], '')
 
+MEETUP_KEY = None
 if 'MEETUP_KEY' in os.environ:
-    meetup_key = os.environ['MEETUP_KEY']
-else:
-    meetup_key = None
+    MEETUP_KEY = os.environ['MEETUP_KEY']
 
+PEOPLEDB = None
 if 'PEOPLEDB' in os.environ:
     PEOPLEDB = os.environ["PEOPLEDB"]
-else:
-    PEOPLEDB = None
 
-github_throttling = False
+GITHUB_THROTTLING = False
 
 
 def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
     '''
-    global github_throttling
+    global GITHUB_THROTTLING
     logging.info('Asking Github for {}{}'.format(url, ' ({})'.format(headers) if headers and headers != {} else ''))
 
-    got = get(url, auth=github_auth, headers=headers)
+    got = get(url, auth=GITHUB_AUTH, headers=headers)
 
     # check for throttling
     if got.status_code == 403:
         # we've been throttled
-        github_throttling = True
+        GITHUB_THROTTLING = True
 
         # log the error
         logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
@@ -116,7 +114,7 @@ def get_meetup_events(organization, group_urlname):
     '''
         Get events associated with a group
     '''
-    meetup_url = MEETUP_API_URL.format(group_urlname=group_urlname, key=meetup_key)
+    meetup_url = MEETUP_API_URL.format(group_urlname=group_urlname, key=MEETUP_KEY)
 
     got = get(meetup_url)
     if got.status_code in range(400, 499):
@@ -148,7 +146,7 @@ def get_meetup_events(organization, group_urlname):
 def get_meetup_count(organization, identifier):
     ''' Get the count of meetup members '''
     MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
-    meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=meetup_key)
+    meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=MEETUP_KEY)
     got = get(meetup_url)
     if got:
         response = got.json()
@@ -453,7 +451,7 @@ def update_project_info(project):
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
-        if github_throttling:
+        if GITHUB_THROTTLING:
             return project
 
         # find an existing project, filtering on code_url, organization_name, and project name (if we know it)
@@ -1087,14 +1085,14 @@ def get_event_group_identifier(events_url):
         return None
 
 
-def get_attendance(peopledb, organization_url, organization_name):
+def get_attendance(peopledb_cursor, organization_url, organization_name):
     ''' Get the attendance of an org from the peopledb '''
 
     # Total attendance
     q = ''' SELECT COUNT(*) AS total FROM attendance
             WHERE organization_url = %s '''
-    peopledb.execute(q, (organization_url,))
-    total = int(peopledb.fetchone()["total"])
+    peopledb_cursor.execute(q, (organization_url,))
+    total = int(peopledb_cursor.fetchone()["total"])
 
     # weekly attendance
     q = ''' SELECT COUNT(*) AS total,
@@ -1102,8 +1100,8 @@ def get_attendance(peopledb, organization_url, organization_name):
             FROM attendance
             WHERE organization_url = %s
             GROUP BY week '''
-    peopledb.execute(q, (organization_url,))
-    weekly = peopledb.fetchall()
+    peopledb_cursor.execute(q, (organization_url,))
+    weekly = peopledb_cursor.fetchall()
     weekly = {week["week"]: int(week["total"]) for week in weekly}
 
     this_week = datetime.strftime(datetime.now(), "%Y %U")
@@ -1235,10 +1233,10 @@ def main(org_name=None, org_sources=None):
             attendance = None
             if PEOPLEDB:
                 with connect(PEOPLEDB) as conn:
-                    with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+                    with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
                         cfapi_url = "https://www.codeforamerica.org/api/organizations/"
                         organization_url = cfapi_url + organization.api_id()
-                        attendance = get_attendance(peopledb, organization_url, organization.name)
+                        attendance = get_attendance(peopledb_cursor, organization_url, organization.name)
 
             if attendance:
                 update_attendance(db, organization.name, attendance)

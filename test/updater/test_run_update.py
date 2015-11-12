@@ -42,7 +42,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.db.create_all()
 
         import run_update
-        run_update.github_throttling = False
+        run_update.GITHUB_THROTTLING = False
 
         # FAKE PEOPLEDB
         with connect(os.environ["PEOPLEDB"]) as conn:
@@ -378,7 +378,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                self.assertFalse(run_update.github_throttling)
+                self.assertFalse(run_update.GITHUB_THROTTLING)
                 with self.assertRaises(IOError):
                     run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
@@ -1521,18 +1521,18 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # Call a function to pull data out of it
         with connect(PEOPLEDB) as conn:
-            with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+            with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
                 import run_update
                 from app import Attendance, Organization
                 from test.factories import OrganizationFactory
                 cfsf = OrganizationFactory(name='Code for San Francisco')
                 oakland = OrganizationFactory(name='Open Oakland')
 
-                cfsf_attendance = run_update.get_attendance(peopledb, cfsf_url, cfsf.name)
+                cfsf_attendance = run_update.get_attendance(peopledb_cursor, cfsf_url, cfsf.name)
                 self.assertEqual(cfsf_attendance["organization_name"], "Code for San Francisco")
                 self.assertTrue("2015 01" in cfsf_attendance["weekly"].keys())
 
-                oakland_attendance = run_update.get_attendance(peopledb, oakland_url, oakland.name)
+                oakland_attendance = run_update.get_attendance(peopledb_cursor, oakland_url, oakland.name)
                 self.assertEqual(oakland_attendance["organization_name"], "Open Oakland")
                 self.assertTrue("2015 03" in oakland_attendance["weekly"].keys())
 
