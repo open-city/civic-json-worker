@@ -111,19 +111,23 @@ def format_location(venue):
 
 
 def get_meetup_events(organization, group_urlname):
+    ''' Get events associated with a group
     '''
-        Get events associated with a group
-    '''
+    events = []
+
+    if not MEETUP_KEY:
+        logging.error("No meetup.com key set.")
+        return events
+
     meetup_url = MEETUP_API_URL.format(group_urlname=group_urlname, key=MEETUP_KEY)
 
     got = get(meetup_url)
     if got.status_code in range(400, 499):
         logging.error("%s's meetup page cannot be found" % organization.name)
-        return []
+        return events
     else:
         try:
             results = got.json()['results']
-            events = []
             for event in results:
                 event = dict(organization_name=organization.name,
                              name=event['name'],
@@ -140,20 +144,21 @@ def get_meetup_events(organization, group_urlname):
                 events.append(event)
             return events
         except (TypeError, ValueError):
-            return []
+            return events
 
 
 def get_meetup_count(organization, identifier):
-    ''' Get the count of meetup members '''
-    MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
+    ''' Get the count of meetup members
+    '''
     meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=MEETUP_KEY)
     got = get(meetup_url)
-    if got:
+    members = None
+    if got and got.status_code // 100 == 2:
         response = got.json()
         if response:
             members = response["results"][0]["members"]
-            organization.member_count = members
-            db.session.commit()
+
+    return members
 
 
 def get_organizations(org_sources):
@@ -215,30 +220,31 @@ def get_stories(organization):
     else:
         rss = organization.website
 
+    stories = []
+
     # Extract a valid RSS feed from the URL
     try:
         url = get_first_working_feed_link(rss)
 
         # If no feed found then give up
         if not url:
-            url = None
-            return None
+            return stories
+
     except (HTTPError, ValueError, URLError):
-        url = None
-        return None
+        return stories
 
     try:
         logging.info('Asking cyberspace for ' + url)
         d = feedparser.parse(get(url).text)
+
     except (HTTPError, URLError, exceptions.SSLError):
-        url = None
-        return None
+        return stories
 
     #
     # Return dictionaries for the two most recent entries.
     #
-    return [dict(title=e.title, link=e.link, type=u'blog', organization_name=organization.name)
-            for e in d.entries[:2]]
+    stories = [dict(title=e.title, link=e.link, type=u'blog', organization_name=organization.name) for e in d.entries[:2]]
+    return stories
 
 
 def get_adjoined_json_lists(response, headers=None):
@@ -268,7 +274,6 @@ def get_projects(organization):
         Convert to a dict.
         TODO: Have this work for GDocs.
     '''
-
     # don't try to process an empty projects_list_url
     if not organization.projects_list_url:
         return []
@@ -704,71 +709,65 @@ def get_issues_for_project(project):
     return issues
 
 
-def get_issues(org_name):
-    '''
-        Get github issues associated to each Organization's Projects.
+def get_issues(project):
+    ''' Get github issues associated with the passed Project.
     '''
     issues = []
 
-    # Only grab this organization's projects
-    projects = db.session.query(Project).filter(Project.organization_name == org_name).all()
+    # don't try to parse an empty code_url
+    if not project.code_url:
+        return issues
 
-    # Populate issues for each project
-    for project in projects:
-        # Mark this project's issues for deletion
-        # :::here (issue/false)
-        db.session.execute(db.update(Issue, values={'keep': False}).where(Issue.project_id == project.id))
+    # Mark this project's issues for deletion
+    # :::here (issue/false)
+    db.session.execute(db.update(Issue, values={'keep': False}).where(Issue.project_id == project.id))
 
-        # don't try to parse an empty code_url
-        if not project.code_url:
-            continue
+    # Get github issues api url
+    _, host, path, _, _, _ = urlparse(project.code_url)
 
-        # Get github issues api url
-        _, host, path, _, _, _ = urlparse(project.code_url)
+    # Only check issues if its a github project
+    if host != 'github.com':
+        return issues
 
-        # Only check issues if its a github project
-        if host != 'github.com':
-            continue
+    path = sub(r"[\s\/]+?$", "", path)
+    # make sure we're working with the main github URL
+    path = make_root_github_project_path(path)
+    issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
-        path = sub(r"[\s\/]+?$", "", path)
-        # make sure we're working with the main github URL
-        path = make_root_github_project_path(path)
-        issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
+    # Ping github's api for project issues
+    # :TODO: non-github projects are hitting here and shouldn't be!
+    got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
 
-        # Ping github's api for project issues
-        # :TODO: non-github projects are hitting here and shouldn't be!
-        got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
+    # A 304 means that issues have not been modified since we last checked
+    if got.status_code == 304:
+        # :::here (issue/true)
+        db.session.execute(db.update(Issue, values={'keep': True}).where(Issue.project_id == project.id))
+        logging.info('Issues %s have not changed since last update', issues_url)
 
-        # Verify that content has not been modified since last run
-        if got.status_code == 304:
-            # :::here (issue/true)
-            db.session.execute(db.update(Issue, values={'keep': True}).where(Issue.project_id == project.id))
-            logging.info('Issues %s have not changed since last update', issues_url)
+    elif got.status_code not in range(400, 499):
+        # Update the project's last_updated_issue field
+        project.last_updated_issues = unicode(got.headers['ETag'])
+        db.session.add(project)
 
-        elif got.status_code not in range(400, 499):
-            # Update project's last_updated_issue field
-            project.last_updated_issues = unicode(got.headers['ETag'])
-            db.session.add(project)
+        responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
 
-            responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+        # Save each issue in response
+        for issue in responses:
+            # Type check the issue, we are expecting a dictionary
+            if isinstance(issue, dict):
+                # Pull requests are returned along with issues. Skip them.
+                if "/pull/" in issue['html_url']:
+                    continue
 
-            # Save each issue in response
-            for issue in responses:
-                # Type check the issue, we are expecting a dictionary
-                if isinstance(issue, dict):
-                    # Pull requests are returned along with issues. Skip them.
-                    if "/pull/" in issue['html_url']:
-                        continue
+                issue_dict = dict(project_id=project.id)
+                for field in (
+                        'title', 'html_url', 'body',
+                        'labels', 'created_at', 'updated_at'):
+                    issue_dict[field] = issue.get(field, None)
 
-                    issue_dict = dict(project_id=project.id)
-                    for field in (
-                            'title', 'html_url', 'body',
-                            'labels', 'created_at', 'updated_at'):
-                        issue_dict[field] = issue.get(field, None)
-
-                    issues.append(issue_dict)
-                else:
-                    logging.error('Issue for project %s is not a dictionary', project.name)
+                issues.append(issue_dict)
+            else:
+                logging.error('Issue for project %s is not a dictionary', project.name)
     return issues
 
 
@@ -950,7 +949,7 @@ def save_project_info(session, proj_dict):
 
         Return an app.Project instance.
     '''
-    # Select the current project, filtering on name AND organization.
+    # Select the current project, filtering on name and organization.
     filter = Project.name == proj_dict['name'], Project.organization_name == proj_dict['organization_name']
     existing_project = session.query(Project).filter(*filter).first()
 
@@ -971,45 +970,47 @@ def save_project_info(session, proj_dict):
     return existing_project
 
 
-def save_issue(session, issue):
-    '''
-        Save a dictionary of issue info to the datastore session.
+def save_issue_info(session, issue_dict):
+    ''' Save a dictionary of issue info to the datastore session.
+
         Return an app.Issue instance
     '''
-    # Select the current issue, filtering on title AND project_id.
-    filter = Issue.title == issue['title'], Issue.project_id == issue['project_id']
+    # Select the current issue, filtering on title and project_id.
+    filter = Issue.title == issue_dict['title'], Issue.project_id == issue_dict['project_id']
     existing_issue = session.query(Issue).filter(*filter).first()
 
-    # If this is a new issue save it
+    # If this is a new issue save and return it.
     if not existing_issue:
-        new_issue = Issue(**issue)
+        new_issue = Issue(**issue_dict)
         session.add(new_issue)
-    else:
-        # Preserve the existing issue.
-        # :::here (issue/true)
-        existing_issue.keep = True
-        # Update existing issue details
-        existing_issue.title = issue['title']
-        existing_issue.body = issue['body']
-        existing_issue.html_url = issue['html_url']
-        existing_issue.project_id = issue['project_id']
+        return new_issue
+
+    # Preserve the existing issue.
+    # :::here (issue/true)
+    existing_issue.keep = True
+
+    # Update existing issue details, skipping 'labels'
+    for (field, value) in issue_dict.items():
+        if field != 'labels':
+            setattr(existing_issue, field, value)
+
+    return existing_issue
 
 
-def save_labels(session, issue):
-    '''
-        Save labels to issues
+def save_labels_info(session, issue_dict):
+    ''' Save labels to issues
     '''
     # Select the current issue, filtering on title AND project_id.
-    filter = Issue.title == issue['title'], Issue.project_id == issue['project_id']
+    filter = Issue.title == issue_dict['title'], Issue.project_id == issue_dict['project_id']
     existing_issue = session.query(Issue).filter(*filter).first()
 
     # Get list of existing and incoming label names (dupes will be filtered out in comparison process)
     existing_label_names = [label.name for label in existing_issue.labels]
-    incoming_label_names = [label['name'] for label in issue['labels']]
+    incoming_label_names = [label['name'] for label in issue_dict['labels']]
 
     # Add labels that are in the incoming list and not the existing list
     add_label_names = list(set(incoming_label_names) - set(existing_label_names))
-    for label_dict in issue['labels']:
+    for label_dict in issue_dict['labels']:
         if label_dict['name'] in add_label_names:
             # add the issue id to the labels
             label_dict["issue_id"] = existing_issue.id
@@ -1046,6 +1047,8 @@ def save_event_info(session, event_dict):
     for (field, value) in event_dict.items():
         setattr(existing_event, field, value)
 
+    return existing_event
+
 
 def save_story_info(session, story_dict):
     '''
@@ -1072,8 +1075,16 @@ def save_story_info(session, story_dict):
     for (field, value) in story_dict.items():
         setattr(existing_story, field, value)
 
+    return existing_story
+
 
 def get_event_group_identifier(events_url):
+    ''' Extract a group identifier from a meetup.com event URL
+    '''
+    if 'meetup.com' not in events_url:
+        logging.error("Only Meetup.com events work right now.")
+        return None
+
     parse_result = urlparse(events_url)
     url_parts = parse_result.path.split('/')
     identifier = url_parts.pop()
@@ -1118,18 +1129,24 @@ def get_attendance(peopledb_cursor, organization_url, organization_name):
     return attendance
 
 
-def update_attendance(db, organization_name, attendance):
-    ''' Update exisiting attendance '''
+def update_attendance(session, organization_name, attendance_dict):
+    ''' Update exisiting attendance
+    '''
+    # Select the current attendance, filtering on organization
     filter = Attendance.organization_name == organization_name
-    existing_attendance = db.session.query(Attendance).filter(filter).first()
-    if existing_attendance:
-        existing_attendance.total = attendance["total"]
-        existing_attendance.weekly = attendance["weekly"]
-        db.session.add(existing_attendance)
-    else:
-        new_att = Attendance(**attendance)
-        db.session.add(new_att)
-    db.session.commit()
+    existing_attendance = session.query(Attendance).filter(filter).first()
+
+    # if this is a new attendance, save and return it
+    if not existing_attendance:
+        new_attendance = Attendance(**attendance_dict)
+        session.add(new_attendance)
+        return new_attendance
+
+    # Update existing attendance details
+    existing_attendance.total = attendance_dict["total"]
+    existing_attendance.weekly = attendance_dict["weekly"]
+
+    return existing_attendance
 
 
 def main(org_name=None, org_sources=None):
@@ -1148,6 +1165,7 @@ def main(org_name=None, org_sources=None):
     # If an organization name was passed, filter.
     if org_name:
         orgs_info = [org for org in orgs_info if org['name'] == org_name]
+
 
     # Retreive and save all information about the organizations
     for org_info in orgs_info:
@@ -1182,52 +1200,48 @@ def main(org_name=None, org_sources=None):
             if organization.rss or organization.website:
                 logging.info("Gathering all of %s's stories." % organization.name)
                 stories = get_stories(organization)
-                if stories:
-                    for story_info in stories:
-                        save_story_info(db.session, story_info)
-                    # flush the stories
-                    db.session.flush()
+                # build and commit stories
+                for story_info in stories:
+                    save_story_info(db.session, story_info)
+                    db.session.commit()
 
-            # PROJECTS
+            # PROJECTS, ISSUES and LABELS
             if organization.projects_list_url:
                 logging.info("Gathering all of %s's projects." % organization.name)
                 projects = get_projects(organization)
+                # build and commit projects
                 for proj_dict in projects:
-                    save_project_info(db.session, proj_dict)
-                # flush the projects
-                db.session.flush()
+                    saved_project = save_project_info(db.session, proj_dict)
+                    db.session.commit()
+
+                    logging.info(u"Gathering all issues for this {} project: {}.".format(organization.name, saved_project.name))
+                    issues = get_issues(saved_project)
+                    # build and commit issues and labels
+                    for issue_dict in issues:
+                        save_issue_info(db.session, issue_dict)
+                        db.session.commit()
+                        save_labels_info(db.session, issue_dict)
+                        db.session.commit()
 
             # EVENTS
             if organization.events_url:
-                if not meetup_key:
-                    logging.error("No Meetup.com key set.")
-                if 'meetup.com' not in organization.events_url:
-                    logging.error("Only Meetup.com events work right now.")
+                logging.info("Gathering all of %s's events." % organization.name)
+                identifier = get_event_group_identifier(organization.events_url)
+                if identifier:
+                    # build and commit events
+                    for event in get_meetup_events(organization, identifier):
+                        save_event_info(db.session, event)
+                        db.session.commit()
+
+                    # Get and save the meetup.com member count for this organization
+                    members = get_meetup_count(organization, identifier)
+                    # Don't overwrite the old value if we got None back
+                    if members:
+                        organization.member_count = members
+                        db.session.commit()
+
                 else:
-                    logging.info("Gathering all of %s's events." % organization.name)
-                    identifier = get_event_group_identifier(organization.events_url)
-                    if identifier:
-                        for event in get_meetup_events(organization, identifier):
-                            save_event_info(db.session, event)
-                        # flush the events
-                        db.session.flush()
-
-                        # Get Meetup member count
-                        get_meetup_count(organization, identifier)
-
-                    else:
-                        logging.error("%s does not have a valid events url" % organization.name)
-
-            # ISSUES
-            logging.info("Gathering all of %s's open GitHub issues." % organization.name)
-            issues = get_issues(organization.name)
-            for issue in issues:
-                save_issue(db.session, issue)
-
-            # flush the issues
-            db.session.flush()
-            for issue in issues:
-                save_labels(db.session, issue)
+                    logging.error("%s does not have a valid events url" % organization.name)
 
             # ATTENDANCE
             attendance = None
@@ -1239,10 +1253,8 @@ def main(org_name=None, org_sources=None):
                         attendance = get_attendance(peopledb_cursor, organization_url, organization.name)
 
             if attendance:
-                update_attendance(db, organization.name, attendance)
-
-            # commit everything
-            db.session.commit()
+                update_attendance(db.session, organization.name, attendance)
+                db.session.commit()
 
             # Remove everything marked for deletion.
             # :::here (event/delete, story/delete, project/delete, issue/delete, organization/delete)

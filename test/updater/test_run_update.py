@@ -275,15 +275,39 @@ class RunUpdateTestCase(unittest.TestCase):
         old_project = ProjectFactory(name=u'Old Project', organization_name=u'Old Organization')
         old_event = EventFactory(name=u'Old Event', organization_name=u'Old Organization')
         old_issue = IssueFactory(title=u'Old Issue', project_id=1)
-        self.db.session.flush()
+        self.db.session.add(old_organization)
+        self.db.session.add(old_project)
+        self.db.session.add(old_event)
+        self.db.session.add(old_issue)
+        self.db.session.commit()
 
+        from app import Organization, Project, Event, Issue
+
+        # make sure old org is there
+        filter = Organization.name == u'Old Organization'
+        organization = self.db.session.query(Organization).filter(filter).first()
+        self.assertIsNotNone(organization)
+
+        # make sure old project is there
+        filter = Project.name == u'Old Project'
+        project = self.db.session.query(Project).filter(filter).first()
+        self.assertIsNotNone(project)
+
+        # make sure the old issue is there
+        filter = Issue.title == u'Old Issue'
+        issue = self.db.session.query(Issue).filter(filter).first()
+        self.assertIsNotNone(issue)
+
+        # make sure old event is there
+        filter = Event.name == u'Old Event'
+        event = self.db.session.query(Event).filter(filter).first()
+        self.assertIsNotNone(event)
+
+        #
+        # run update
         with HTTMock(self.response_content):
             import run_update
             run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
-
-        self.db.session.flush()
-
-        from app import Organization, Project, Event, Issue
 
         # make sure old org is no longer there
         filter = Organization.name == u'Old Organization'
@@ -305,17 +329,18 @@ class RunUpdateTestCase(unittest.TestCase):
         event = self.db.session.query(Event).filter(filter).first()
         self.assertIsNone(event)
 
-        # check for the one organization
+        #
+        # check for one organization
         filter = Organization.name == u'Cöde for Ameriça'
         organization = self.db.session.query(Organization).filter(filter).first()
         self.assertEqual(organization.name, u'Cöde for Ameriça')
 
-        # check for the one project
+        # check for one project
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertEqual(project.name, u'bizfriendly-web')
 
-        # check for the one issue
+        # check for one issue
         filter = Issue.title == u'Important cityvoice issue'
         issue = self.db.session.query(Issue).filter(filter).first()
         self.assertEqual(issue.title, u'Important cityvoice issue')
@@ -710,8 +735,8 @@ class RunUpdateTestCase(unittest.TestCase):
         from test.factories import OrganizationFactory, ProjectFactory
 
         organization = OrganizationFactory(name=u'Code for America', projects_list_url=u'http://codeforamerica.org/projects.csv')
-        project = ProjectFactory(organization_name=u'Code for America',code_url=u'https://github.com/TESTORG/TESTPROJECT')
-        self.db.session.flush()
+        project = ProjectFactory(organization_name=organization.name, code_url=u'https://github.com/TESTORG/TESTPROJECT')
+        self.db.session.commit()
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues':
@@ -726,7 +751,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                issues = run_update.get_issues(organization.name)
+                issues = run_update.get_issues(project)
                 assert (len(issues) == 2)
 
     def test_project_list_without_all_columns(self):
@@ -1536,8 +1561,9 @@ class RunUpdateTestCase(unittest.TestCase):
                 self.assertEqual(oakland_attendance["organization_name"], "Open Oakland")
                 self.assertTrue("2015 03" in oakland_attendance["weekly"].keys())
 
-        run_update.update_attendance(self.db, cfsf.name, cfsf_attendance)
-        run_update.update_attendance(self.db, oakland.name, oakland_attendance)
+        run_update.update_attendance(self.db.session, cfsf.name, cfsf_attendance)
+        run_update.update_attendance(self.db.session, oakland.name, oakland_attendance)
+        self.db.session.commit()
         attendance = self.db.session.query(Attendance).all()
         self.assertEqual(attendance[0].organization_name, "Code for San Francisco")
         self.assertEqual(attendance[1].organization_name, "Open Oakland")
@@ -1545,12 +1571,14 @@ class RunUpdateTestCase(unittest.TestCase):
 
 
     def test_meetup_count(self):
-        ''' Test getting membership count from Meetup '''
+        ''' Test getting membership count from Meetup
+        '''
         from test.factories import OrganizationFactory
         org = OrganizationFactory(name="TEST ORG")
         with HTTMock(self.response_content):
             import run_update
-            run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
+            org.member_count = run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
+
         self.assertEqual(org.member_count, 100)
 
 
