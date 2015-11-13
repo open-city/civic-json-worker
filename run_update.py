@@ -65,7 +65,7 @@ def get_github_api(url, headers=None):
         Make authenticated GitHub requests.
     '''
     global GITHUB_THROTTLING
-    logging.info('Asking Github for {}{}'.format(url, ' ({})'.format(headers) if headers and headers != {} else ''))
+    logging.info(u'Asking Github for {}{}'.format(url, u' ({})'.format(headers) if headers and headers != {} else u''))
 
     got = get(url, auth=GITHUB_AUTH, headers=headers)
 
@@ -105,9 +105,9 @@ def format_location(venue):
         address = address + ', ' + venue['address_2']
 
     if 'state' in venue:
-        return "{address}, {city}, {state}, {country}".format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
+        return u'{address}, {city}, {state}, {country}'.format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
     else:
-        return "{address}, {city}, {country}".format(address=address, city=venue['city'], country=venue['country'])
+        return u'{address}, {city}, {country}'.format(address=address, city=venue['city'], country=venue['country'])
 
 
 def get_meetup_events(organization, group_urlname):
@@ -123,7 +123,7 @@ def get_meetup_events(organization, group_urlname):
 
     got = get(meetup_url)
     if got.status_code in range(400, 499):
-        logging.error("{}'s meetup page cannot be found".format(organization.name))
+        logging.error(u"{}'s meetup page cannot be found".format(organization.name))
         return events
     else:
         try:
@@ -510,7 +510,7 @@ def update_project_info(project):
 
         # If the project has not been modified...
         elif got.status_code == 304:
-            logging.info('Project {} has not been modified since last update'.format(repo_url))
+            logging.info(u'Project {} has not been modified since last update'.format(repo_url))
 
             # Populate values from the civic.json if it exists/is updated
             project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
@@ -797,17 +797,17 @@ def get_root_directory_listing_for_project(project_dict, force=False):
 
     # Verify that content has not been modified since last run
     if got.status_code == 304:
-        logging.info('root directory listing has not changed since last update for {}'.format(directory_url))
+        logging.info(u'root directory listing has not changed since last update for {}'.format(directory_url))
 
     elif got.status_code not in range(400, 499):
-        logging.info('root directory listing has changed for {}'.format(directory_url))
+        logging.info(u'root directory listing has changed for {}'.format(directory_url))
         # Update the project's last_updated_root_files field
         project_dict['last_updated_root_files'] = unicode(got.headers['ETag'])
         # get the contents of the file
         listing = got.json()
 
     else:
-        logging.info('NO root directory listing found for {}'.format(directory_url))
+        logging.info(u'NO root directory listing found for {}'.format(directory_url))
 
     return listing
 
@@ -846,20 +846,20 @@ def get_civic_json_for_project(project_dict, force=False):
 
     # Verify that content has not been modified since last run
     if got.status_code == 304:
-        logging.info('Unchanged civic.json at {}'.format(civic_url))
+        logging.info(u'Unchanged civic.json at {}'.format(civic_url))
 
     elif got.status_code not in range(400, 499):
-        logging.info('New civic.json at {}'.format(civic_url))
+        logging.info(u'New civic.json at {}'.format(civic_url))
         # Update the project's last_updated_civic_json field
         project_dict['last_updated_civic_json'] = unicode(got.headers['ETag'])
         try:
             # get the contents of the file
             civic = got.json()
         except ValueError:
-            logging.error('Malformed civic.json at {}'.format(civic_url))
+            logging.error(u'Malformed civic.json at {}'.format(civic_url))
 
     else:
-        logging.info('No civic.json at {}'.format(civic_url))
+        logging.info(u'No civic.json at {}'.format(civic_url))
 
     return civic
 
@@ -1198,7 +1198,7 @@ def main(org_name=None, org_sources=None):
 
             # STORIES
             if organization.rss or organization.website:
-                logging.info("Gathering all of {}'s stories.".format(organization.name))
+                logging.info(u"Gathering all of {}'s stories.".format(organization.name))
                 stories = get_stories(organization)
                 # build and commit stories
                 for story_info in stories:
@@ -1207,14 +1207,14 @@ def main(org_name=None, org_sources=None):
 
             # PROJECTS, ISSUES and LABELS
             if organization.projects_list_url:
-                logging.info("Gathering all of {}'s projects.".format(organization.name))
+                logging.info(u"Gathering all of {}'s projects.".format(organization.name))
                 projects = get_projects(organization)
                 # build and commit projects
                 for proj_dict in projects:
                     saved_project = save_project_info(db.session, proj_dict)
                     db.session.commit()
 
-                    logging.info(u"Gathering all issues for this {} project: {}.".format(organization.name, saved_project.name))
+                    logging.info(u'Gathering all issues for this {} project: {}.'.format(organization.name, saved_project.name))
                     issues = get_issues(saved_project)
                     # build and commit issues and labels
                     for issue_dict in issues:
@@ -1225,7 +1225,7 @@ def main(org_name=None, org_sources=None):
 
             # EVENTS
             if organization.events_url:
-                logging.info("Gathering all of {}'s events.".format(organization.name))
+                logging.info(u"Gathering all of {}'s events.".format(organization.name))
                 identifier = get_event_group_identifier(organization.events_url)
                 if identifier:
                     # build and commit events
@@ -1241,7 +1241,7 @@ def main(org_name=None, org_sources=None):
                         db.session.commit()
 
                 else:
-                    logging.error("{} does not have a valid events url".format(organization.name))
+                    logging.error(u'{} does not have a valid events url'.format(organization.name))
 
             # ATTENDANCE
             attendance = None
