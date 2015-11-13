@@ -749,7 +749,8 @@ def get_issues(project):
         project.last_updated_issues = unicode(got.headers['ETag'])
         db.session.add(project)
 
-        responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+        # Get all the pages of issues
+        responses, _ = get_adjoined_json_lists(got)
 
         # Save each issue in response
         for issue in responses:
