@@ -977,8 +977,8 @@ def save_issue_info(session, issue_dict):
 
         Return an app.Issue instance
     '''
-    # Select the current issue, filtering on title and project_id.
-    filter = Issue.title == issue_dict['title'], Issue.project_id == issue_dict['project_id']
+    # Select the current issue, filtering on html_url and project id.
+    filter = Issue.html_url == issue_dict['html_url'], Issue.project_id == issue_dict['project_id']
     existing_issue = session.query(Issue).filter(*filter).first()
 
     # If this is a new issue save and return it.
@@ -1002,8 +1002,8 @@ def save_issue_info(session, issue_dict):
 def save_labels_info(session, issue_dict):
     ''' Save labels to issues
     '''
-    # Select the current issue, filtering on title AND project_id.
-    filter = Issue.title == issue_dict['title'], Issue.project_id == issue_dict['project_id']
+    # Select the current issue, filtering on html_url and project id.
+    filter = Issue.html_url == issue_dict['html_url'], Issue.project_id == issue_dict['project_id']
     existing_issue = session.query(Issue).filter(*filter).first()
 
     # Get list of existing and incoming label names (dupes will be filtered out in comparison process)
@@ -1031,8 +1031,7 @@ def save_event_info(session, event_dict):
         that event instance
     '''
     # Select the current event, filtering on event_url and organization name.
-    filter = Event.event_url == event_dict['event_url'], \
-        Event.organization_name == event_dict['organization_name']
+    filter = Event.event_url == event_dict['event_url'], Event.organization_name == event_dict['organization_name']
     existing_event = session.query(Event).filter(*filter).first()
 
     # If this is a new event, save and return it.
@@ -1058,8 +1057,7 @@ def save_story_info(session, story_dict):
         that story instance
     '''
     # Select the current story, filtering on link and organization name.
-    filter = Story.organization_name == story_dict['organization_name'], \
-        Story.link == story_dict['link']
+    filter = Story.organization_name == story_dict['organization_name'], Story.link == story_dict['link']
 
     existing_story = session.query(Story).filter(*filter).first()
 
