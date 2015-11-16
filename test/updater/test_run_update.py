@@ -1289,6 +1289,44 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertTrue(type(check_project.tags) is unicode)
         self.assertTrue(len(check_project.tags) > 0)
 
+    def test_git_extension_stripped_from_git_url(self):
+        ''' A .git extension is stripped from a project's GitHub URL
+        '''
+        self.setup_mock_rss_response()
+
+        from app import Project
+        import run_update
+
+        # alter responses to return only one organization, with one project that
+        # has a GitHub URL with .git at the end
+        def overwrite_response_content(url, request):
+            if "docs.google.com" in url:
+                org_lines = [u'''name,website,events_url,rss,projects_list_url'''.encode('utf8'), u'''Cöde for Ameriça,http://codeforamerica.org,http://www.meetup.com/events/Code-For-Charlotte/,http://www.codeforamerica.org/blog/feed/,http://example.com/cfa-projects.csv'''.encode('utf8')]
+                return response(200, '''\n'''.join(org_lines), {'content-type': 'text/csv; charset=UTF-8'})
+            elif url.geturl() == 'http://example.com/cfa-projects.csv':
+                project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status'''.encode('utf8'), ''',,,https://github.com/codeforamerica/cityvoice.git,,,"safety, police, poverty",Shuttered'''.encode('utf8')]
+                return response(200, '''\n'''.join(project_lines), {'content-type': 'text/csv; charset=UTF-8'})
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        check_project = self.db.session.query(Project).first()
+        # the project exists
+        self.assertIsNotNone(check_project)
+        self.assertIsNotNone(check_project.id)
+        # the project has issues
+        self.assertTrue(hasattr(check_project, 'issues'))
+        self.assertTrue(len(check_project.issues) > 0)
+        # the project has status & tags from civic.json
+        self.assertTrue(check_project.status is not None)
+        self.assertTrue(type(check_project.status) is unicode)
+        self.assertTrue(len(check_project.status) > 0)
+        self.assertTrue(check_project.tags is not None)
+        self.assertTrue(type(check_project.tags) is unicode)
+        self.assertTrue(len(check_project.tags) > 0)
+
     def test_unmodified_projects_stay_in_database(self):
         ''' Verify that unmodified projects are not deleted from the database
         '''
@@ -1603,7 +1641,6 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_two_issues_with_the_same_name(self):
         ''' Two issues with the same name but different html_urls should be saved as separate issues.
         '''
-        # ;;;
         from app import Project, Issue
         import run_update
         self.setup_mock_rss_response()
@@ -1636,6 +1673,38 @@ class RunUpdateTestCase(unittest.TestCase):
         for check_issue in issues:
             self.assertEqual(check_issue.title, same_title)
             self.assertEqual(check_issue.project_id, project_id)
+
+    def test_404ing_project_deleted(self):
+        ''' A project that once existed but is now returning a 404 is deleted from the database.
+        '''
+        from app import Project
+        self.setup_mock_rss_response()
+
+        # run a vanilla update
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        filter = Project.name == u'cityvoice'
+        projects = self.db.session.query(Project).filter(filter).all()
+        self.assertEqual(len(projects), 3)
+
+        def overwrite_response_content(url, request):
+            if 'https://api.github.com/repos/codeforamerica/cityvoice' in url.geturl():
+                return response(404, '''{"message": "Not Found", "documentation_url": "https://developer.github.com/v3"}''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        logging.error = Mock()
+
+        # run a new update
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                import run_update
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        logging.error.assert_called_with('https://api.github.com/repos/codeforamerica/cityvoice doesn\'t exist.')
+        filter = Project.name == u'cityvoice'
+        projects = self.db.session.query(Project).filter(filter).all()
+        self.assertEqual(len(projects), 0)
 
 
 if __name__ == '__main__':

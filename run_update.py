@@ -424,6 +424,8 @@ def make_root_github_project_path(path):
     '''
     path_split = path.split('/')
     path = '/'.join(path_split[0:3])
+    # some URLs have been passed to us with '.git' at the end
+    path = sub(ur'\.git$', '', path)
     return path
 
 
@@ -497,8 +499,14 @@ def update_project_info(project):
 
         if got.status_code in range(400, 499):
             if got.status_code == 404:
-                logging.error(repo_url + ' doesn\'t exist.')
-                # If its a bad GitHub link, don't return it at all.
+                # It's a bad GitHub link
+                logging.error(u"{} doesn't exist.".format(repo_url))
+                # If there's an existing project in the database, get rid of it
+                if existing_project:
+                    # this is redundant, but let's make sure
+                    existing_project.keep = False
+                    db.session.commit()
+                # Take the project out of the loop by returning None
                 return None
 
             elif got.status_code == 403:
@@ -525,7 +533,6 @@ def update_project_info(project):
             # nothing was updated, but make sure we keep the project
             # :::here (project/true)
             existing_project.keep = True
-            db.session.add(existing_project)
             # commit the project
             db.session.commit()
             return None
