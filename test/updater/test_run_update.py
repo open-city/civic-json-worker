@@ -5,7 +5,6 @@ import unittest
 import datetime
 import logging
 import time
-import json
 from re import match, search, sub
 
 from httmock import response, HTTMock
@@ -42,7 +41,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.db.create_all()
 
         import run_update
-        run_update.github_throttling = False
+        run_update.GITHUB_THROTTLING = False
 
         # FAKE PEOPLEDB
         with connect(os.environ["PEOPLEDB"]) as conn:
@@ -275,15 +274,39 @@ class RunUpdateTestCase(unittest.TestCase):
         old_project = ProjectFactory(name=u'Old Project', organization_name=u'Old Organization')
         old_event = EventFactory(name=u'Old Event', organization_name=u'Old Organization')
         old_issue = IssueFactory(title=u'Old Issue', project_id=1)
-        self.db.session.flush()
+        self.db.session.add(old_organization)
+        self.db.session.add(old_project)
+        self.db.session.add(old_event)
+        self.db.session.add(old_issue)
+        self.db.session.commit()
 
+        from app import Organization, Project, Event, Issue
+
+        # make sure old org is there
+        filter = Organization.name == u'Old Organization'
+        organization = self.db.session.query(Organization).filter(filter).first()
+        self.assertIsNotNone(organization)
+
+        # make sure old project is there
+        filter = Project.name == u'Old Project'
+        project = self.db.session.query(Project).filter(filter).first()
+        self.assertIsNotNone(project)
+
+        # make sure the old issue is there
+        filter = Issue.title == u'Old Issue'
+        issue = self.db.session.query(Issue).filter(filter).first()
+        self.assertIsNotNone(issue)
+
+        # make sure old event is there
+        filter = Event.name == u'Old Event'
+        event = self.db.session.query(Event).filter(filter).first()
+        self.assertIsNotNone(event)
+
+        #
+        # run update
         with HTTMock(self.response_content):
             import run_update
             run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
-
-        self.db.session.flush()
-
-        from app import Organization, Project, Event, Issue
 
         # make sure old org is no longer there
         filter = Organization.name == u'Old Organization'
@@ -305,17 +328,18 @@ class RunUpdateTestCase(unittest.TestCase):
         event = self.db.session.query(Event).filter(filter).first()
         self.assertIsNone(event)
 
-        # check for the one organization
+        #
+        # check for one organization
         filter = Organization.name == u'Cöde for Ameriça'
         organization = self.db.session.query(Organization).filter(filter).first()
         self.assertEqual(organization.name, u'Cöde for Ameriça')
 
-        # check for the one project
+        # check for one project
         filter = Project.name == u'bizfriendly-web'
         project = self.db.session.query(Project).filter(filter).first()
         self.assertEqual(project.name, u'bizfriendly-web')
 
-        # check for the one issue
+        # check for one issue
         filter = Issue.title == u'Important cityvoice issue'
         issue = self.db.session.query(Issue).filter(filter).first()
         self.assertEqual(issue.title, u'Important cityvoice issue')
@@ -330,7 +354,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # Thu, 16 Jan 2014 19:00:00 -05:00
         self.assertEqual(first_event.utc_offset, -5 * 3600)
         self.assertEqual(first_event.start_time_notz, datetime.datetime(2014, 1, 16, 19, 0, 0))
-        self.assertEqual(first_event.name,u'Organizational meeting')
+        self.assertEqual(first_event.name, u'Organizational meeting')
 
         second_event = events.pop(0)
         # Thu, 20 Feb 2014 18:30:00 -05:00
@@ -378,7 +402,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                self.assertFalse(run_update.github_throttling)
+                self.assertFalse(run_update.GITHUB_THROTTLING)
                 with self.assertRaises(IOError):
                     run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
@@ -606,7 +630,6 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(projects[0]['status'], "active")
             self.assertEqual(projects[0]['last_updated'], datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"))
 
-
     def test_non_github_projects_same_name(self):
         ''' Test that non github projects with same name but different groups dont overlap
         '''
@@ -670,7 +693,7 @@ class RunUpdateTestCase(unittest.TestCase):
         github_details = {'pushed_at': newer_time_from_github, 'updated_at': older_time_from_github}
         self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(newer_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
-        #Test handling of missing data
+        # Test handling of missing data
         github_details = {'updated_at': older_time_from_github}
         self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(older_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
@@ -679,7 +702,6 @@ class RunUpdateTestCase(unittest.TestCase):
 
         github_details = {}
         self.assertIsNotNone(run_update.github_latest_update_time(github_details))
-
 
     def test_utf8_noncode_projects(self):
         ''' Test that utf8 project descriptions match exisiting projects.
@@ -710,8 +732,8 @@ class RunUpdateTestCase(unittest.TestCase):
         from test.factories import OrganizationFactory, ProjectFactory
 
         organization = OrganizationFactory(name=u'Code for America', projects_list_url=u'http://codeforamerica.org/projects.csv')
-        project = ProjectFactory(organization_name=u'Code for America',code_url=u'https://github.com/TESTORG/TESTPROJECT')
-        self.db.session.flush()
+        project = ProjectFactory(organization_name=organization.name, code_url=u'https://github.com/TESTORG/TESTPROJECT')
+        self.db.session.commit()
 
         def overwrite_response_content(url, request):
             if url.geturl() == 'https://api.github.com/repos/TESTORG/TESTPROJECT/issues':
@@ -726,7 +748,7 @@ class RunUpdateTestCase(unittest.TestCase):
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
                 import run_update
-                issues = run_update.get_issues(organization.name)
+                issues = run_update.get_issues(project)
                 assert (len(issues) == 2)
 
     def test_project_list_without_all_columns(self):
@@ -1492,7 +1514,6 @@ class RunUpdateTestCase(unittest.TestCase):
 
         self.results_state = 'before'
 
-
     def test_attendance(self):
         ''' Test gathering attendance from the peopledb '''
         # Mock attendance data
@@ -1500,10 +1521,10 @@ class RunUpdateTestCase(unittest.TestCase):
         cfsf_name = "Code for San Francisco"
         oakland_url = "https://www.codeforamerica.org/api/organizations/Open-Oakland"
         oakland_name = "Open Oakland"
-        cfsf_checkin1 = datetime.datetime.strptime("2015-01-01","%Y-%m-%d")
-        cfsf_checkin2 = datetime.datetime.strptime("2015-01-08","%Y-%m-%d")
-        oakland_checkin1 = datetime.datetime.strptime("2015-01-16","%Y-%m-%d")
-        oakland_checkin2 = datetime.datetime.strptime("2015-01-24","%Y-%m-%d")
+        cfsf_checkin1 = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
+        cfsf_checkin2 = datetime.datetime.strptime("2015-01-08", "%Y-%m-%d")
+        oakland_checkin1 = datetime.datetime.strptime("2015-01-16", "%Y-%m-%d")
+        oakland_checkin2 = datetime.datetime.strptime("2015-01-24", "%Y-%m-%d")
 
         # Access the peopledb
         PEOPLEDB = 'postgres:///peopledbtest'
@@ -1521,38 +1542,39 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # Call a function to pull data out of it
         with connect(PEOPLEDB) as conn:
-            with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+            with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
                 import run_update
-                from app import Attendance, Organization
+                from app import Attendance
                 from test.factories import OrganizationFactory
                 cfsf = OrganizationFactory(name='Code for San Francisco')
                 oakland = OrganizationFactory(name='Open Oakland')
 
-                cfsf_attendance = run_update.get_attendance(peopledb, cfsf_url, cfsf.name)
-                self.assertEqual(cfsf_attendance["organization_name"], "Code for San Francisco")
+                cfsf_attendance = run_update.get_attendance(peopledb_cursor, cfsf_url, cfsf.name)
+                self.assertEqual(cfsf_attendance["organization_name"], cfsf_name)
                 self.assertTrue("2015 01" in cfsf_attendance["weekly"].keys())
 
-                oakland_attendance = run_update.get_attendance(peopledb, oakland_url, oakland.name)
-                self.assertEqual(oakland_attendance["organization_name"], "Open Oakland")
+                oakland_attendance = run_update.get_attendance(peopledb_cursor, oakland_url, oakland.name)
+                self.assertEqual(oakland_attendance["organization_name"], oakland_name)
                 self.assertTrue("2015 03" in oakland_attendance["weekly"].keys())
 
-        run_update.update_attendance(self.db, cfsf.name, cfsf_attendance)
-        run_update.update_attendance(self.db, oakland.name, oakland_attendance)
+        run_update.update_attendance(self.db.session, cfsf.name, cfsf_attendance)
+        run_update.update_attendance(self.db.session, oakland.name, oakland_attendance)
+        self.db.session.commit()
         attendance = self.db.session.query(Attendance).all()
-        self.assertEqual(attendance[0].organization_name, "Code for San Francisco")
-        self.assertEqual(attendance[1].organization_name, "Open Oakland")
+        self.assertEqual(attendance[0].organization_name, cfsf_name)
+        self.assertEqual(attendance[1].organization_name, oakland_name)
         self.assertTrue("2015 03" in attendance[1].weekly.keys())
 
-
     def test_meetup_count(self):
-        ''' Test getting membership count from Meetup '''
+        ''' Test getting membership count from Meetup
+        '''
         from test.factories import OrganizationFactory
         org = OrganizationFactory(name="TEST ORG")
         with HTTMock(self.response_content):
             import run_update
-            run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
-        self.assertEqual(org.member_count, 100)
+            org.member_count = run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
 
+        self.assertEqual(org.member_count, 100)
 
     def test_languages(self):
         ''' Test pulling languages from Github '''
@@ -1577,6 +1599,43 @@ class RunUpdateTestCase(unittest.TestCase):
                 run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
                 project = self.db.session.query(Project).first()
                 self.assertTrue(isinstance(project.languages, type(None)))
+
+    def test_two_issues_with_the_same_name(self):
+        ''' Two issues with the same name but different html_urls should be saved as separate issues.
+        '''
+        # ;;;
+        from app import Project, Issue
+        import run_update
+        self.setup_mock_rss_response()
+
+        same_title = u'Same-Titled Cityvoice Issue'
+
+        def overwrite_response_content(url, request):
+            response_etag = {'ETag': '8456bc53d4cf6b78779ded3408886f82'}
+            if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/issues':
+                return response(200, '''[{{"html_url": "https://github.com/codeforamerica/cityvoice/issue/210","title": "{issue_title}", "labels": [],"created_at": "2015-09-16T05:45:20Z", "updated_at": "2015-10-22T17:26:02Z", "body" : "WHATEVER"}}, {{"html_url": "https://github.com/codeforamerica/cityvoice/issue/211","title": "{issue_title}", "labels": [], "created_at" : "2015-10-26T01:13:03Z", "updated_at" : "2015-10-26T18:06:54Z", "body" : "WHATEVER"}}]'''.format(issue_title=same_title), response_etag)
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                run_update.main(org_name=u"Cöde for Ameriça", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check the cityvoice project
+        filter = Project.name == u'cityvoice'
+        project = self.db.session.query(Project).filter(filter).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.name, u'cityvoice')
+        project_id = project.id
+
+        # and check the issues
+        filter = Issue.title == same_title
+        issues = self.db.session.query(Issue).filter(filter).all()
+        self.assertIsNotNone(issues)
+        self.assertEqual(2, len(issues))
+        self.assertNotEqual(issues[0].html_url, issues[1].html_url)
+        for check_issue in issues:
+            self.assertEqual(check_issue.title, same_title)
+            self.assertEqual(check_issue.project_id, project_id)
 
 
 if __name__ == '__main__':

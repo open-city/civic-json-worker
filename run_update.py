@@ -39,42 +39,40 @@ TEST_ORG_SOURCES_FILENAME = 'test_org_sources.csv'
 
 # API URL templates
 MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}"
+MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
 GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
 GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
 GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{repo_path}/issues'
 GITHUB_CONTENT_API_URL = 'https://api.github.com/repos{repo_path}/contents/{file_path}'
 
+GITHUB_AUTH = None
 if 'GITHUB_TOKEN' in os.environ:
-    github_auth = (os.environ['GITHUB_TOKEN'], '')
-else:
-    github_auth = None
+    GITHUB_AUTH = (os.environ['GITHUB_TOKEN'], '')
 
+MEETUP_KEY = None
 if 'MEETUP_KEY' in os.environ:
-    meetup_key = os.environ['MEETUP_KEY']
-else:
-    meetup_key = None
+    MEETUP_KEY = os.environ['MEETUP_KEY']
 
+PEOPLEDB = None
 if 'PEOPLEDB' in os.environ:
     PEOPLEDB = os.environ["PEOPLEDB"]
-else:
-    PEOPLEDB = None
 
-github_throttling = False
+GITHUB_THROTTLING = False
 
 
 def get_github_api(url, headers=None):
     '''
         Make authenticated GitHub requests.
     '''
-    global github_throttling
-    logging.info('Asking Github for {}{}'.format(url, ' ({})'.format(headers) if headers and headers != {} else ''))
+    global GITHUB_THROTTLING
+    logging.info(u'Asking Github for {}{}'.format(url, u' ({})'.format(headers) if headers and headers != {} else u''))
 
-    got = get(url, auth=github_auth, headers=headers)
+    got = get(url, auth=GITHUB_AUTH, headers=headers)
 
     # check for throttling
     if got.status_code == 403:
         # we've been throttled
-        github_throttling = True
+        GITHUB_THROTTLING = True
 
         # log the error
         logging.error("GitHub Rate Limit Remaining: " + str(got.headers["x-ratelimit-remaining"]))
@@ -107,25 +105,29 @@ def format_location(venue):
         address = address + ', ' + venue['address_2']
 
     if 'state' in venue:
-        return "{address}, {city}, {state}, {country}".format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
+        return u'{address}, {city}, {state}, {country}'.format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
     else:
-        return "{address}, {city}, {country}".format(address=address, city=venue['city'], country=venue['country'])
+        return u'{address}, {city}, {country}'.format(address=address, city=venue['city'], country=venue['country'])
 
 
 def get_meetup_events(organization, group_urlname):
+    ''' Get events associated with a group
     '''
-        Get events associated with a group
-    '''
-    meetup_url = MEETUP_API_URL.format(group_urlname=group_urlname, key=meetup_key)
+    events = []
+
+    if not MEETUP_KEY:
+        logging.error("No meetup.com key set.")
+        return events
+
+    meetup_url = MEETUP_API_URL.format(group_urlname=group_urlname, key=MEETUP_KEY)
 
     got = get(meetup_url)
     if got.status_code in range(400, 499):
-        logging.error("%s's meetup page cannot be found" % organization.name)
-        return []
+        logging.error(u"{}'s meetup page cannot be found".format(organization.name))
+        return events
     else:
         try:
             results = got.json()['results']
-            events = []
             for event in results:
                 event = dict(organization_name=organization.name,
                              name=event['name'],
@@ -142,20 +144,21 @@ def get_meetup_events(organization, group_urlname):
                 events.append(event)
             return events
         except (TypeError, ValueError):
-            return []
+            return events
 
 
 def get_meetup_count(organization, identifier):
-    ''' Get the count of meetup members '''
-    MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
-    meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=meetup_key)
+    ''' Get the count of meetup members
+    '''
+    meetup_url = MEETUP_COUNT_API_URL.format(group_urlname=identifier, key=MEETUP_KEY)
     got = get(meetup_url)
-    if got:
+    members = None
+    if got and got.status_code // 100 == 2:
         response = got.json()
         if response:
             members = response["results"][0]["members"]
-            organization.member_count = members
-            db.session.commit()
+
+    return members
 
 
 def get_organizations(org_sources):
@@ -164,8 +167,11 @@ def get_organizations(org_sources):
     organizations = []
     with open(org_sources) as file:
         for org_source in file.read().splitlines():
+            scheme, netloc, path, _, _, _ = urlparse(org_source)
             if 'docs.google.com' in org_source:
                 organizations.extend(get_organizations_from_spreadsheet(org_source))
+            elif not scheme and not netloc:
+                organizations.extend(get_organizations_from_local_file(org_source))
 
     return organizations
 
@@ -182,7 +188,22 @@ def get_organizations_from_spreadsheet(org_source):
     # Use response.content to plain bytes, then decode everything.
     #
     organizations = list(DictReader(StringIO(got.content)))
+    return decode_organizations_list(organizations)
 
+
+def get_organizations_from_local_file(org_source):
+    '''
+        Get a row for each organization from a local file.
+        Return a list of dictionaries, one for each row past the header.
+    '''
+    organizations = list(DictReader(open(org_source, 'rb')))
+    return decode_organizations_list(organizations)
+
+
+def decode_organizations_list(organizations):
+    '''
+        Decode keys and values in a list of organizations
+    '''
     for (index, org) in enumerate(organizations):
         organizations[index] = dict([(k.decode('utf8'), v.decode('utf8'))
                                      for (k, v) in org.items()])
@@ -199,30 +220,31 @@ def get_stories(organization):
     else:
         rss = organization.website
 
+    stories = []
+
     # Extract a valid RSS feed from the URL
     try:
         url = get_first_working_feed_link(rss)
 
         # If no feed found then give up
         if not url:
-            url = None
-            return None
+            return stories
+
     except (HTTPError, ValueError, URLError):
-        url = None
-        return None
+        return stories
 
     try:
         logging.info('Asking cyberspace for ' + url)
         d = feedparser.parse(get(url).text)
+
     except (HTTPError, URLError, exceptions.SSLError):
-        url = None
-        return None
+        return stories
 
     #
     # Return dictionaries for the two most recent entries.
     #
-    return [dict(title=e.title, link=e.link, type=u'blog', organization_name=organization.name)
-            for e in d.entries[:2]]
+    stories = [dict(title=e.title, link=e.link, type=u'blog', organization_name=organization.name) for e in d.entries[:2]]
+    return stories
 
 
 def get_adjoined_json_lists(response, headers=None):
@@ -252,7 +274,6 @@ def get_projects(organization):
         Convert to a dict.
         TODO: Have this work for GDocs.
     '''
-
     # don't try to process an empty projects_list_url
     if not organization.projects_list_url:
         return []
@@ -435,7 +456,7 @@ def update_project_info(project):
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
         # If we've hit the GitHub rate limit, skip updating projects.
-        if github_throttling:
+        if GITHUB_THROTTLING:
             return project
 
         # find an existing project, filtering on code_url, organization_name, and project name (if we know it)
@@ -489,7 +510,7 @@ def update_project_info(project):
 
         # If the project has not been modified...
         elif got.status_code == 304:
-            logging.info('Project {} has not been modified since last update'.format(repo_url))
+            logging.info(u'Project {} has not been modified since last update'.format(repo_url))
 
             # Populate values from the civic.json if it exists/is updated
             project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
@@ -688,71 +709,67 @@ def get_issues_for_project(project):
     return issues
 
 
-def get_issues(org_name):
-    '''
-        Get github issues associated to each Organization's Projects.
+def get_issues(project):
+    ''' Get github issues associated with the passed Project.
     '''
     issues = []
 
-    # Only grab this organization's projects
-    projects = db.session.query(Project).filter(Project.organization_name == org_name).all()
+    # don't try to parse an empty code_url
+    if not project.code_url:
+        return issues
 
-    # Populate issues for each project
-    for project in projects:
-        # Mark this project's issues for deletion
-        # :::here (issue/false)
-        db.session.execute(db.update(Issue, values={'keep': False}).where(Issue.project_id == project.id))
+    # Mark this project's issues for deletion
+    # :::here (issue/false)
+    db.session.execute(db.update(Issue, values={'keep': False}).where(Issue.project_id == project.id))
 
-        # don't try to parse an empty code_url
-        if not project.code_url:
-            continue
+    # Get github issues api url
+    _, host, path, _, _, _ = urlparse(project.code_url)
 
-        # Get github issues api url
-        _, host, path, _, _, _ = urlparse(project.code_url)
+    # Only check issues if its a github project
+    if host != 'github.com':
+        return issues
 
-        # Only check issues if its a github project
-        if host != 'github.com':
-            continue
+    path = sub(r"[\s\/]+?$", "", path)
+    # make sure we're working with the main github URL
+    path = make_root_github_project_path(path)
+    issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
 
-        path = sub(r"[\s\/]+?$", "", path)
-        # make sure we're working with the main github URL
-        path = make_root_github_project_path(path)
-        issues_url = GITHUB_ISSUES_API_URL.format(repo_path=path)
+    # Ping github's api for project issues
+    # :TODO: non-github projects are hitting here and shouldn't be!
+    got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
 
-        # Ping github's api for project issues
-        # :TODO: non-github projects are hitting here and shouldn't be!
-        got = get_github_api(issues_url, headers={'If-None-Match': project.last_updated_issues})
+    # A 304 means that issues have not been modified since we last checked
+    if got.status_code == 304:
+        # :::here (issue/true)
+        db.session.execute(db.update(Issue, values={'keep': True}).where(Issue.project_id == project.id))
+        logging.info('Issues %s have not changed since last update', issues_url)
 
-        # Verify that content has not been modified since last run
-        if got.status_code == 304:
-            # :::here (issue/true)
-            db.session.execute(db.update(Issue, values={'keep': True}).where(Issue.project_id == project.id))
-            logging.info('Issues %s have not changed since last update', issues_url)
+    elif got.status_code not in range(400, 499):
+        # Update the project's last_updated_issue field
+        project.last_updated_issues = unicode(got.headers['ETag'])
+        db.session.add(project)
 
-        elif got.status_code not in range(400, 499):
-            # Update project's last_updated_issue field
-            project.last_updated_issues = unicode(got.headers['ETag'])
-            db.session.add(project)
+        # Get all the pages of issues
+        responses, _ = get_adjoined_json_lists(got)
 
-            responses, _ = get_adjoined_json_lists(got, headers={'If-None-Match': project.last_updated_issues})
+        # Save each issue in response
+        for issue in responses:
+            # Type check the issue, we are expecting a dictionary
+            if isinstance(issue, dict):
+                # Pull requests are returned along with issues. Skip them.
+                if "/pull/" in issue['html_url']:
+                    continue
 
-            # Save each issue in response
-            for issue in responses:
-                # Type check the issue, we are expecting a dictionary
-                if isinstance(issue, dict):
-                    # Pull requests are returned along with issues. Skip them.
-                    if "/pull/" in issue['html_url']:
-                        continue
+                issue_dict = dict(project_id=project.id)
+                for field in (
+                        'title', 'html_url', 'body',
+                        'labels', 'created_at', 'updated_at'):
+                    issue_dict[field] = issue.get(field, None)
 
-                    issue_dict = dict(project_id=project.id)
-                    for field in (
-                            'title', 'html_url', 'body',
-                            'labels', 'created_at', 'updated_at'):
-                        issue_dict[field] = issue.get(field, None)
+                issues.append(issue_dict)
+            else:
+                logging.error('Issue for project %s is not a dictionary', project.name)
 
-                    issues.append(issue_dict)
-                else:
-                    logging.error('Issue for project %s is not a dictionary', project.name)
     return issues
 
 
@@ -781,17 +798,17 @@ def get_root_directory_listing_for_project(project_dict, force=False):
 
     # Verify that content has not been modified since last run
     if got.status_code == 304:
-        logging.info('root directory listing has not changed since last update for {}'.format(directory_url))
+        logging.info(u'root directory listing has not changed since last update for {}'.format(directory_url))
 
     elif got.status_code not in range(400, 499):
-        logging.info('root directory listing has changed for {}'.format(directory_url))
+        logging.info(u'root directory listing has changed for {}'.format(directory_url))
         # Update the project's last_updated_root_files field
         project_dict['last_updated_root_files'] = unicode(got.headers['ETag'])
         # get the contents of the file
         listing = got.json()
 
     else:
-        logging.info('NO root directory listing found for {}'.format(directory_url))
+        logging.info(u'NO root directory listing found for {}'.format(directory_url))
 
     return listing
 
@@ -830,20 +847,20 @@ def get_civic_json_for_project(project_dict, force=False):
 
     # Verify that content has not been modified since last run
     if got.status_code == 304:
-        logging.info('Unchanged civic.json at {}'.format(civic_url))
+        logging.info(u'Unchanged civic.json at {}'.format(civic_url))
 
     elif got.status_code not in range(400, 499):
-        logging.info('New civic.json at {}'.format(civic_url))
+        logging.info(u'New civic.json at {}'.format(civic_url))
         # Update the project's last_updated_civic_json field
         project_dict['last_updated_civic_json'] = unicode(got.headers['ETag'])
         try:
             # get the contents of the file
             civic = got.json()
         except ValueError:
-            logging.error('Malformed civic.json at {}'.format(civic_url))
+            logging.error(u'Malformed civic.json at {}'.format(civic_url))
 
     else:
-        logging.info('No civic.json at {}'.format(civic_url))
+        logging.info(u'No civic.json at {}'.format(civic_url))
 
     return civic
 
@@ -894,19 +911,22 @@ def count_people_totals(all_projects):
     return users
 
 
-def save_organization_info(session, org_dict):
+def save_organization_info(session, org_info):
     ''' Save a dictionary of organization info to the datastore session.
 
         Return an app.Organization instance.
     '''
+    # Set any empty strings in org_info to None
+    org_info = {key: None if not value else value for (key, value) in org_info.iteritems()}
+
     # Select an existing organization by name.
-    filter = Organization.name == org_dict['name']
+    filter = Organization.name == org_info['name']
     existing_org = session.query(Organization).filter(filter).first()
 
     # :::here (organization/true)
     # If this is a new organization, save and return it. The keep parameter is True by default.
     if not existing_org:
-        new_organization = Organization(**org_dict)
+        new_organization = Organization(**org_info)
         session.add(new_organization)
         return new_organization
 
@@ -920,7 +940,7 @@ def save_organization_info(session, org_dict):
     existing_org.keep = True
 
     # Update existing organization details.
-    for (field, value) in org_dict.items():
+    for (field, value) in org_info.items():
         setattr(existing_org, field, value)
 
     return existing_org
@@ -931,7 +951,7 @@ def save_project_info(session, proj_dict):
 
         Return an app.Project instance.
     '''
-    # Select the current project, filtering on name AND organization.
+    # Select the current project, filtering on name and organization.
     filter = Project.name == proj_dict['name'], Project.organization_name == proj_dict['organization_name']
     existing_project = session.query(Project).filter(*filter).first()
 
@@ -952,45 +972,47 @@ def save_project_info(session, proj_dict):
     return existing_project
 
 
-def save_issue(session, issue):
-    '''
-        Save a dictionary of issue info to the datastore session.
+def save_issue_info(session, issue_dict):
+    ''' Save a dictionary of issue info to the datastore session.
+
         Return an app.Issue instance
     '''
-    # Select the current issue, filtering on title AND project_id.
-    filter = Issue.title == issue['title'], Issue.project_id == issue['project_id']
+    # Select the current issue, filtering on html_url and project id.
+    filter = Issue.html_url == issue_dict['html_url'], Issue.project_id == issue_dict['project_id']
     existing_issue = session.query(Issue).filter(*filter).first()
 
-    # If this is a new issue save it
+    # If this is a new issue save and return it.
     if not existing_issue:
-        new_issue = Issue(**issue)
+        new_issue = Issue(**issue_dict)
         session.add(new_issue)
-    else:
-        # Preserve the existing issue.
-        # :::here (issue/true)
-        existing_issue.keep = True
-        # Update existing issue details
-        existing_issue.title = issue['title']
-        existing_issue.body = issue['body']
-        existing_issue.html_url = issue['html_url']
-        existing_issue.project_id = issue['project_id']
+        return new_issue
+
+    # Preserve the existing issue.
+    # :::here (issue/true)
+    existing_issue.keep = True
+
+    # Update existing issue details, skipping 'labels'
+    for (field, value) in issue_dict.items():
+        if field != 'labels':
+            setattr(existing_issue, field, value)
+
+    return existing_issue
 
 
-def save_labels(session, issue):
+def save_labels_info(session, issue_dict):
+    ''' Save labels to issues
     '''
-        Save labels to issues
-    '''
-    # Select the current issue, filtering on title AND project_id.
-    filter = Issue.title == issue['title'], Issue.project_id == issue['project_id']
+    # Select the current issue, filtering on html_url and project id.
+    filter = Issue.html_url == issue_dict['html_url'], Issue.project_id == issue_dict['project_id']
     existing_issue = session.query(Issue).filter(*filter).first()
 
     # Get list of existing and incoming label names (dupes will be filtered out in comparison process)
     existing_label_names = [label.name for label in existing_issue.labels]
-    incoming_label_names = [label['name'] for label in issue['labels']]
+    incoming_label_names = [label['name'] for label in issue_dict['labels']]
 
     # Add labels that are in the incoming list and not the existing list
     add_label_names = list(set(incoming_label_names) - set(existing_label_names))
-    for label_dict in issue['labels']:
+    for label_dict in issue_dict['labels']:
         if label_dict['name'] in add_label_names:
             # add the issue id to the labels
             label_dict["issue_id"] = existing_issue.id
@@ -1009,8 +1031,7 @@ def save_event_info(session, event_dict):
         that event instance
     '''
     # Select the current event, filtering on event_url and organization name.
-    filter = Event.event_url == event_dict['event_url'], \
-        Event.organization_name == event_dict['organization_name']
+    filter = Event.event_url == event_dict['event_url'], Event.organization_name == event_dict['organization_name']
     existing_event = session.query(Event).filter(*filter).first()
 
     # If this is a new event, save and return it.
@@ -1027,6 +1048,8 @@ def save_event_info(session, event_dict):
     for (field, value) in event_dict.items():
         setattr(existing_event, field, value)
 
+    return existing_event
+
 
 def save_story_info(session, story_dict):
     '''
@@ -1034,8 +1057,7 @@ def save_story_info(session, story_dict):
         that story instance
     '''
     # Select the current story, filtering on link and organization name.
-    filter = Story.organization_name == story_dict['organization_name'], \
-        Story.link == story_dict['link']
+    filter = Story.organization_name == story_dict['organization_name'], Story.link == story_dict['link']
 
     existing_story = session.query(Story).filter(*filter).first()
 
@@ -1053,8 +1075,16 @@ def save_story_info(session, story_dict):
     for (field, value) in story_dict.items():
         setattr(existing_story, field, value)
 
+    return existing_story
+
 
 def get_event_group_identifier(events_url):
+    ''' Extract a group identifier from a meetup.com event URL
+    '''
+    if 'meetup.com' not in events_url:
+        logging.error("Only Meetup.com events work right now.")
+        return None
+
     parse_result = urlparse(events_url)
     url_parts = parse_result.path.split('/')
     identifier = url_parts.pop()
@@ -1066,14 +1096,14 @@ def get_event_group_identifier(events_url):
         return None
 
 
-def get_attendance(peopledb, organization_url, organization_name):
+def get_attendance(peopledb_cursor, organization_url, organization_name):
     ''' Get the attendance of an org from the peopledb '''
 
     # Total attendance
     q = ''' SELECT COUNT(*) AS total FROM attendance
             WHERE organization_url = %s '''
-    peopledb.execute(q, (organization_url,))
-    total = int(peopledb.fetchone()["total"])
+    peopledb_cursor.execute(q, (organization_url,))
+    total = int(peopledb_cursor.fetchone()["total"])
 
     # weekly attendance
     q = ''' SELECT COUNT(*) AS total,
@@ -1081,8 +1111,8 @@ def get_attendance(peopledb, organization_url, organization_name):
             FROM attendance
             WHERE organization_url = %s
             GROUP BY week '''
-    peopledb.execute(q, (organization_url,))
-    weekly = peopledb.fetchall()
+    peopledb_cursor.execute(q, (organization_url,))
+    weekly = peopledb_cursor.fetchall()
     weekly = {week["week"]: int(week["total"]) for week in weekly}
 
     this_week = datetime.strftime(datetime.now(), "%Y %U")
@@ -1099,22 +1129,28 @@ def get_attendance(peopledb, organization_url, organization_name):
     return attendance
 
 
-def update_attendance(db, organization_name, attendance):
-    ''' Update exisiting attendance '''
+def update_attendance(session, organization_name, attendance_dict):
+    ''' Update exisiting attendance
+    '''
+    # Select the current attendance, filtering on organization
     filter = Attendance.organization_name == organization_name
-    existing_attendance = db.session.query(Attendance).filter(filter).first()
-    if existing_attendance:
-        existing_attendance.total = attendance["total"]
-        existing_attendance.weekly = attendance["weekly"]
-        db.session.add(existing_attendance)
-    else:
-        new_att = Attendance(**attendance)
-        db.session.add(new_att)
-    db.session.commit()
+    existing_attendance = session.query(Attendance).filter(filter).first()
+
+    # if this is a new attendance, save and return it
+    if not existing_attendance:
+        new_attendance = Attendance(**attendance_dict)
+        session.add(new_attendance)
+        return new_attendance
+
+    # Update existing attendance details
+    existing_attendance.total = attendance_dict["total"]
+    existing_attendance.weekly = attendance_dict["weekly"]
+
+    return existing_attendance
 
 
 def main(org_name=None, org_sources=None):
-    ''' Run update over all organizations. Optionally, update just one.
+    ''' Update the API's database
     '''
     # set org_sources
     org_sources = org_sources or ORG_SOURCES_FILENAME
@@ -1126,15 +1162,16 @@ def main(org_name=None, org_sources=None):
     orgs_info = get_organizations(org_sources)
     shuffle(orgs_info)
 
+    # If an organization name was passed, filter.
     if org_name:
         orgs_info = [org for org in orgs_info if org['name'] == org_name]
 
-    # Iterate over organizations and projects, saving them to db.session.
+    # Retrieve and save all information about the organizations
     for org_info in orgs_info:
 
         if not is_safe_name(org_info['name']):
             error_dict = {
-                "error": unicode('ValueError: Bad organization name: "%s"' % org_info['name']),
+                "error": unicode('ValueError: Bad organization name: "{}"'.format(org_info['name'])),
                 "time": datetime.now()
             }
             new_error = Error(**error_dict)
@@ -1144,95 +1181,79 @@ def main(org_name=None, org_sources=None):
             continue
 
         try:
-            filter = Organization.name == org_info['name']
-            existing_org = db.session.query(Organization).filter(filter).first()
-            organization_names.add(org_info['name'])
-
-            # Mark everything associated with this organization for deletion at first.
+            # Mark everything associated with this organization for deletion
             # :::here (event/false, story/false, project/false, organization/false)
             db.session.execute(db.update(Event, values={'keep': False}).where(Event.organization_name == org_info['name']))
             db.session.execute(db.update(Story, values={'keep': False}).where(Story.organization_name == org_info['name']))
             db.session.execute(db.update(Project, values={'keep': False}).where(Project.organization_name == org_info['name']))
             db.session.execute(db.update(Organization, values={'keep': False}).where(Organization.name == org_info['name']))
-            # commit the false keeps
+
+            # Save or update the organization
+            organization = save_organization_info(db.session, org_info)
+            organization_names.add(organization.name)
+
+            # commit the organization and the false keeps
             db.session.commit()
 
-            # Empty lat longs are okay.
-            if 'latitude' in org_info:
-                if not org_info['latitude']:
-                    org_info['latitude'] = None
-            if 'longitude' in org_info:
-                if not org_info['longitude']:
-                    org_info['longitude'] = None
-
-            organization = save_organization_info(db.session, org_info)
-
-            organization_names.add(organization.name)
-            # flush the organization
-            db.session.flush()
-
+            # STORIES
             if organization.rss or organization.website:
-                logging.info("Gathering all of %s's stories." % organization.name)
+                logging.info(u"Gathering all of {}'s stories.".format(organization.name))
                 stories = get_stories(organization)
-                if stories:
-                    for story_info in stories:
-                        save_story_info(db.session, story_info)
-                    # flush the stories
-                    db.session.flush()
+                # build and commit stories
+                for story_info in stories:
+                    save_story_info(db.session, story_info)
+                    db.session.commit()
 
+            # PROJECTS, ISSUES and LABELS
             if organization.projects_list_url:
-                logging.info("Gathering all of %s's projects." % organization.name)
+                logging.info(u"Gathering all of {}'s projects.".format(organization.name))
                 projects = get_projects(organization)
+                # build and commit projects
                 for proj_dict in projects:
-                    save_project_info(db.session, proj_dict)
-                # flush the projects
-                db.session.flush()
+                    saved_project = save_project_info(db.session, proj_dict)
+                    db.session.commit()
 
+                    logging.info(u'Gathering all issues for this {} project: {}.'.format(organization.name, saved_project.name))
+                    issues = get_issues(saved_project)
+                    # build and commit issues and labels
+                    for issue_dict in issues:
+                        save_issue_info(db.session, issue_dict)
+                        db.session.commit()
+                        save_labels_info(db.session, issue_dict)
+                        db.session.commit()
+
+            # EVENTS
             if organization.events_url:
-                if not meetup_key:
-                    logging.error("No Meetup.com key set.")
-                if 'meetup.com' not in organization.events_url:
-                    logging.error("Only Meetup.com events work right now.")
+                logging.info(u"Gathering all of {}'s events.".format(organization.name))
+                identifier = get_event_group_identifier(organization.events_url)
+                if identifier:
+                    # build and commit events
+                    for event in get_meetup_events(organization, identifier):
+                        save_event_info(db.session, event)
+                        db.session.commit()
+
+                    # Get and save the meetup.com member count for this organization
+                    members = get_meetup_count(organization, identifier)
+                    # Don't overwrite the old value if we got None back
+                    if members:
+                        organization.member_count = members
+                        db.session.commit()
+
                 else:
-                    logging.info("Gathering all of %s's events." % organization.name)
-                    identifier = get_event_group_identifier(organization.events_url)
-                    if identifier:
-                        for event in get_meetup_events(organization, identifier):
-                            save_event_info(db.session, event)
-                        # flush the events
-                        db.session.flush()
+                    logging.error(u'{} does not have a valid events url'.format(organization.name))
 
-                        # Get Meetup member count
-                        get_meetup_count(organization, identifier)
-
-                    else:
-                        logging.error("%s does not have a valid events url" % organization.name)
-
-            # Get issues for all of the projects
-            logging.info("Gathering all of %s's open GitHub issues." % organization.name)
-            issues = get_issues(organization.name)
-            for issue in issues:
-                save_issue(db.session, issue)
-
-            # flush the issues
-            db.session.flush()
-            for issue in issues:
-                save_labels(db.session, issue)
-
-            # Get attendance data
+            # ATTENDANCE
             attendance = None
             if PEOPLEDB:
                 with connect(PEOPLEDB) as conn:
-                    with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb:
+                    with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
                         cfapi_url = "https://www.codeforamerica.org/api/organizations/"
                         organization_url = cfapi_url + organization.api_id()
-                        attendance = get_attendance(peopledb, organization_url, organization.name)
+                        attendance = get_attendance(peopledb_cursor, organization_url, organization.name)
 
             if attendance:
-                update_attendance(db, organization.name, attendance)
-
-            # commit everything
-            db.session.commit()
+                update_attendance(db.session, organization.name, attendance)
+                db.session.commit()
 
             # Remove everything marked for deletion.
             # :::here (event/delete, story/delete, project/delete, issue/delete, organization/delete)
@@ -1266,9 +1287,13 @@ def main(org_name=None, org_sources=None):
 
 parser = ArgumentParser(description='''Update database from CSV source URL.''')
 parser.add_argument('--name', dest='name', help='Single organization name to update.')
-parser.add_argument('--test', action='store_const', dest='org_sources', const=TEST_ORG_SOURCES_FILENAME, help='Use the testing list of organizations.')
+parser.add_argument('--sources', dest='sources', help='URL of an organization sources CSV file.')
+parser.add_argument('--test', action='store_const', dest='test_sources', const=TEST_ORG_SOURCES_FILENAME, help='Use the testing list of organizations.')
 
 if __name__ == "__main__":
     args = parser.parse_args()
     org_name = args.name and args.name.decode('utf8') or ''
-    main(org_name=org_name, org_sources=args.org_sources)
+    org_sources = args.sources and args.sources.decode('utf8') or ''
+    if args.test_sources and not org_sources:
+        org_sources = args.test_sources
+    main(org_name=org_name, org_sources=org_sources)

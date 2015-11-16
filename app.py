@@ -793,26 +793,24 @@ def well_known_status():
 
         http://engine-light.codeforamerica.org
     '''
+    GITHUB_AUTH = None
     if 'GITHUB_TOKEN' in os.environ:
-        github_auth = (os.environ['GITHUB_TOKEN'], '')
-    else:
-        github_auth = None
+        GITHUB_AUTH = (os.environ['GITHUB_TOKEN'], '')
 
+    MEETUP_KEY = None
     if 'MEETUP_KEY' in os.environ:
-        meetup_key = os.environ['MEETUP_KEY']
-    else:
-        meetup_key = None
+        MEETUP_KEY = os.environ['MEETUP_KEY']
 
     try:
         org = db.session.query(Organization).order_by(Organization.last_updated).limit(1).first()
         project = db.session.query(Project).limit(1).first()
-        rate_limit = requests.get('https://api.github.com/rate_limit', auth=github_auth)
+        rate_limit = requests.get('https://api.github.com/rate_limit', auth=GITHUB_AUTH)
         remaining_github = rate_limit.json()['resources']['core']['remaining']
         recent_error = db.session.query(Error).order_by(desc(Error.time)).limit(1).first()
 
         meetup_status = "No Meetup key set"
-        if meetup_key:
-            meetup_url = 'https://api.meetup.com/status?format=json&key=' + meetup_key
+        if MEETUP_KEY:
+            meetup_url = 'https://api.meetup.com/status?format=json&key=' + MEETUP_KEY
             meetup_status = requests.get(meetup_url).json().get('status')
 
         time_since_updated = time.time() - getattr(org, 'last_updated', -1)
