@@ -424,6 +424,8 @@ def make_root_github_project_path(path):
     '''
     path_split = path.split('/')
     path = '/'.join(path_split[0:3])
+    # some URLs have been passed to us with '.git' at the end
+    path = sub(ur'\.git$', '', path)
     return path
 
 
