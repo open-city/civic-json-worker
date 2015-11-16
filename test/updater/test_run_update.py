@@ -1600,6 +1600,43 @@ class RunUpdateTestCase(unittest.TestCase):
                 project = self.db.session.query(Project).first()
                 self.assertTrue(isinstance(project.languages, type(None)))
 
+    def test_two_issues_with_the_same_name(self):
+        ''' Two issues with the same name but different html_urls should be saved as separate issues.
+        '''
+        # ;;;
+        from app import Project, Issue
+        import run_update
+        self.setup_mock_rss_response()
+
+        same_title = u'Same-Titled Cityvoice Issue'
+
+        def overwrite_response_content(url, request):
+            response_etag = {'ETag': '8456bc53d4cf6b78779ded3408886f82'}
+            if url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/issues':
+                return response(200, '''[{{"html_url": "https://github.com/codeforamerica/cityvoice/issue/210","title": "{issue_title}", "labels": [],"created_at": "2015-09-16T05:45:20Z", "updated_at": "2015-10-22T17:26:02Z", "body" : "WHATEVER"}}, {{"html_url": "https://github.com/codeforamerica/cityvoice/issue/211","title": "{issue_title}", "labels": [], "created_at" : "2015-10-26T01:13:03Z", "updated_at" : "2015-10-26T18:06:54Z", "body" : "WHATEVER"}}]'''.format(issue_title=same_title), response_etag)
+
+        # run a standard run_update
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                run_update.main(org_name=u"Cöde for Ameriça", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        # check the cityvoice project
+        filter = Project.name == u'cityvoice'
+        project = self.db.session.query(Project).filter(filter).first()
+        self.assertIsNotNone(project)
+        self.assertEqual(project.name, u'cityvoice')
+        project_id = project.id
+
+        # and check the issues
+        filter = Issue.title == same_title
+        issues = self.db.session.query(Issue).filter(filter).all()
+        self.assertIsNotNone(issues)
+        self.assertEqual(2, len(issues))
+        self.assertNotEqual(issues[0].html_url, issues[1].html_url)
+        for check_issue in issues:
+            self.assertEqual(check_issue.title, same_title)
+            self.assertEqual(check_issue.project_id, project_id)
+
 
 if __name__ == '__main__':
     unittest.main()
