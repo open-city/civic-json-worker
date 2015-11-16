@@ -1674,6 +1674,38 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(check_issue.title, same_title)
             self.assertEqual(check_issue.project_id, project_id)
 
+    def test_404ing_project_deleted(self):
+        ''' A project that once existed but is now returning a 404 is deleted from the database.
+        '''
+        from app import Project
+        self.setup_mock_rss_response()
+
+        # run a vanilla update
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        filter = Project.name == u'cityvoice'
+        projects = self.db.session.query(Project).filter(filter).all()
+        self.assertEqual(len(projects), 3)
+
+        def overwrite_response_content(url, request):
+            if 'https://api.github.com/repos/codeforamerica/cityvoice' in url.geturl():
+                return response(404, '''{"message": "Not Found", "documentation_url": "https://developer.github.com/v3"}''', {'ETag': '8456bc53d4cf6b78779ded3408886f82'})
+
+        logging.error = Mock()
+
+        # run a new update
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                import run_update
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        logging.error.assert_called_with('https://api.github.com/repos/codeforamerica/cityvoice doesn\'t exist.')
+        filter = Project.name == u'cityvoice'
+        projects = self.db.session.query(Project).filter(filter).all()
+        self.assertEqual(len(projects), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
