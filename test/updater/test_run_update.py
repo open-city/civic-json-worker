@@ -532,7 +532,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         def overwrite_response_content(url, request):
             if url.netloc == 'api.github.com':
-                return response(403, "", {"x-ratelimit-remaining": 0})
+                return response(403, "", {"X-Ratelimit-Remaining": '0'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -547,6 +547,29 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Error
         error = self.db.session.query(Error).first()
         self.assertEqual(error.error, "IOError: We done got throttled by GitHub")
+
+    def test_unthrottled_forbidden(self):
+        ''' A 403 response that's not due to GitHub throttling doesn't generate an error.
+        '''
+        self.setup_mock_rss_response()
+
+        def overwrite_response_content(url, request):
+            if url.netloc == 'api.github.com':
+                return response(403, "", {"X-Ratelimit-Remaining": '3388'})
+
+        with HTTMock(self.response_content):
+            with HTTMock(overwrite_response_content):
+                import run_update
+                run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        from app import Project
+        projects = self.db.session.query(Project).all()
+        for project in projects:
+            self.assertIsNone(project.github_details)
+
+        from app import Error
+        error = self.db.session.query(Error).first()
+        self.assertIsNone(error)
 
     def test_csv_sniffer(self):
         '''
