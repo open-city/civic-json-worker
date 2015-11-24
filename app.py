@@ -467,7 +467,7 @@ def get_all_orgs_attendance():
         }
         response.append(attendance_response)
 
-    return jsonify(response)
+    return jsonify(dict(organizations=response, total=len(response)))
 
 
 @app.route("/api/attendance")
