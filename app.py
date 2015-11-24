@@ -288,7 +288,7 @@ def gather_orgs_rsvps(organization_name=None):
     orgs_events = Event.query.filter(Event.organization_name == organization.name).all()
     rsvps = build_rsvps_response(orgs_events)
 
-    return json.dumps(rsvps)
+    return jsonify(rsvps)
 
 
 @app.route("/api/organizations/<organization_name>/stories")
@@ -436,7 +436,7 @@ def get_orgs_attendance(organization_name):
         "weekly": attendance.weekly
     }
 
-    return json.dumps(attendance_response)
+    return jsonify(attendance_response)
 
 
 def find(lst, key, value):
@@ -467,7 +467,7 @@ def get_all_orgs_attendance():
         }
         response.append(attendance_response)
 
-    return json.dumps(response)
+    return jsonify(response)
 
 
 @app.route("/api/attendance")
@@ -520,7 +520,7 @@ def orgs_member_count():
         "organizations": orgs_members
     }
 
-    return json.dumps(response)
+    return jsonify(response)
 
 
 @app.route('/api/projects')
@@ -747,7 +747,7 @@ def gather_all_rsvps():
     events = Event.query.all()
     rsvps = build_rsvps_response(events)
 
-    return json.dumps(rsvps)
+    return jsonify(rsvps)
 
 
 @app.route('/api/stories')
