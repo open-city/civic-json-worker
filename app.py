@@ -418,23 +418,27 @@ def get_orgs_attendance(organization_name):
     if not organization:
         return "Organization not found", 404
 
+    attendance_response = {
+        "organization_name": organization.name,
+        "cfapi_url": organization.api_url(),
+        "total": 0,
+        "weekly": {}
+    }
+
     # Get that organization's attendance
     attendance = Attendance.query.filter_by(organization_name=organization.name).first()
 
-    weekly = {}
-    for week in attendance.weekly.keys():
-        if week in weekly.keys():
-            weekly[week] += attendance.weekly[week]
-        else:
-            weekly[week] = attendance.weekly[week]
-    attendance.weekly = weekly
+    if attendance:
+        weekly = {}
+        for week in attendance.weekly.keys():
+            if week in weekly.keys():
+                weekly[week] += attendance.weekly[week]
+            else:
+                weekly[week] = attendance.weekly[week]
+        attendance.weekly = weekly
 
-    attendance_response = {
-        "organization_name": attendance.organization_name,
-        "cfapi_url": attendance.organization_url,
-        "total": attendance.total,
-        "weekly": attendance.weekly
-    }
+        attendance_response['total'] = attendance.total
+        attendance_response['weekly'] = attendance.weekly
 
     return jsonify(attendance_response)
 
