@@ -288,7 +288,7 @@ def gather_orgs_rsvps(organization_name=None):
     orgs_events = Event.query.filter(Event.organization_name == organization.name).all()
     rsvps = build_rsvps_response(orgs_events)
 
-    return json.dumps(rsvps)
+    return jsonify(rsvps)
 
 
 @app.route("/api/organizations/<organization_name>/stories")
@@ -418,25 +418,29 @@ def get_orgs_attendance(organization_name):
     if not organization:
         return "Organization not found", 404
 
+    attendance_response = {
+        "organization_name": organization.name,
+        "cfapi_url": organization.api_url(),
+        "total": 0,
+        "weekly": {}
+    }
+
     # Get that organization's attendance
     attendance = Attendance.query.filter_by(organization_name=organization.name).first()
 
-    weekly = {}
-    for week in attendance.weekly.keys():
-        if week in weekly.keys():
-            weekly[week] += attendance.weekly[week]
-        else:
-            weekly[week] = attendance.weekly[week]
-    attendance.weekly = weekly
+    if attendance:
+        weekly = {}
+        for week in attendance.weekly.keys():
+            if week in weekly.keys():
+                weekly[week] += attendance.weekly[week]
+            else:
+                weekly[week] = attendance.weekly[week]
+        attendance.weekly = weekly
 
-    attendance_response = {
-        "organization_name": attendance.organization_name,
-        "cfapi_url": attendance.organization_url,
-        "total": attendance.total,
-        "weekly": attendance.weekly
-    }
+        attendance_response['total'] = attendance.total
+        attendance_response['weekly'] = attendance.weekly
 
-    return json.dumps(attendance_response)
+    return jsonify(attendance_response)
 
 
 def find(lst, key, value):
@@ -467,7 +471,7 @@ def get_all_orgs_attendance():
         }
         response.append(attendance_response)
 
-    return json.dumps(response)
+    return jsonify(dict(organizations=response, total=len(response)))
 
 
 @app.route("/api/attendance")
@@ -520,7 +524,7 @@ def orgs_member_count():
         "organizations": orgs_members
     }
 
-    return json.dumps(response)
+    return jsonify(response)
 
 
 @app.route('/api/projects')
@@ -747,7 +751,7 @@ def gather_all_rsvps():
     events = Event.query.all()
     rsvps = build_rsvps_response(events)
 
-    return json.dumps(rsvps)
+    return jsonify(rsvps)
 
 
 @app.route('/api/stories')

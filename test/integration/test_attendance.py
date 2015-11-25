@@ -50,11 +50,11 @@ class TestAttendance(IntegrationTest):
         response = self.app.get('/api/organizations/attendance')
         self.assertEquals(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertIsInstance(response, list)
-        self.assertTrue("organization_name" in response[0].keys())
-        self.assertTrue("cfapi_url" in response[0].keys())
-        self.assertTrue("total" in response[0].keys())
-        self.assertTrue("weekly" in response[0].keys())
+        self.assertIsInstance(response, dict)
+        self.assertTrue("organization_name" in response['organizations'][0].keys())
+        self.assertTrue("cfapi_url" in response['organizations'][0].keys())
+        self.assertTrue("total" in response['organizations'][0].keys())
+        self.assertTrue("weekly" in response['organizations'][0].keys())
 
 
     def test_org_attendance(self):
