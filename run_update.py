@@ -1284,11 +1284,14 @@ def main(org_name=None, org_sources=None):
 
             # Remove everything marked for deletion.
             # :::here (event/delete, story/delete, project/delete, issue/delete, organization/delete)
-            db.session.query(Event).filter(Event.keep == False).delete()
-            db.session.query(Story).filter(Story.keep == False).delete()
-            db.session.query(Issue).filter(Issue.keep == False).delete()
-            db.session.query(Project).filter(Project.keep == False).delete()
-            db.session.query(Organization).filter(Organization.keep == False).delete()
+            num_events = db.session.query(Event).filter(Event.keep == False).delete()
+            num_stories = db.session.query(Story).filter(Story.keep == False).delete()
+            num_issues = db.session.query(Issue).filter(Issue.keep == False).delete()
+            num_projects = db.session.query(Project).filter(Project.keep == False).delete()
+            num_orgs = db.session.query(Organization).filter(Organization.keep == False).delete()
+
+            logging.info(u'Deleted {} organizations, {} projects, {} issues, {} stories, {} events'.format(num_orgs, num_projects, num_issues, num_stories, num_events))
+
             # commit objects deleted for keep=False
             db.session.commit()
 
