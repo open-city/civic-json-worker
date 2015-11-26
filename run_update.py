@@ -1222,6 +1222,7 @@ def main(org_name=None, org_sources=None):
 
         # don't try to process orgs if we're throttled
         if GITHUB_THROTTLING:
+            organization_names.add(org_info['name'])
             continue
 
         try:
