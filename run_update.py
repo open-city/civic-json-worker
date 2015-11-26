@@ -1220,6 +1220,10 @@ def main(org_name=None, org_sources=None):
             db.session.commit()
             continue
 
+        # don't try to process orgs if we're throttled
+        if GITHUB_THROTTLING:
+            continue
+
         try:
             # Mark everything associated with this organization for deletion
             # :::here (event/false, story/false, project/false, organization/false)
