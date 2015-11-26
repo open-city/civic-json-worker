@@ -65,12 +65,13 @@ def get_github_api(url, headers=None):
         Make authenticated GitHub requests.
     '''
     global GITHUB_THROTTLING
-    logging.info(u'Asking Github for {}{}'.format(url, u' ({})'.format(headers) if headers and headers != {} else u''))
-
     got = get(url, auth=GITHUB_AUTH, headers=headers)
 
+    limit_hit, remaining = get_hit_github_ratelimit(got.headers)
+    logging.info(u'-{}- Asked Github for {}{}'.format(remaining, url, u' ({})'.format(headers) if headers and headers != {} else u''))
+
     # check for throttling
-    if got.status_code == 403 and get_hit_github_ratelimit(got.headers):
+    if got.status_code == 403 and limit_hit:
         # we've been throttled
         GITHUB_THROTTLING = True
 
@@ -92,21 +93,22 @@ def get_github_api(url, headers=None):
 def get_hit_github_ratelimit(headers):
     ''' Return True if we've hit the GitHub rate limit,
         False if we haven't or if we can't figure it out.
+        Also return the remaining requests reported by GitHub.
     '''
     try:
         remaining_str = headers['X-Ratelimit-Remaining']
     except KeyError:
         # no header by that name
-        return False
+        return False, 0
 
     try:
         remaining_int = int(remaining_str)
     except ValueError:
         # value can't be converted into an integer
-        return False
+        return False, 0
 
     # return True if we've hit the limit
-    return remaining_int <= 0
+    return remaining_int <= 0, remaining_int
 
 def format_date(time_in_milliseconds, utc_offset_msec):
     '''
