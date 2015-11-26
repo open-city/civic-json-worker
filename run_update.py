@@ -477,18 +477,25 @@ def update_project_info(project):
         path = make_root_github_project_path(path)
         repo_url = GITHUB_REPOS_API_URL.format(repo_path=path)
 
-        # If we've hit the GitHub rate limit, skip updating projects.
-        if GITHUB_THROTTLING:
-            return project
-
         # find an existing project, filtering on code_url, organization_name, and project name (if we know it)
         existing_filter = [Project.code_url == project['code_url'], Project.organization_name == project['organization_name']]
         if 'name' in project and project['name']:
             existing_filter.append(Project.name == project['name'])
 
+        existing_project = db.session.query(Project).filter(*existing_filter).first()
+
+        # if we're throttled, make sure an existing project is kept and return none
+        if GITHUB_THROTTLING:
+            if existing_project:
+                # :::here (project/true)
+                existing_project.keep = True
+                # commit the project
+                db.session.commit()
+            return None
+
+        # keep track of org spreadsheet values
         spreadsheet_is_updated = False
 
-        existing_project = db.session.query(Project).filter(*existing_filter).first()
         if existing_project:
             # copy 'last_updated' values from the existing project to the project dict
             project['last_updated'] = existing_project.last_updated
@@ -524,6 +531,7 @@ def update_project_info(project):
                 # If there's an existing project in the database, get rid of it
                 if existing_project:
                     # this is redundant, but let's make sure
+                    # :::here (project/false)
                     existing_project.keep = False
                     db.session.commit()
                 # Take the project out of the loop by returning None
@@ -531,7 +539,12 @@ def update_project_info(project):
 
             elif got.status_code == 403:
                 # Throttled by GitHub
-                return project
+                if existing_project:
+                    # :::here (project/true)
+                    existing_project.keep = True
+                    # commit the project
+                    db.session.commit()
+                return None
 
             else:
                 raise IOError
