@@ -421,6 +421,26 @@ class TestProjects(IntegrationTest):
         self.assertEqual(org_project_response['objects'][0]['tags'], 'food stamps, health')
 
 
+    def test_project_search_includes_org_name(self):
+        """
+        The organization name is included in the project search
+        """
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, name="Project One")
+        organization = OrganizationFactory(name=u"Code for America")
+        ProjectFactory(organization_name=organization.name, name="Project Two")
+        db.session.commit()
+
+        project_response = self.app.get('/api/projects?q=Code for San Francisco')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['name'], 'Project One')
+
+        project_response = self.app.get('/api/projects?q=Code for America')
+        project_response = json.loads(project_response.data)
+        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(project_response['objects'][0]['name'], 'Project Two')
+
     def test_project_query_filter(self):
         '''
         Test that project query params work as expected.
