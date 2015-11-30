@@ -421,25 +421,37 @@ class TestProjects(IntegrationTest):
         self.assertEqual(org_project_response['objects'][0]['tags'], 'food stamps, health')
 
 
-    def test_project_search_includes_org_name(self):
+    def test_project_search_includes_organization_name(self):
         """
         The organization name is included in the project search
         """
         organization = OrganizationFactory(name=u"Code for San Francisco")
         ProjectFactory(organization_name=organization.name, name="Project One")
+        ProjectFactory(organization_name=organization.name, name="Project Two", description="America")
+
         organization = OrganizationFactory(name=u"Code for America")
-        ProjectFactory(organization_name=organization.name, name="Project Two")
+        ProjectFactory(organization_name=organization.name, name="Project Three")
+        ProjectFactory(organization_name=organization.name, name="Project Four", tags="San Francisco")
         db.session.commit()
 
-        project_response = self.app.get('/api/projects?q=Code for San Francisco')
+        # Test that org_name matches return before project name
+        project_response = self.app.get('/api/projects?q=Code+for+San+Francisco')
         project_response = json.loads(project_response.data)
-        self.assertEqual(len(project_response['objects']), 1)
+        self.assertEqual(len(project_response['objects']), 3)
         self.assertEqual(project_response['objects'][0]['name'], 'Project One')
+        self.assertEqual(project_response['objects'][1]['name'], 'Project Two')
+        self.assertEqual(project_response['objects'][2]['name'], 'Project Four')
+        self.assertTrue( 'San Francisco' in project_response['objects'][2]['tags'] )
 
+        # Test that org name matches return before project description
         project_response = self.app.get('/api/projects?q=Code for America')
         project_response = json.loads(project_response.data)
-        self.assertEqual(len(project_response['objects']), 1)
-        self.assertEqual(project_response['objects'][0]['name'], 'Project Two')
+        self.assertEqual(len(project_response['objects']), 3)
+        self.assertEqual(project_response['objects'][0]['name'], 'Project Three')
+        self.assertEqual(project_response['objects'][1]['name'], 'Project Four')
+        self.assertEqual(project_response['objects'][2]['name'], 'Project Two')
+        self.assertEqual(project_response['objects'][2]['description'], 'America')
+
 
     def test_project_query_filter(self):
         '''
