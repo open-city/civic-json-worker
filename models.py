@@ -292,7 +292,7 @@ class Project(db.Model):
     description = db.Column(db.Unicode())
     type = db.Column(db.Unicode())
     categories = db.Column(db.Unicode())
-    tags = db.Column(db.Unicode())
+    tags = db.Column(JsonType())
     github_details = db.Column(JsonType())
     last_updated = db.Column(db.DateTime())
     last_updated_issues = db.Column(db.Unicode())
