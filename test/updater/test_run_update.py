@@ -1519,13 +1519,14 @@ class RunUpdateTestCase(unittest.TestCase):
             with HTTMock(unicode_response_content):
                 run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
+
         # check a project for the status and tags from the mock civic.json
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Cromulent')
-        self.assertEqual(project.tags, u'economic development,twitter,người máy,python')
+        self.assertEqual(project.tags, [u'economic development',u'twitter',u'người máy',u'python'])
         # testing for the roman text representations as well, just for reference
-        self.assertEqual(project.tags, u'economic development,twitter,ng\u01b0\u1eddi m\xe1y,python')
+        self.assertEqual(project.tags, [u'economic development',u'twitter',u'ng\u01b0\u1eddi m\xe1y',u'python'])
 
     def test_civic_json_values_preferred(self):
         ''' Values set in civic.json are preferred over values set in spreadsheets,

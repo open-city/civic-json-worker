@@ -37,7 +37,7 @@ class TestProjects(IntegrationTest):
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
         assert isinstance(response['objects'][0]['categories'], unicode)
-        assert isinstance(response['objects'][0]['tags'], unicode)
+        assert isinstance(response['objects'][0]['tags'], list)
         assert isinstance(response['objects'][0]['code_url'], unicode)
         assert isinstance(response['objects'][0]['description'], unicode)
         assert isinstance(response['objects'][0]['github_details'], dict)
@@ -277,14 +277,14 @@ class TestProjects(IntegrationTest):
         organization = OrganizationFactory(name=u"Code for San Francisco")
         ProjectFactory(organization_name=organization.name, status='TEST', last_updated=datetime.now() - timedelta(10000))
         ProjectFactory(organization_name=organization.name, description='testing a new thing', last_updated=datetime.now() - timedelta(1))
-        ProjectFactory(organization_name=organization.name, tags='test,tags,what,ever', last_updated=datetime.now() - timedelta(100))
+        ProjectFactory(organization_name=organization.name, tags=['test,tags,what,ever'], last_updated=datetime.now() - timedelta(100))
         ProjectFactory(organization_name=organization.name, last_updated=datetime.now())
         db.session.commit()
         project_response = self.app.get('/api/projects?q=TEST')
         project_response = json.loads(project_response.data)
         self.assertEqual(project_response['total'], 3)
         self.assertEqual(project_response['objects'][0]['status'], 'TEST')
-        self.assertEqual(project_response['objects'][1]['tags'], 'test,tags,what,ever')
+        self.assertEqual(project_response['objects'][1]['tags'], ['test,tags,what,ever'])
         self.assertEqual(project_response['objects'][2]['description'], 'testing a new thing')
 
 
@@ -407,18 +407,18 @@ class TestProjects(IntegrationTest):
         The tags field is included in search results from the project and org/project endpoints
         """
         organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, tags=u'mapping, philly')
-        ProjectFactory(organization_name=organization.name, tags=u'food stamps, health')
+        ProjectFactory(organization_name=organization.name, tags=['mapping', 'philly'])
+        ProjectFactory(organization_name=organization.name, tags=['food stamps', 'health'])
         db.session.commit()
         project_response = self.app.get('/api/projects?q=stamps')
         project_response = json.loads(project_response.data)
         self.assertEqual(len(project_response['objects']), 1)
-        self.assertEqual(project_response['objects'][0]['tags'], 'food stamps, health')
+        self.assertEqual(project_response['objects'][0]['tags'], ['food stamps', 'health'])
 
         org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=stamps')
         org_project_response = json.loads(org_project_response.data)
         self.assertEqual(len(org_project_response['objects']), 1)
-        self.assertEqual(org_project_response['objects'][0]['tags'], 'food stamps, health')
+        self.assertEqual(org_project_response['objects'][0]['tags'], ['food stamps', 'health'])
 
 
     def test_project_query_filter(self):
