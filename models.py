@@ -375,7 +375,8 @@ trig_ddl = DDL("""
          setweight(to_tsvector('pg_catalog.english', coalesce(new.tags,'')), 'A') ||
          setweight(to_tsvector('pg_catalog.english', coalesce(new.name,'')), 'B') ||
          setweight(to_tsvector('pg_catalog.english', coalesce(new.description,'')), 'B') ||
-         setweight(to_tsvector('pg_catalog.english', coalesce(new.languages,'')), 'A');
+         setweight(to_tsvector('pg_catalog.english', coalesce(new.languages,'')), 'A') ||
+         setweight(to_tsvector('pg_catalog.english', coalesce(new.organization_name,'')), 'A');
       return new;
     end
     $$ LANGUAGE plpgsql;
