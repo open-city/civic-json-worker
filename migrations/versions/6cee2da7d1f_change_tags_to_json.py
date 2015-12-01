@@ -1,14 +1,14 @@
 """ Changes tags column type to json
 
 Revision ID: 6cee2da7d1f
-Revises: 15593ff6a15f
+Revises: 4b2b7cde821f
 Create Date: 2015-12-01 11:13:34.873061
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '6cee2da7d1f'
-down_revision = '15593ff6a15f'
+down_revision = '4b2b7cde821f'
 
 from alembic import op
 import sqlalchemy as sa
