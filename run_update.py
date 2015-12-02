@@ -347,6 +347,10 @@ def get_projects(organization):
                         # some values might be empty strings
                         elif type(project_value) in (str, unicode) and unicode(project_value.decode('utf8')) == u'':
                             project[project_key] = None
+                        # we want tags to be a list with no whitespace
+                        elif project_key == 'tags':
+                            project_value = unicode(project_value.decode('utf8'))
+                            project[project_key] = [tag.strip() for tag in project_value.split(',')]
                         else:
                             project[project_key] = unicode(project_value.decode('utf8'))
 
@@ -675,10 +679,8 @@ def get_tags_from_civic_json_object(tags_in):
 
     # get the tags
     extracted = [extract_tag_value(item) for item in tags_in]
-    # strip None values
-    stripped = [item for item in extracted if item is not None]
-    # return as a string
-    return u','.join(stripped) if len(stripped) else None
+    # strip None values and return as a list
+    return [item for item in extracted if item is not None]
 
 
 def update_project_from_civic_json(project_dict, force=False):

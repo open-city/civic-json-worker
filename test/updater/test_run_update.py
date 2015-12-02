@@ -86,7 +86,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web/,,,,''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web/,,,"what,ever,,†≈ç®åz¥≈†",''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -242,6 +242,7 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.name, u'bizfriendly-web')
+        self.assertEqual(project.tags, [u'what', u'ever', u'', u'†≈ç®åz¥≈†'])
 
         # check for the one project status
         filter = [Project.organization_name == u'Cöde for Ameriça', Project.name == u'cityvoice']
@@ -734,7 +735,7 @@ class RunUpdateTestCase(unittest.TestCase):
         from test.factories import OrganizationFactory, ProjectFactory
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
-        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=u'philly, mapping', type=None, link_url=u'http://phillymapofshame.org', code_url=None, status=u'In Progress')
+        old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=[u'philly', u'mapping'], type=None, link_url=u'http://phillymapofshame.org', code_url=None, status=u'In Progress')
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
@@ -1201,6 +1202,9 @@ class RunUpdateTestCase(unittest.TestCase):
         def overwrite_response_content(url, request):
             if "cityvoice/contents/civic.json" in url.geturl():
                 return response(200, '''{"status": "", "tags": ["", "", ""]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            if url.geturl() == 'http://example.com/cfa-projects.csv':
+                project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web/,,,"",''']
+                return response(200, '''\n'''.join(project_lines), {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -1214,6 +1218,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertIsNotNone(project)
         self.assertEqual(project.status, None)
         self.assertEqual(project.tags, None)
+
 
         # and in the saved project you know doesn't have status & tags set because they're
         # missing from civic.json
@@ -1309,7 +1314,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertTrue(type(check_project.status) is unicode)
         self.assertTrue(len(check_project.status) > 0)
         self.assertTrue(check_project.tags is not None)
-        self.assertTrue(type(check_project.tags) is unicode)
+        self.assertTrue(type(check_project.tags) is list)
         self.assertTrue(len(check_project.tags) > 0)
 
     def test_git_extension_stripped_from_git_url(self):
@@ -1347,7 +1352,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertTrue(type(check_project.status) is unicode)
         self.assertTrue(len(check_project.status) > 0)
         self.assertTrue(check_project.tags is not None)
-        self.assertTrue(type(check_project.tags) is unicode)
+        self.assertTrue(type(check_project.tags) is list)
         self.assertTrue(len(check_project.tags) > 0)
 
     def test_unmodified_projects_stay_in_database(self):
@@ -1412,7 +1417,7 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Beta')
-        self.assertEqual(project.tags, u'mapping,transportation,community organizing')
+        self.assertEqual(project.tags, [u'mapping',u'transportation',u'community organizing'])
 
     def test_new_values_in_civic_json(self):
         ''' A value that has changed in civic.json should be saved, even if the
@@ -1440,7 +1445,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # the project status was correctly set
         self.assertEqual(project_v1.status, u'Beta')
         # the project tags were correctly set
-        self.assertEqual(project_v1.tags, u'mapping,transportation,community organizing')
+        self.assertEqual(project_v1.tags, [u'mapping',u'transportation',u'community organizing'])
         v1_github_details = project_v1.github_details
 
         # save the default github response so we can send it with a 304 status below
@@ -1470,7 +1475,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # the new project status was correctly set
         self.assertEqual(project_v2.status, u'Cromulent')
         # the new tags were correctly set
-        self.assertEqual(project_v2.tags, u'community organizing,safety and justice')
+        self.assertEqual(project_v2.tags, [u'community organizing',u'safety and justice'])
         # the untouched details from the GitHub project weren't changed
         self.assertEqual(project_v2.github_details, v1_github_details)
 
@@ -1497,10 +1502,10 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'汉语 漢語')
-        self.assertEqual(project.tags, u'한국어 조선말,ру́сский язы́к,†≈ç®åz¥≈†')
+        self.assertEqual(project.tags, [u'한국어 조선말',u'ру́сский язы́к',u'†≈ç®åz¥≈†'])
         # testing for the roman text representations as well, just for reference
         self.assertEqual(project.status, u'\u6c49\u8bed \u6f22\u8a9e')
-        self.assertEqual(project.tags, u'\ud55c\uad6d\uc5b4 \uc870\uc120\ub9d0,\u0440\u0443\u0301\u0441\u0441\u043a\u0438\u0439 \u044f\u0437\u044b\u0301\u043a,\u2020\u2248\xe7\xae\xe5z\xa5\u2248\u2020')
+        self.assertEqual(project.tags, [u'\ud55c\uad6d\uc5b4 \uc870\uc120\ub9d0',u'\u0440\u0443\u0301\u0441\u0441\u043a\u0438\u0439 \u044f\u0437\u044b\u0301\u043a',u'\u2020\u2248\xe7\xae\xe5z\xa5\u2248\u2020'])
 
     def test_alt_tag_format_in_civic_json(self):
         ''' Tags represented as objects rather than strings are read correctly.
@@ -1519,13 +1524,14 @@ class RunUpdateTestCase(unittest.TestCase):
             with HTTMock(unicode_response_content):
                 run_update.main(org_name=u"C\xf6de for Ameri\xe7a", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
 
+
         # check a project for the status and tags from the mock civic.json
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Cromulent')
-        self.assertEqual(project.tags, u'economic development,twitter,người máy,python')
+        self.assertEqual(project.tags, [u'economic development',u'twitter',u'người máy',u'python'])
         # testing for the roman text representations as well, just for reference
-        self.assertEqual(project.tags, u'economic development,twitter,ng\u01b0\u1eddi m\xe1y,python')
+        self.assertEqual(project.tags, [u'economic development',u'twitter',u'ng\u01b0\u1eddi m\xe1y',u'python'])
 
     def test_civic_json_values_preferred(self):
         ''' Values set in civic.json are preferred over values set in spreadsheets,
@@ -1547,7 +1553,7 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Beta')
-        self.assertEqual(project.tags, u'mapping,transportation,community organizing')
+        self.assertEqual(project.tags, [u'mapping',u'transportation',u'community organizing'])
 
         # respond to requests for project, root file listing, and civic.json with 304s
         # only if a 'If-None-Match' or 'If-Modified-Since' header is passed
@@ -1571,7 +1577,7 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Beta')
-        self.assertEqual(project.tags, u'mapping,transportation,community organizing')
+        self.assertEqual(project.tags, [u'mapping',u'transportation',u'community organizing'])
 
         self.results_state = 'before'
 
