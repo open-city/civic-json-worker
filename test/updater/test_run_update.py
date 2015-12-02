@@ -86,7 +86,7 @@ class RunUpdateTestCase(unittest.TestCase):
     def response_content(self, url, request):
         # csv file of project descriptions
         if url.geturl() == 'http://example.com/cfa-projects.csv':
-            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web/,,,,''']
+            project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web/,,,"what,ever,,†≈ç®åz¥≈†",''']
 
             if self.results_state == 'before':
                 return response(200, '''\n'''.join(project_lines[0:3]), {'content-type': 'text/csv; charset=UTF-8'})
@@ -242,6 +242,7 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).filter(filter).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.name, u'bizfriendly-web')
+        self.assertEqual(project.tags, [u'what', u'ever', u'', u'†≈ç®åz¥≈†'])
 
         # check for the one project status
         filter = [Project.organization_name == u'Cöde for Ameriça', Project.name == u'cityvoice']
@@ -1201,6 +1202,9 @@ class RunUpdateTestCase(unittest.TestCase):
         def overwrite_response_content(url, request):
             if "cityvoice/contents/civic.json" in url.geturl():
                 return response(200, '''{"status": "", "tags": ["", "", ""]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
+            if url.geturl() == 'http://example.com/cfa-projects.csv':
+                project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status''', ''',,,https://github.com/codeforamerica/cityvoice,,,"safety, police, poverty",Shuttered''', ''',,,https://github.com/codeforamerica/bizfriendly-web/,,,"",''']
+                return response(200, '''\n'''.join(project_lines), {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -1214,6 +1218,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertIsNotNone(project)
         self.assertEqual(project.status, None)
         self.assertEqual(project.tags, None)
+
 
         # and in the saved project you know doesn't have status & tags set because they're
         # missing from civic.json

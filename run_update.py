@@ -349,6 +349,7 @@ def get_projects(organization):
                             project[project_key] = None
                         # we want tags to be a list with no whitespace
                         elif project_key == 'tags':
+                            project_value = unicode(project_value.decode('utf8'))
                             project[project_key] = [tag.strip() for tag in project_value.split(',')]
                         else:
                             project[project_key] = unicode(project_value.decode('utf8'))
