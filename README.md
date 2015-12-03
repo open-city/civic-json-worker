@@ -58,7 +58,6 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
     {
       api_url: "http://codeforamerica.org/api/projects/122",
       categories: null,
-      tags: null,
       code_url: "https://github.com/sfbrigade/localfreeweb.org",
       description: "Front end for the Local Free Web project",
       github_details: { ... },
@@ -69,9 +68,9 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
       name: "localfreeweb.org",
       organization: {},
       organization_name: "Code for San Francisco",
-      tags: "digital access",
+      tags: ["digital access","bus stops"],
       type: null,
-      status: "Delivered"
+      status: "Official"
     },
     ...
   ],
