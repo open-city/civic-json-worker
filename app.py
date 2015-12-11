@@ -139,7 +139,7 @@ def get_query_params(args):
     filters = {}
     for key, value in args.iteritems():
         if 'page' not in key:
-            filters[key] = value
+            filters[key] = value.encode('utf8')
     return filters, urlencode(filters)
 
 
@@ -532,7 +532,6 @@ def orgs_member_count():
 def get_projects(id=None):
     ''' Regular response option for projects.
     '''
-
     filters, querystring = get_query_params(request.args)
     if id:
         # Get one named project.
