@@ -1,3 +1,4 @@
+# -- coding: utf-8 --
 import json
 from datetime import datetime, timedelta
 import time
@@ -235,6 +236,25 @@ class TestOrganizations(IntegrationTest):
         )
         db.session.commit()
         response = self.app.get('/api/organizations?q=Code for San Francisco')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+    def test_org_search_escaped_phrase(self):
+        OrganizationFactory(
+            name=u'Cöde%%for \'Ameriça',
+        )
+        db.session.commit()
+        response = self.app.get('/api/organizations?q=\'Ameriça')
+        response = json.loads(response.data)
+        assert isinstance(response['total'], int)
+        assert isinstance(response['objects'], list)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(len(response['objects']), 1)
+
+        response = self.app.get('/api/organizations?q=Cöde%')
         response = json.loads(response.data)
         assert isinstance(response['total'], int)
         assert isinstance(response['objects'], list)
