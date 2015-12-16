@@ -458,16 +458,20 @@ class TestProjects(IntegrationTest):
         Test that project query params work as expected.
         '''
         brigade = OrganizationFactory(name=u'Whatever', type=u'Brigade')
-        brigade_somewhere_far = OrganizationFactory(name=u'Brigade Organization', type=u'Brigade, Code for All')
+        brigade_somewhere_far = OrganizationFactory(name=u'Brigade Organization', type=u'Code for All')
+        gov_org = OrganizationFactory(name=u'Gov Org', type=u'Government')
         web_project = ProjectFactory(name=u'Random Web App', type=u'web service')
         other_web_project = ProjectFactory(name=u'Random Web App 2', type=u'web service', description=u'Another')
         non_web_project = ProjectFactory(name=u'Random Other App', type=u'other service')
+        gov_project = ProjectFactory(name=u'Gov App')
 
         web_project.organization = brigade
         non_web_project.organization = brigade_somewhere_far
+        gov_project.organization = gov_org
 
         db.session.add(web_project)
         db.session.add(non_web_project)
+        db.session.add(gov_project)
         db.session.commit()
 
         response = self.app.get('/api/projects?type=web%20service')
@@ -492,6 +496,11 @@ class TestProjects(IntegrationTest):
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['total'], 1)
+
+        response = self.app.get('/api/projects?organization_type=Brigade,Code+for+All')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 3)
 
     def test_project_cascading_deletes(self):
         ''' Test that issues get deleted when their parent

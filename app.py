@@ -558,7 +558,12 @@ def get_projects(id=None):
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            # Support searching for multiple org_types
+            if "," in value:
+                values = value.split(",")
+                query = query.join(Project.organization).filter(getattr(Organization, org_attr).in_(values))
+            else:
+                query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
         elif 'q' in attr:
             # Returns all results if the value is empty
             if value:
