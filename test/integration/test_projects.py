@@ -1,3 +1,4 @@
+# -- coding: utf-8 --
 import json
 from datetime import datetime, timedelta
 
@@ -88,6 +89,42 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(project_response['objects']), 1)
 
         org_project_response = self.app.get('/api/organizations/Code-for-San-Francisco/projects?q=ruby')
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 1)
+        self.assertEqual(len(org_project_response['objects']), 1)
+
+    def test_project_search_escaped_text(self):
+        ''' Searching for escaped text in the project and org/project endpoints
+            returns expected results
+        '''
+        organization = OrganizationFactory(name=u"Code for San Francisco")
+        ProjectFactory(organization_name=organization.name, description=u'What\'s My \'District')
+        ProjectFactory(organization_name=organization.name, description=u'Cöde%%for%%Ameriça')
+        db.session.commit()
+        project_response = self.app.get('/api/projects?q=What\'s My \'District')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 1)
+        self.assertEqual(len(project_response['objects']), 1)
+
+        org_project_response = self.app.get("/api/organizations/Code-for-San-Francisco/projects?q='District")
+        org_project_response = json.loads(org_project_response.data)
+        assert isinstance(org_project_response['total'], int)
+        assert isinstance(org_project_response['objects'], list)
+        self.assertEqual(org_project_response['total'], 1)
+        self.assertEqual(len(org_project_response['objects']), 1)
+
+        project_response = self.app.get('/api/projects?q=%Ameriça')
+        project_response = json.loads(project_response.data)
+        assert isinstance(project_response['total'], int)
+        assert isinstance(project_response['objects'], list)
+        self.assertEqual(project_response['total'], 1)
+        self.assertEqual(len(project_response['objects']), 1)
+
+        org_project_response = self.app.get("/api/organizations/Code-for-San-Francisco/projects?q=Cöde%")
         org_project_response = json.loads(org_project_response.data)
         assert isinstance(org_project_response['total'], int)
         assert isinstance(org_project_response['objects'], list)

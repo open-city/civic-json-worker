@@ -33,11 +33,11 @@ class ProjectFactory(SQLAlchemyModelFactory):
     description = u'This is a description'
     type = factory.LazyAttribute(lambda n: choice([u'web service', u'api', u'data standard']))
     categories = factory.LazyAttribute(lambda n: choice([u'housing', u'community engagement', u'criminal justice', u'education']))
-    tags = ['what','ever','','†≈ç®åz¥≈†']
+    tags = ['what', 'ever', '', '†≈ç®åz¥≈†']
     github_details = {'repo': u'git@github.com:codeforamerica/civic-project.git'}
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
     status = u'Project status'
-    languages = ['Python','CSS']
+    languages = ['Python', 'CSS']
 
 class EventFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Event
@@ -92,11 +92,11 @@ class AttendanceFactory(SQLAlchemyModelFactory):
     FACTORY_SESSION = db.session
 
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
-    organization_url = "https://www.codeforamerica.org/api/organizations/" + str(factory.LazyAttribute(lambda e: OrganizationFactory().name)).replace(" ","-")
-    total = randint(1,1000)
+    organization_url = "https://www.codeforamerica.org/api/organizations/" + str(factory.LazyAttribute(lambda e: OrganizationFactory().name)).replace(" ", "-")
+    total = randint(1, 1000)
     weekly = {
-        "2014 01" : randint(1,50),
-        "2014 02" : randint(1,50),
-        "2015 01" : randint(1,50),
-        "2015 02" : randint(1,50)
+        "2014 01": randint(1, 50),
+        "2014 02": randint(1, 50),
+        "2015 01": randint(1, 50),
+        "2015 02": randint(1, 50)
     }
