@@ -139,7 +139,7 @@ def get_query_params(args):
     filters = {}
     for key, value in args.iteritems():
         if 'page' not in key:
-            filters[key] = value
+            filters[key] = value.encode('utf8')
     return filters, urlencode(filters)
 
 
@@ -193,8 +193,8 @@ def get_organizations(name=None):
 
     for attr, value in filters.iteritems():
         if 'q' in attr:
-            query = query.filter("organization.tsv_body @@ plainto_tsquery('%s')" % value)
-            ordering = desc(func.ts_rank(Organization.tsv_body, func.plainto_tsquery('%s' % value)))
+            query = query.filter('organization.tsv_body @@ plainto_tsquery(:search_query)').params(search_query=value)
+            ordering = desc(func.ts_rank(Organization.tsv_body, func.plainto_tsquery(value)))
         else:
             query = query.filter(getattr(Organization, attr).ilike('%%%s%%' % value))
 
@@ -334,8 +334,8 @@ def get_orgs_projects(organization_name):
         if 'q' in attr:
             # Returns all results if the value is empty
             if value:
-                query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
-                relevance_ordering_filter = func.ts_rank(Project.tsv_body, func.plainto_tsquery('%s' % value))
+                query = query.filter('project.tsv_body @@ plainto_tsquery(:search_query)').params(search_query=value)
+                relevance_ordering_filter = func.ts_rank(Project.tsv_body, func.plainto_tsquery(value))
                 ordering_filter_name = 'relevance'
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
@@ -532,9 +532,7 @@ def orgs_member_count():
 def get_projects(id=None):
     ''' Regular response option for projects.
     '''
-
     filters, querystring = get_query_params(request.args)
-
     if id:
         # Get one named project.
         filter = Project.id == id
@@ -562,8 +560,8 @@ def get_projects(id=None):
         elif 'q' in attr:
             # Returns all results if the value is empty
             if value:
-                query = query.filter("project.tsv_body @@ plainto_tsquery('%s')" % value)
-                relevance_ordering_filter = func.ts_rank(Project.tsv_body, func.plainto_tsquery('%s' % value))
+                query = query.filter('project.tsv_body @@ plainto_tsquery(:search_query)').params(search_query=value)
+                relevance_ordering_filter = func.ts_rank(Project.tsv_body, func.plainto_tsquery(value))
                 ordering_filter_name = 'relevance'
         elif 'only_ids' in attr:
             query = query.with_entities(Project.id)
