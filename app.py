@@ -11,7 +11,7 @@ import re
 from mimetypes import guess_type
 from os.path import join
 from math import ceil
-from urllib import urlencode
+from urllib import urlencode, unquote_plus
 
 from flask import Flask, make_response, request, jsonify, render_template
 import requests
@@ -139,7 +139,7 @@ def get_query_params(args):
     filters = {}
     for key, value in args.iteritems():
         if 'page' not in key:
-            filters[key] = value.encode('utf8')
+            filters[key] = unquote_plus(value).encode('utf8')
     return filters, urlencode(filters)
 
 def format_ilike_term(term):
