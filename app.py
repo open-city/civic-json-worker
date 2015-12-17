@@ -5,7 +5,6 @@
 from __future__ import division
 
 from datetime import datetime, date
-import json
 import os
 import time
 import re
@@ -21,7 +20,7 @@ from sqlalchemy import desc
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
 from dictalchemy import make_class_dictable
-from flask.ext.script import Manager, prompt_bool
+from flask.ext.script import Manager, Server, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
 from werkzeug.contrib.fixers import ProxyFix
 from models import initialize_database, Organization, Event, Issue, Project, Story, Label, Error, Attendance
@@ -42,7 +41,7 @@ db = initialize_database(app)
 migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
-
+manager.add_command('runserver', Server(use_debugger=True))
 
 @manager.command
 def dropdb():
