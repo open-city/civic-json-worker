@@ -180,7 +180,6 @@ def get_organizations(name=None):
     ''' Regular response option for organizations.
     '''
 
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if name:
@@ -654,7 +653,6 @@ def get_issues_by_labels(labels):
     base_query = db.session.query(Issue).join(Issue.labels)
 
     # Check for parameters
-    filters = request.args
     filters, querystring = get_query_params(request.args)
     for attr, value in filters.iteritems():
         if 'project' in attr:
@@ -718,7 +716,6 @@ def get_all_upcoming_events():
     ''' Show all upcoming events.
         Return them in chronological order.
     '''
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     query = db.session.query(Event).filter(Event.start_time_notz >= datetime.utcnow()).order_by(Event.start_time_notz)
@@ -739,7 +736,6 @@ def get_all_past_events():
     ''' Show all past events.
         Return them in reverse chronological order.
     '''
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     query = db.session.query(Event).filter(Event.start_time_notz <= datetime.utcnow()).order_by(desc(Event.start_time_notz))
@@ -770,7 +766,6 @@ def get_stories(id=None):
     ''' Regular response option for stories.
     '''
 
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if id:
