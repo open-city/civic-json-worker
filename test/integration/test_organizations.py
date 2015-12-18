@@ -363,6 +363,54 @@ class TestOrganizations(IntegrationTest):
         response = json.loads(response.data)
         self.assertEqual(response['total'], 0)
 
+    def test_organization_query_filter_with_unescaped_characters(self):
+        ''' Test that organization query params with unescaped characters work as expected.
+        '''
+        OrganizationFactory(name=u'Code for Addis Ababa', type=u'Code for All', city=u'Addis Ababa')
+        OrganizationFactory(name=u'Code for Ponta Grossa', type=u'Code for All', city=u'Ponta Grossa, PR')
+        OrganizationFactory(name=u'USDS', type=u'Government', city=u'Washington, DC')
+
+        db.session.commit()
+
+        response = self.app.get('/api/organizations?type=Code%20for%20All')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], u'Code for Addis Ababa')
+        self.assertEqual(response['objects'][1]['name'], u'Code for Ponta Grossa')
+
+        response = self.app.get('/api/organizations?type=Code+for+All')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], u'Code for Addis Ababa')
+        self.assertEqual(response['objects'][1]['name'], u'Code for Ponta Grossa')
+
+        response = self.app.get('/api/organizations?type=Code%2Bfor%2BAll')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], u'Code for Addis Ababa')
+        self.assertEqual(response['objects'][1]['name'], u'Code for Ponta Grossa')
+
+        response = self.app.get('/api/organizations?city=Ponta%20Grossa')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['objects'][0]['name'], u'Code for Ponta Grossa')
+
+        response = self.app.get('/api/organizations?city=Addis+Ababa')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['objects'][0]['name'], u'Code for Addis Ababa')
+
+        response = self.app.get('/api/organizations?city=Washington%2C%2BDC')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['objects'][0]['name'], u'USDS')
+
     def test_organization_issues(self):
         ''' Test getting all of an organization's issues
         '''
