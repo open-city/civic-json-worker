@@ -335,7 +335,7 @@ class Project(db.Model):
     def api_url(self):
         ''' API link to itself
         '''
-        return '%s://%s/api/projects/%s' % (request.scheme, request.host, str(self.id))
+        return u'{}://{}/api/projects/{}'.format(request.scheme, request.host, str(self.id))
 
     def asdict(self, include_organization=False, include_issues=True):
         ''' Return Project as a dictionary, with some properties tweaked.
