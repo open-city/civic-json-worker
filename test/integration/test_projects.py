@@ -10,9 +10,9 @@ from app import db, Issue
 class TestProjects(IntegrationTest):
 
     def test_all_projects_order(self):
-        """
+        '''
         Test that projects gets returned in order of last_updated
-        """
+        '''
         ProjectFactory(name=u'Project 1', last_updated='Mon, 01 Jan 2010 00:00:00 GMT')
         ProjectFactory(name=u'Project 2', last_updated='Tue, 01 Jan 2011 00:00:00 GMT')
         ProjectFactory(name=u'Non Github Project', last_updated='Wed, 01 Jan 2013 00:00:00', github_details=None)
@@ -311,17 +311,17 @@ class TestProjects(IntegrationTest):
             with correct ranking values
         '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, status='TEST', last_updated=datetime.now() - timedelta(10000))
-        ProjectFactory(organization_name=organization.name, description='testing a new thing', last_updated=datetime.now() - timedelta(1))
-        ProjectFactory(organization_name=organization.name, tags=['test,tags,what,ever'], last_updated=datetime.now() - timedelta(100))
+        ProjectFactory(organization_name=organization.name, status=u'TEST', last_updated=datetime.now() - timedelta(10000))
+        ProjectFactory(organization_name=organization.name, description=u'testing a new thing', last_updated=datetime.now() - timedelta(1))
+        ProjectFactory(organization_name=organization.name, tags=[u'test,tags,what,ever'], last_updated=datetime.now() - timedelta(100))
         ProjectFactory(organization_name=organization.name, last_updated=datetime.now())
         db.session.commit()
         project_response = self.app.get('/api/projects?q=TEST')
         project_response = json.loads(project_response.data)
         self.assertEqual(project_response['total'], 3)
-        self.assertEqual(project_response['objects'][0]['status'], 'TEST')
-        self.assertEqual(project_response['objects'][1]['tags'], ['test,tags,what,ever'])
-        self.assertEqual(project_response['objects'][2]['description'], 'testing a new thing')
+        self.assertEqual(project_response['objects'][0]['status'], u'TEST')
+        self.assertEqual(project_response['objects'][1]['tags'], [u'test,tags,what,ever'])
+        self.assertEqual(project_response['objects'][2]['description'], u'testing a new thing')
 
     def test_project_return_only_ids(self):
         ''' Search results from the project and org/project endpoints are returned
@@ -437,9 +437,9 @@ class TestProjects(IntegrationTest):
         self.assertEqual(org_project_response['objects'][0]['name'], 'My Cool Project')
 
     def test_project_search_includes_tags(self):
-        """
+        '''
         The tags field is included in search results from the project and org/project endpoints
-        """
+        '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
         ProjectFactory(organization_name=organization.name, tags=['mapping', 'philly'])
         ProjectFactory(organization_name=organization.name, tags=['food stamps', 'health'])
@@ -455,35 +455,35 @@ class TestProjects(IntegrationTest):
         self.assertEqual(org_project_response['objects'][0]['tags'], ['food stamps', 'health'])
 
     def test_project_search_includes_organization_name(self):
-        """
+        '''
         The organization name is included in the project search
-        """
+        '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, name="Project One")
-        ProjectFactory(organization_name=organization.name, name="Project Two", description="America")
+        ProjectFactory(organization_name=organization.name, name=u"Project One")
+        ProjectFactory(organization_name=organization.name, name=u"Project Two", description=u"America")
 
         organization = OrganizationFactory(name=u"Code for America")
-        ProjectFactory(organization_name=organization.name, name="Project Three")
-        ProjectFactory(organization_name=organization.name, name="Project Four", tags="San Francisco")
+        ProjectFactory(organization_name=organization.name, name=u"Project Three")
+        ProjectFactory(organization_name=organization.name, name=u"Project Four", tags=u"San Francisco")
         db.session.commit()
 
         # Test that org_name matches return before project name
         project_response = self.app.get('/api/projects?q=Code+for+San+Francisco')
         project_response = json.loads(project_response.data)
         self.assertEqual(len(project_response['objects']), 3)
-        self.assertEqual(project_response['objects'][0]['name'], 'Project One')
-        self.assertEqual(project_response['objects'][1]['name'], 'Project Two')
-        self.assertEqual(project_response['objects'][2]['name'], 'Project Four')
+        self.assertEqual(project_response['objects'][0]['name'], u'Project One')
+        self.assertEqual(project_response['objects'][1]['name'], u'Project Two')
+        self.assertEqual(project_response['objects'][2]['name'], u'Project Four')
         self.assertTrue('San Francisco' in project_response['objects'][2]['tags'])
 
         # Test that org name matches return before project description
         project_response = self.app.get('/api/projects?q=Code for America')
         project_response = json.loads(project_response.data)
         self.assertEqual(len(project_response['objects']), 3)
-        self.assertEqual(project_response['objects'][0]['name'], 'Project Three')
-        self.assertEqual(project_response['objects'][1]['name'], 'Project Four')
-        self.assertEqual(project_response['objects'][2]['name'], 'Project Two')
-        self.assertEqual(project_response['objects'][2]['description'], 'America')
+        self.assertEqual(project_response['objects'][0]['name'], u'Project Three')
+        self.assertEqual(project_response['objects'][1]['name'], u'Project Four')
+        self.assertEqual(project_response['objects'][2]['name'], u'Project Two')
+        self.assertEqual(project_response['objects'][2]['description'], u'America')
 
     def test_project_query_filter(self):
         '''

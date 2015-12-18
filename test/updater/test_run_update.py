@@ -1584,10 +1584,10 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_attendance(self):
         ''' Test gathering attendance from the peopledb '''
         # Mock attendance data
-        cfsf_url = "https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
-        cfsf_name = "Code for San Francisco"
-        oakland_url = "https://www.codeforamerica.org/api/organizations/Open-Oakland"
-        oakland_name = "Open Oakland"
+        cfsf_url = u"https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
+        cfsf_name = u"Code for San Francisco"
+        oakland_url = u"https://www.codeforamerica.org/api/organizations/Open-Oakland"
+        oakland_name = u"Open Oakland"
         cfsf_checkin1 = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
         cfsf_checkin2 = datetime.datetime.strptime("2015-01-08", "%Y-%m-%d")
         oakland_checkin1 = datetime.datetime.strptime("2015-01-16", "%Y-%m-%d")
@@ -1613,8 +1613,8 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 from app import Attendance
                 from test.factories import OrganizationFactory
-                cfsf = OrganizationFactory(name='Code for San Francisco')
-                oakland = OrganizationFactory(name='Open Oakland')
+                cfsf = OrganizationFactory(name=u'Code for San Francisco')
+                oakland = OrganizationFactory(name=u'Open Oakland')
 
                 cfsf_attendance = run_update.get_attendance(peopledb_cursor, cfsf_url, cfsf.name)
                 self.assertEqual(cfsf_attendance["organization_name"], cfsf_name)
