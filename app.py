@@ -563,7 +563,7 @@ def get_projects(id=None):
             org_attr = attr.split('_')[1]
             # Support searching for multiple org_types
             if "," in value:
-                values = value.split(",")
+                values = [unicode(item) for item in value.split(",")]
                 query = query.join(Project.organization).filter(getattr(Organization, org_attr).in_(values))
             else:
                 query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
