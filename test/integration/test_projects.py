@@ -306,7 +306,6 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response["objects"]), 2)
         self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
 
-
     def test_project_search_ranked_order(self):
         ''' Search results from the project and org/project endpoints are returned
             with correct ranking values
@@ -323,7 +322,6 @@ class TestProjects(IntegrationTest):
         self.assertEqual(project_response['objects'][0]['status'], 'TEST')
         self.assertEqual(project_response['objects'][1]['tags'], ['test,tags,what,ever'])
         self.assertEqual(project_response['objects'][2]['description'], 'testing a new thing')
-
 
     def test_project_return_only_ids(self):
         ''' Search results from the project and org/project endpoints are returned
@@ -438,7 +436,6 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['name'], 'My Cool Project')
 
-
     def test_project_search_includes_tags(self):
         """
         The tags field is included in search results from the project and org/project endpoints
@@ -456,7 +453,6 @@ class TestProjects(IntegrationTest):
         org_project_response = json.loads(org_project_response.data)
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['tags'], ['food stamps', 'health'])
-
 
     def test_project_search_includes_organization_name(self):
         """
@@ -478,7 +474,7 @@ class TestProjects(IntegrationTest):
         self.assertEqual(project_response['objects'][0]['name'], 'Project One')
         self.assertEqual(project_response['objects'][1]['name'], 'Project Two')
         self.assertEqual(project_response['objects'][2]['name'], 'Project Four')
-        self.assertTrue( 'San Francisco' in project_response['objects'][2]['tags'] )
+        self.assertTrue('San Francisco' in project_response['objects'][2]['tags'])
 
         # Test that org name matches return before project description
         project_response = self.app.get('/api/projects?q=Code for America')
@@ -488,7 +484,6 @@ class TestProjects(IntegrationTest):
         self.assertEqual(project_response['objects'][1]['name'], 'Project Four')
         self.assertEqual(project_response['objects'][2]['name'], 'Project Two')
         self.assertEqual(project_response['objects'][2]['description'], 'America')
-
 
     def test_project_query_filter(self):
         '''
@@ -572,6 +567,9 @@ class TestProjects(IntegrationTest):
         issue = IssueFactory(title=u'TEST ISSUE', project_id=project.id)
         another_issue = IssueFactory(title=u'ANOTHER TEST ISSUE', project_id=project.id)
         a_third_issue = IssueFactory(title=u'A THIRD TEST ISSUE', project_id=project.id)
+        db.session.add(issue)
+        db.session.add(another_issue)
+        db.session.add(a_third_issue)
         db.session.commit()
 
         # make sure the issues are in the db
