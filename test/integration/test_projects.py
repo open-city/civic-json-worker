@@ -500,13 +500,13 @@ class TestProjects(IntegrationTest):
         web_project = ProjectFactory(name=u'Random Web App', type=u'web service')
         other_web_project = ProjectFactory(name=u'Random Web App 2', type=u'web service', description=u'Another')
         non_web_project = ProjectFactory(name=u'Random Other App', type=u'other service')
-        gov_project = ProjectFactory(name=u'Gov App')
-
+        gov_project = ProjectFactory(name=u'Gov App', type=u'data standard')
         web_project.organization = brigade
         non_web_project.organization = brigade_somewhere_far
         gov_project.organization = gov_org
 
         db.session.add(web_project)
+        db.session.add(other_web_project)
         db.session.add(non_web_project)
         db.session.add(gov_project)
         db.session.commit()
