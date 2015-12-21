@@ -492,66 +492,83 @@ class TestProjects(IntegrationTest):
         brigade = OrganizationFactory(name=u'Brigade Org', type=u'Brigade')
         code_for_all = OrganizationFactory(name=u'Code for All Org', type=u'Code for All')
         gov_org = OrganizationFactory(name=u'Gov Org', type=u'Government')
-        
-        brigade_project = ProjectFactory(name=u'Today Brigade project')
-        code_for_all_project = ProjectFactory(name=u'Yesterday Code for All project', last_updated=datetime.now() - timedelta(days=1))
-        gov_project = ProjectFactory(name=u'Two days ago Gov project', last_updated=datetime.now() - timedelta(days=2))
-        brigade_project.organization = brigade
-        code_for_all_project.organization = code_for_all
-        gov_project.organization = gov_org
+
+        brigade_project = ProjectFactory(name=u'Today Brigade project', organization_name=brigade.name)
+        code_for_all_project = ProjectFactory(name=u'Yesterday Code for All project', organization_name=code_for_all.name, last_updated=datetime.now() - timedelta(days=1))
+        gov_project = ProjectFactory(name=u'Two days ago Gov project', organization_name=gov_org.name, last_updated=datetime.now() - timedelta(days=2))
+        brigade_project2 = ProjectFactory(name=u'Three days ago Brigade project', organization_name=brigade.name, last_updated=datetime.now() - timedelta(days=3))
+        code_for_all_project2 = ProjectFactory(name=u'Four days ago Code for All project', organization_name=code_for_all.name, last_updated=datetime.now() - timedelta(days=4))
+        gov_project2 = ProjectFactory(name=u'Five days ago Gov project', organization_name=gov_org.name, last_updated=datetime.now() - timedelta(days=5))
 
         db.session.add(brigade_project)
         db.session.add(code_for_all_project)
         db.session.add(gov_project)
+        db.session.add(brigade_project2)
+        db.session.add(code_for_all_project2)
+        db.session.add(gov_project2)
         db.session.commit()
 
         # Test they return in order of last_updated
         response = self.app.get('/api/projects')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 3)
+        self.assertEqual(response['total'], 6)
         self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
         self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
         self.assertEqual(response['objects'][2]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][3]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][4]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][5]['name'], 'Five days ago Gov project')
 
         # Test they return in order of last_updated, no matter the search order
         response = self.app.get('/api/projects?organization_type=Government,Code+for+All,Brigade')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 3)
+        self.assertEqual(response['total'], 6)
         self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
         self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
         self.assertEqual(response['objects'][2]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][3]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][4]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][5]['name'], 'Five days ago Gov project')
 
         response = self.app.get('/api/projects?organization_type=Brigade,Code+for+All')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['total'], 4)
         self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
         self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][3]['name'], 'Four days ago Code for All project')
 
-        # Different order, same results
+        # # Different order, same results
         response = self.app.get('/api/projects?organization_type=Code+for+All,Brigade')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['total'], 4)
         self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
         self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][3]['name'], 'Four days ago Code for All project')
 
         response = self.app.get('/api/projects?organization_type=Code+for+All,Government')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['total'], 4)
         self.assertEqual(response['objects'][0]['name'], 'Yesterday Code for All project')
         self.assertEqual(response['objects'][1]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][2]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][3]['name'], 'Five days ago Gov project')
 
-        # Different order, same results
+        # # Different order, same results
         response = self.app.get('/api/projects?organization_type=Government,Code+for+All')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['total'], 4)
         self.assertEqual(response['objects'][0]['name'], 'Yesterday Code for All project')
         self.assertEqual(response['objects'][1]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][2]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][3]['name'], 'Five days ago Gov project')
 
 
     def test_project_cascading_deletes(self):
