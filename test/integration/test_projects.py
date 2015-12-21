@@ -489,7 +489,7 @@ class TestProjects(IntegrationTest):
         '''
         Test searching for projects from certain types of organizations.
         '''
-        brigade = OrganizationFactory(name=u'Brigade Org', type=u'Brigade')
+        brigade = OrganizationFactory(name=u'Brigade Org', type=u'Brigade, midwest')
         code_for_all = OrganizationFactory(name=u'Code for All Org', type=u'Code for All')
         gov_org = OrganizationFactory(name=u'Gov Org', type=u'Government')
 

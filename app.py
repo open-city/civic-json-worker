@@ -16,7 +16,7 @@ from urllib import urlencode, unquote_plus
 from flask import Flask, make_response, request, jsonify, render_template
 import requests
 from flask.ext.heroku import Heroku
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
 from dictalchemy import make_class_dictable
@@ -564,7 +564,9 @@ def get_projects(id=None):
             # Support searching for multiple org_types
             if "," in value:
                 values = [unicode(item) for item in value.split(",")]
-                query = query.join(Project.organization).filter(getattr(Organization, org_attr).in_(values))
+                # build a list of ilike queries to match on
+                ilike_values = [getattr(Organization, org_attr).ilike(format_ilike_term(value)) for value in values]
+                query = query.join(Project.organization).filter(or_(*ilike_values))
             else:
                 query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         elif 'q' in attr:
