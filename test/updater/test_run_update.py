@@ -736,6 +736,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=[u'philly', u'mapping'], type=None, link_url=u'http://phillymapofshame.org', code_url=None, status=u'In Progress')
+        old_project.last_updated = "2000-01-01"
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
@@ -747,7 +748,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 projects = run_update.get_projects(philly)
                 # If the two descriptions are equal, it won't update last_updated
-                assert projects[0]['last_updated'] == None
+                self.assertEqual(projects[0]['last_updated'], "2000-01-01")
 
     def test_issue_paging(self):
         ''' test that issues are following page links '''
