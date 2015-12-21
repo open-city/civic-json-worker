@@ -38,6 +38,7 @@ class ProjectFactory(SQLAlchemyModelFactory):
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
     status = u'Project status'
     languages = [u'Python', u'CSS']
+    last_updated = factory.LazyAttribute(lambda o: datetime.utcnow())
 
 class EventFactory(SQLAlchemyModelFactory):
     FACTORY_FOR = Event

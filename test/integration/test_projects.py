@@ -485,54 +485,74 @@ class TestProjects(IntegrationTest):
         self.assertEqual(project_response['objects'][2]['name'], u'Project Two')
         self.assertEqual(project_response['objects'][2]['description'], u'America')
 
-    def test_project_query_filter(self):
+    def test_project_organzation_type_filter(self):
         '''
-        Test that project query params work as expected.
+        Test searching for projects from certain types of organizations.
         '''
-        brigade = OrganizationFactory(name=u'Whatever', type=u'Brigade')
-        brigade_somewhere_far = OrganizationFactory(name=u'Brigade Organization', type=u'Code for All')
+        brigade = OrganizationFactory(name=u'Brigade Org', type=u'Brigade')
+        code_for_all = OrganizationFactory(name=u'Code for All Org', type=u'Code for All')
         gov_org = OrganizationFactory(name=u'Gov Org', type=u'Government')
-        web_project = ProjectFactory(name=u'Random Web App', type=u'web service')
-        other_web_project = ProjectFactory(name=u'Random Web App 2', type=u'web service', description=u'Another')
-        non_web_project = ProjectFactory(name=u'Random Other App', type=u'other service')
-        gov_project = ProjectFactory(name=u'Gov App', type=u'data standard')
-        web_project.organization = brigade
-        non_web_project.organization = brigade_somewhere_far
+        
+        brigade_project = ProjectFactory(name=u'Today Brigade project')
+        code_for_all_project = ProjectFactory(name=u'Yesterday Code for All project', last_updated=datetime.now() - timedelta(days=1))
+        gov_project = ProjectFactory(name=u'Two days ago Gov project', last_updated=datetime.now() - timedelta(days=2))
+        brigade_project.organization = brigade
+        code_for_all_project.organization = code_for_all
         gov_project.organization = gov_org
 
-        db.session.add(web_project)
-        db.session.add(other_web_project)
-        db.session.add(non_web_project)
+        db.session.add(brigade_project)
+        db.session.add(code_for_all_project)
         db.session.add(gov_project)
         db.session.commit()
 
-        response = self.app.get('/api/projects?type=web%20service')
+        # Test they return in order of last_updated
+        response = self.app.get('/api/projects')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 2)
-        self.assertEqual(response['objects'][0]['name'], u'Random Web App')
-        self.assertEqual(response['objects'][1]['name'], u'Random Web App 2')
+        self.assertEqual(response['total'], 3)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Two days ago Gov project')
 
-        response = self.app.get('/api/projects?type=web%20service&description=Another')
+        # Test they return in order of last_updated, no matter the search order
+        response = self.app.get('/api/projects?organization_type=Government,Code+for+All,Brigade')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 1)
-        self.assertEqual(response['objects'][0]['name'], u'Random Web App 2')
-
-        response = self.app.get('/api/projects?type=different%20service')
-        self.assertEqual(response.status_code, 200)
-        response = json.loads(response.data)
-        self.assertEqual(response['total'], 0)
-
-        response = self.app.get('/api/projects?organization_type=Code+for+All')
-        self.assertEqual(response.status_code, 200)
-        response = json.loads(response.data)
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 3)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Two days ago Gov project')
 
         response = self.app.get('/api/projects?organization_type=Brigade,Code+for+All')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 3)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+
+        # Different order, same results
+        response = self.app.get('/api/projects?organization_type=Code+for+All,Brigade')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+
+        response = self.app.get('/api/projects?organization_type=Code+for+All,Government')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][1]['name'], 'Two days ago Gov project')
+
+        # Different order, same results
+        response = self.app.get('/api/projects?organization_type=Government,Code+for+All')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][1]['name'], 'Two days ago Gov project')
+
 
     def test_project_cascading_deletes(self):
         ''' Test that issues get deleted when their parent
