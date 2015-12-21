@@ -5,22 +5,22 @@
 from __future__ import division
 
 from datetime import datetime, date
-import json
 import os
 import time
+import re
 from mimetypes import guess_type
 from os.path import join
 from math import ceil
-from urllib import urlencode
+from urllib import urlencode, unquote_plus
 
 from flask import Flask, make_response, request, jsonify, render_template
 import requests
 from flask.ext.heroku import Heroku
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
 from dictalchemy import make_class_dictable
-from flask.ext.script import Manager, prompt_bool
+from flask.ext.script import Manager, Server, prompt_bool
 from flask.ext.migrate import Migrate, MigrateCommand
 from werkzeug.contrib.fixers import ProxyFix
 from models import initialize_database, Organization, Event, Issue, Project, Story, Label, Error, Attendance
@@ -41,7 +41,7 @@ db = initialize_database(app)
 migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
-
+manager.add_command('runserver', Server(use_debugger=True))
 
 @manager.command
 def dropdb():
@@ -139,9 +139,15 @@ def get_query_params(args):
     filters = {}
     for key, value in args.iteritems():
         if 'page' not in key:
-            filters[key] = value.encode('utf8')
+            filters[key] = unquote_plus(value).encode('utf8')
     return filters, urlencode(filters)
 
+def format_ilike_term(term):
+    ''' Format the passed term for use in an ilike query.
+    '''
+    # strip pattern-matching metacharacters from the term
+    stripped_term = re.sub(ur'\||_|%|\*|\+|\?|\{|\}|\(|\)|\[|\]', '', term)
+    return u'%{}%'.format(stripped_term)
 
 def build_rsvps_response(events):
     ''' Arrange and organize rsvps from a list of event objects '''
@@ -173,7 +179,6 @@ def get_organizations(name=None):
     ''' Regular response option for organizations.
     '''
 
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if name:
@@ -196,7 +201,7 @@ def get_organizations(name=None):
             query = query.filter('organization.tsv_body @@ plainto_tsquery(:search_query)').params(search_query=value)
             ordering = desc(func.ts_rank(Organization.tsv_body, func.plainto_tsquery(value)))
         else:
-            query = query.filter(getattr(Organization, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Organization, attr).ilike(format_ilike_term(value)))
 
     query = query.order_by(ordering)
     response = paged_results(query=query, include_args=dict(include_extras=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
@@ -350,7 +355,7 @@ def get_orgs_projects(organization_name):
             else:
                 ordering_dir = 'desc'
         else:
-            query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Project, attr).ilike(format_ilike_term(value)))
 
     if ordering_filter_name == 'last_updated':
         ordering_filter = last_updated_ordering_filter
@@ -389,7 +394,7 @@ def get_orgs_issues(organization_name, labels=None):
         labels = [label.strip() for label in labels.split(',')]
 
         # Create the filter for each label
-        labels = [Label.name.ilike('%{}%'.format(label)) for label in labels]
+        labels = [Label.name.ilike(format_ilike_term(label)) for label in labels]
 
         # Create the base query object by joining on Issue.labels
         query = query.join(Issue.labels)
@@ -556,7 +561,14 @@ def get_projects(id=None):
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            # Support searching for multiple org_types
+            if "," in value:
+                values = [unicode(item) for item in value.split(",")]
+                # build a list of ilike queries to match on
+                ilike_values = [getattr(Organization, org_attr).ilike(format_ilike_term(value)) for value in values]
+                query = query.join(Project.organization).filter(or_(*ilike_values))
+            else:
+                query = query.join(Project.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         elif 'q' in attr:
             # Returns all results if the value is empty
             if value:
@@ -576,7 +588,7 @@ def get_projects(id=None):
             else:
                 ordering_dir = 'desc'
         else:
-            query = query.filter(getattr(Project, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Project, attr).ilike(format_ilike_term(value)))
 
     if ordering_filter_name == 'last_updated':
         ordering_filter = last_updated_ordering_filter
@@ -616,12 +628,12 @@ def get_issues(id=None):
     for attr, value in filters.iteritems():
         if 'project' in attr:
             proj_attr = attr.split('_')[1]
-            query = query.join(Issue.project).filter(getattr(Project, proj_attr).ilike('%%%s%%' % value))
+            query = query.join(Issue.project).filter(getattr(Project, proj_attr).ilike(format_ilike_term(value)))
         elif 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Issue.project).join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            query = query.join(Issue.project).join(Project.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         else:
-            query = query.filter(getattr(Issue, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Issue, attr).ilike(format_ilike_term(value)))
 
     response = paged_results(query=query, include_args=dict(include_project=True, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
@@ -636,25 +648,24 @@ def get_issues_by_labels(labels):
     labels = [label.strip() for label in labels.split(',')]
 
     # Create the filter for each label
-    labels = [Label.name.ilike('%%%s%%' % label) for label in labels]
+    labels = [Label.name.ilike(format_ilike_term(label)) for label in labels]
 
     # Create the base query object by joining on Issue.labels
     base_query = db.session.query(Issue).join(Issue.labels)
 
     # Check for parameters
-    filters = request.args
     filters, querystring = get_query_params(request.args)
     for attr, value in filters.iteritems():
         if 'project' in attr:
             proj_attr = attr.split('_')[1]
-            base_query = base_query.join(Issue.project).filter(getattr(Project, proj_attr).ilike('%%%s%%' % value))
+            base_query = base_query.join(Issue.project).filter(getattr(Project, proj_attr).ilike(format_ilike_term(value)))
         elif 'organization' in attr:
             org_attr = attr.split('_')[1]
-            base_query = base_query.join(Issue.project).join(Project.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            base_query = base_query.join(Issue.project).join(Project.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         else:
             try:
                 filter_attr = getattr(Issue, attr)
-                base_query = base_query.filter(filter_attr.ilike('%%%s%%' % value))
+                base_query = base_query.filter(filter_attr.ilike(format_ilike_term(value)))
             except AttributeError:
                 pass
 
@@ -693,9 +704,9 @@ def get_events(id=None):
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Event.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            query = query.join(Event.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         else:
-            query = query.filter(getattr(Event, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Event, attr).ilike(format_ilike_term(value)))
 
     response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)), querystring=querystring)
     return jsonify(response)
@@ -706,7 +717,6 @@ def get_all_upcoming_events():
     ''' Show all upcoming events.
         Return them in chronological order.
     '''
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     query = db.session.query(Event).filter(Event.start_time_notz >= datetime.utcnow()).order_by(Event.start_time_notz)
@@ -714,9 +724,9 @@ def get_all_upcoming_events():
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Event.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            query = query.join(Event.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         else:
-            query = query.filter(getattr(Event, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Event, attr).ilike(format_ilike_term(value)))
 
     response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
@@ -727,7 +737,6 @@ def get_all_past_events():
     ''' Show all past events.
         Return them in reverse chronological order.
     '''
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     query = db.session.query(Event).filter(Event.start_time_notz <= datetime.utcnow()).order_by(desc(Event.start_time_notz))
@@ -735,9 +744,9 @@ def get_all_past_events():
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Event.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            query = query.join(Event.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         else:
-            query = query.filter(getattr(Event, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Event, attr).ilike(format_ilike_term(value)))
 
     response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
@@ -758,7 +767,6 @@ def get_stories(id=None):
     ''' Regular response option for stories.
     '''
 
-    filters = request.args
     filters, querystring = get_query_params(request.args)
 
     if id:
@@ -777,9 +785,9 @@ def get_stories(id=None):
     for attr, value in filters.iteritems():
         if 'organization' in attr:
             org_attr = attr.split('_')[1]
-            query = query.join(Story.organization).filter(getattr(Organization, org_attr).ilike('%%%s%%' % value))
+            query = query.join(Story.organization).filter(getattr(Organization, org_attr).ilike(format_ilike_term(value)))
         else:
-            query = query.filter(getattr(Story, attr).ilike('%%%s%%' % value))
+            query = query.filter(getattr(Story, attr).ilike(format_ilike_term(value)))
 
     response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)), querystring=querystring)
     return jsonify(response)

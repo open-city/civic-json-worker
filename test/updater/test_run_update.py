@@ -736,6 +736,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         philly = OrganizationFactory(name=u'Code for Philly', projects_list_url=u'http://codeforphilly.org/projects.csv')
         old_project = ProjectFactory(name=u'Philly Map of Shame', organization_name=u'Code for Philly', description=u'PHL Map of Shame is a citizen-led project to map the impact of the School Reform Commission\u2019s \u201cdoomsday budget\u201d on students and parents. We will visualize complaints filed with the Pennsylvania Department of Education.', categories=u'Education, CivicEngagement', tags=[u'philly', u'mapping'], type=None, link_url=u'http://phillymapofshame.org', code_url=None, status=u'In Progress')
+        old_project.last_updated = "2000-01-01"
         self.db.session.flush()
 
         def overwrite_response_content(url, request):
@@ -747,7 +748,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 projects = run_update.get_projects(philly)
                 # If the two descriptions are equal, it won't update last_updated
-                assert projects[0]['last_updated'] == None
+                self.assertEqual(projects[0]['last_updated'], "2000-01-01")
 
     def test_issue_paging(self):
         ''' test that issues are following page links '''
@@ -1584,10 +1585,10 @@ class RunUpdateTestCase(unittest.TestCase):
     def test_attendance(self):
         ''' Test gathering attendance from the peopledb '''
         # Mock attendance data
-        cfsf_url = "https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
-        cfsf_name = "Code for San Francisco"
-        oakland_url = "https://www.codeforamerica.org/api/organizations/Open-Oakland"
-        oakland_name = "Open Oakland"
+        cfsf_url = u"https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
+        cfsf_name = u"Code for San Francisco"
+        oakland_url = u"https://www.codeforamerica.org/api/organizations/Open-Oakland"
+        oakland_name = u"Open Oakland"
         cfsf_checkin1 = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
         cfsf_checkin2 = datetime.datetime.strptime("2015-01-08", "%Y-%m-%d")
         oakland_checkin1 = datetime.datetime.strptime("2015-01-16", "%Y-%m-%d")
@@ -1613,8 +1614,8 @@ class RunUpdateTestCase(unittest.TestCase):
                 import run_update
                 from app import Attendance
                 from test.factories import OrganizationFactory
-                cfsf = OrganizationFactory(name='Code for San Francisco')
-                oakland = OrganizationFactory(name='Open Oakland')
+                cfsf = OrganizationFactory(name=u'Code for San Francisco')
+                oakland = OrganizationFactory(name=u'Open Oakland')
 
                 cfsf_attendance = run_update.get_attendance(peopledb_cursor, cfsf_url, cfsf.name)
                 self.assertEqual(cfsf_attendance["organization_name"], cfsf_name)

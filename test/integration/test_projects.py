@@ -10,9 +10,9 @@ from app import db, Issue
 class TestProjects(IntegrationTest):
 
     def test_all_projects_order(self):
-        """
+        '''
         Test that projects gets returned in order of last_updated
-        """
+        '''
         ProjectFactory(name=u'Project 1', last_updated='Mon, 01 Jan 2010 00:00:00 GMT')
         ProjectFactory(name=u'Project 2', last_updated='Tue, 01 Jan 2011 00:00:00 GMT')
         ProjectFactory(name=u'Non Github Project', last_updated='Wed, 01 Jan 2013 00:00:00', github_details=None)
@@ -306,24 +306,22 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response["objects"]), 2)
         self.assertEqual(org_project_response['objects'][0]['description'], 'ruby ruby ruby ruby ruby')
 
-
     def test_project_search_ranked_order(self):
         ''' Search results from the project and org/project endpoints are returned
             with correct ranking values
         '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, status='TEST', last_updated=datetime.now() - timedelta(10000))
-        ProjectFactory(organization_name=organization.name, description='testing a new thing', last_updated=datetime.now() - timedelta(1))
-        ProjectFactory(organization_name=organization.name, tags=['test,tags,what,ever'], last_updated=datetime.now() - timedelta(100))
+        ProjectFactory(organization_name=organization.name, status=u'TEST', last_updated=datetime.now() - timedelta(10000))
+        ProjectFactory(organization_name=organization.name, description=u'testing a new thing', last_updated=datetime.now() - timedelta(1))
+        ProjectFactory(organization_name=organization.name, tags=[u'test,tags,what,ever'], last_updated=datetime.now() - timedelta(100))
         ProjectFactory(organization_name=organization.name, last_updated=datetime.now())
         db.session.commit()
         project_response = self.app.get('/api/projects?q=TEST')
         project_response = json.loads(project_response.data)
         self.assertEqual(project_response['total'], 3)
-        self.assertEqual(project_response['objects'][0]['status'], 'TEST')
-        self.assertEqual(project_response['objects'][1]['tags'], ['test,tags,what,ever'])
-        self.assertEqual(project_response['objects'][2]['description'], 'testing a new thing')
-
+        self.assertEqual(project_response['objects'][0]['status'], u'TEST')
+        self.assertEqual(project_response['objects'][1]['tags'], [u'test,tags,what,ever'])
+        self.assertEqual(project_response['objects'][2]['description'], u'testing a new thing')
 
     def test_project_return_only_ids(self):
         ''' Search results from the project and org/project endpoints are returned
@@ -438,11 +436,10 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['name'], 'My Cool Project')
 
-
     def test_project_search_includes_tags(self):
-        """
+        '''
         The tags field is included in search results from the project and org/project endpoints
-        """
+        '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
         ProjectFactory(organization_name=organization.name, tags=['mapping', 'philly'])
         ProjectFactory(organization_name=organization.name, tags=['food stamps', 'health'])
@@ -457,78 +454,122 @@ class TestProjects(IntegrationTest):
         self.assertEqual(len(org_project_response['objects']), 1)
         self.assertEqual(org_project_response['objects'][0]['tags'], ['food stamps', 'health'])
 
-
     def test_project_search_includes_organization_name(self):
-        """
+        '''
         The organization name is included in the project search
-        """
+        '''
         organization = OrganizationFactory(name=u"Code for San Francisco")
-        ProjectFactory(organization_name=organization.name, name="Project One")
-        ProjectFactory(organization_name=organization.name, name="Project Two", description="America")
+        ProjectFactory(organization_name=organization.name, name=u"Project One")
+        ProjectFactory(organization_name=organization.name, name=u"Project Two", description=u"America")
 
         organization = OrganizationFactory(name=u"Code for America")
-        ProjectFactory(organization_name=organization.name, name="Project Three")
-        ProjectFactory(organization_name=organization.name, name="Project Four", tags="San Francisco")
+        ProjectFactory(organization_name=organization.name, name=u"Project Three")
+        ProjectFactory(organization_name=organization.name, name=u"Project Four", tags=u"San Francisco")
         db.session.commit()
 
         # Test that org_name matches return before project name
         project_response = self.app.get('/api/projects?q=Code+for+San+Francisco')
         project_response = json.loads(project_response.data)
         self.assertEqual(len(project_response['objects']), 3)
-        self.assertEqual(project_response['objects'][0]['name'], 'Project One')
-        self.assertEqual(project_response['objects'][1]['name'], 'Project Two')
-        self.assertEqual(project_response['objects'][2]['name'], 'Project Four')
-        self.assertTrue( 'San Francisco' in project_response['objects'][2]['tags'] )
+        self.assertEqual(project_response['objects'][0]['name'], u'Project One')
+        self.assertEqual(project_response['objects'][1]['name'], u'Project Two')
+        self.assertEqual(project_response['objects'][2]['name'], u'Project Four')
+        self.assertTrue('San Francisco' in project_response['objects'][2]['tags'])
 
         # Test that org name matches return before project description
         project_response = self.app.get('/api/projects?q=Code for America')
         project_response = json.loads(project_response.data)
         self.assertEqual(len(project_response['objects']), 3)
-        self.assertEqual(project_response['objects'][0]['name'], 'Project Three')
-        self.assertEqual(project_response['objects'][1]['name'], 'Project Four')
-        self.assertEqual(project_response['objects'][2]['name'], 'Project Two')
-        self.assertEqual(project_response['objects'][2]['description'], 'America')
+        self.assertEqual(project_response['objects'][0]['name'], u'Project Three')
+        self.assertEqual(project_response['objects'][1]['name'], u'Project Four')
+        self.assertEqual(project_response['objects'][2]['name'], u'Project Two')
+        self.assertEqual(project_response['objects'][2]['description'], u'America')
 
-
-    def test_project_query_filter(self):
+    def test_project_organzation_type_filter(self):
         '''
-        Test that project query params work as expected.
+        Test searching for projects from certain types of organizations.
         '''
-        brigade = OrganizationFactory(name=u'Whatever', type=u'Brigade')
-        brigade_somewhere_far = OrganizationFactory(name=u'Brigade Organization', type=u'Brigade, Code for All')
-        web_project = ProjectFactory(name=u'Random Web App', type=u'web service')
-        other_web_project = ProjectFactory(name=u'Random Web App 2', type=u'web service', description=u'Another')
-        non_web_project = ProjectFactory(name=u'Random Other App', type=u'other service')
+        brigade = OrganizationFactory(name=u'Brigade Org', type=u'Brigade, midwest')
+        code_for_all = OrganizationFactory(name=u'Code for All Org', type=u'Code for All')
+        gov_org = OrganizationFactory(name=u'Gov Org', type=u'Government')
 
-        web_project.organization = brigade
-        non_web_project.organization = brigade_somewhere_far
+        brigade_project = ProjectFactory(name=u'Today Brigade project', organization_name=brigade.name)
+        code_for_all_project = ProjectFactory(name=u'Yesterday Code for All project', organization_name=code_for_all.name, last_updated=datetime.now() - timedelta(days=1))
+        gov_project = ProjectFactory(name=u'Two days ago Gov project', organization_name=gov_org.name, last_updated=datetime.now() - timedelta(days=2))
+        brigade_project2 = ProjectFactory(name=u'Three days ago Brigade project', organization_name=brigade.name, last_updated=datetime.now() - timedelta(days=3))
+        code_for_all_project2 = ProjectFactory(name=u'Four days ago Code for All project', organization_name=code_for_all.name, last_updated=datetime.now() - timedelta(days=4))
+        gov_project2 = ProjectFactory(name=u'Five days ago Gov project', organization_name=gov_org.name, last_updated=datetime.now() - timedelta(days=5))
 
-        db.session.add(web_project)
-        db.session.add(non_web_project)
+        db.session.add(brigade_project)
+        db.session.add(code_for_all_project)
+        db.session.add(gov_project)
+        db.session.add(brigade_project2)
+        db.session.add(code_for_all_project2)
+        db.session.add(gov_project2)
         db.session.commit()
 
-        response = self.app.get('/api/projects?type=web%20service')
+        # Test they return in order of last_updated
+        response = self.app.get('/api/projects')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 2)
-        self.assertEqual(response['objects'][0]['name'], u'Random Web App')
-        self.assertEqual(response['objects'][1]['name'], u'Random Web App 2')
+        self.assertEqual(response['total'], 6)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][3]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][4]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][5]['name'], 'Five days ago Gov project')
 
-        response = self.app.get('/api/projects?type=web%20service&description=Another')
+        # Test they return in order of last_updated, no matter the search order
+        response = self.app.get('/api/projects?organization_type=Government,Code+for+All,Brigade')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 1)
-        self.assertEqual(response['objects'][0]['name'], u'Random Web App 2')
+        self.assertEqual(response['total'], 6)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][3]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][4]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][5]['name'], 'Five days ago Gov project')
 
-        response = self.app.get('/api/projects?type=different%20service')
+        response = self.app.get('/api/projects?organization_type=Brigade,Code+for+All')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 0)
+        self.assertEqual(response['total'], 4)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][3]['name'], 'Four days ago Code for All project')
 
-        response = self.app.get('/api/projects?organization_type=Code+for+All')
+        # # Different order, same results
+        response = self.app.get('/api/projects?organization_type=Code+for+All,Brigade')
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 4)
+        self.assertEqual(response['objects'][0]['name'], 'Today Brigade project')
+        self.assertEqual(response['objects'][1]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][2]['name'], 'Three days ago Brigade project')
+        self.assertEqual(response['objects'][3]['name'], 'Four days ago Code for All project')
+
+        response = self.app.get('/api/projects?organization_type=Code+for+All,Government')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 4)
+        self.assertEqual(response['objects'][0]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][1]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][2]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][3]['name'], 'Five days ago Gov project')
+
+        # # Different order, same results
+        response = self.app.get('/api/projects?organization_type=Government,Code+for+All')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 4)
+        self.assertEqual(response['objects'][0]['name'], 'Yesterday Code for All project')
+        self.assertEqual(response['objects'][1]['name'], 'Two days ago Gov project')
+        self.assertEqual(response['objects'][2]['name'], 'Four days ago Code for All project')
+        self.assertEqual(response['objects'][3]['name'], 'Five days ago Gov project')
+
 
     def test_project_cascading_deletes(self):
         ''' Test that issues get deleted when their parent
@@ -563,6 +604,9 @@ class TestProjects(IntegrationTest):
         issue = IssueFactory(title=u'TEST ISSUE', project_id=project.id)
         another_issue = IssueFactory(title=u'ANOTHER TEST ISSUE', project_id=project.id)
         a_third_issue = IssueFactory(title=u'A THIRD TEST ISSUE', project_id=project.id)
+        db.session.add(issue)
+        db.session.add(another_issue)
+        db.session.add(a_third_issue)
         db.session.commit()
 
         # make sure the issues are in the db
