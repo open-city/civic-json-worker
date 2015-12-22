@@ -188,12 +188,21 @@ def get_organizations(org_sources):
     with open(org_sources) as file:
         for org_source in file.read().splitlines():
             scheme, netloc, path, _, _, _ = urlparse(org_source)
-            if 'docs.google.com' in org_source:
+            if os.path.splitext(path)[1] == '.json':
+                organizations.extend(get_organizations_from_json(org_source))
+            elif 'docs.google.com' in org_source:
                 organizations.extend(get_organizations_from_spreadsheet(org_source))
             elif not scheme and not netloc:
                 organizations.extend(get_organizations_from_local_file(org_source))
 
     return organizations
+
+
+def get_organizations_from_json(org_source):
+    ''' Get a row for each organization from a remote JSON file.
+    '''
+    got = get(org_source)
+    return got.json()
 
 
 def get_organizations_from_spreadsheet(org_source):
