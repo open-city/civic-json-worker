@@ -14,6 +14,10 @@ from psycopg2 import connect, extras
 
 from freezegun import freeze_time
 
+from csv import DictReader
+from StringIO import StringIO
+import json
+
 root_logger = logging.getLogger()
 root_logger.disabled = True
 
@@ -75,13 +79,19 @@ class RunUpdateTestCase(unittest.TestCase):
         urllib2.urlopen.return_value.read = Mock(return_value=rss_content)
         return urllib2.urlopen
 
-    def get_raw_organization_list(self, count=3):
+    def get_csv_organization_list(self, count=3):
         if type(count) is not int:
             count = 3
         # 'https://github.com/codeforamerica' and 'https://www.github.com/orgs/codeforamerica' are transformed
         #  to 'https://api.github.com/users/codeforamerica/repos' in run_update/get_projects()
         lines = [u'''name,website,events_url,rss,projects_list_url'''.encode('utf8'), u'''Cöde for Ameriça,http://codeforamerica.org,http://www.meetup.com/events/Code-For-Charlotte/,http://www.codeforamerica.org/blog/feed/,http://example.com/cfa-projects.csv'''.encode('utf8'), u'''Code for America (2),,,,https://github.com/codeforamerica'''.encode('utf8'), u'''Code for America (3),,http://www.meetup.com/events/Code-For-Rhode-Island/,http://www.codeforamerica.org/blog/another/feed/,https://www.github.com/orgs/codeforamerica'''.encode('utf8')]
         return '\n'.join(lines[0:count + 1])
+
+    def get_json_organization_list(self, count=3):
+        ''' Get the json version of the organization list
+        '''
+        raw_csv = self.get_csv_organization_list(count)
+        return json.dumps([item for item in DictReader(StringIO(raw_csv))])
 
     def response_content(self, url, request):
         # csv file of project descriptions
@@ -101,10 +111,14 @@ class RunUpdateTestCase(unittest.TestCase):
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/languages':
             return response(200, ''' {  "Ruby": 178825,  "HTML": 80191,  "JavaScript": 16028,  "CSS": 8579,  "Shell": 219 }''')
 
-        # csv file of organization descriptions
+        # json file of organization descriptions
         # this catches the request for the URL contained in run_update.TEST_ORG_SOURCES_FILENAME
+        elif url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+            return response(200, self.get_json_organization_list(self.organization_count))
+
+        # csv file of organization descriptions
         elif "docs.google.com" in url:
-            return response(200, self.get_raw_organization_list(self.organization_count))
+            return response(200, self.get_csv_organization_list(self.organization_count))
 
         # contents of civic.json file in root directory for cityvoice
         elif "cityvoice/contents/civic.json" in url.geturl():
@@ -413,8 +427,8 @@ class RunUpdateTestCase(unittest.TestCase):
         self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
-            if "docs.google.com" in url:
-                return response(200, '''name\nCode_for-America''')
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, '''[{"name": "Code_for-America"}]''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -438,7 +452,7 @@ class RunUpdateTestCase(unittest.TestCase):
         self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
-            return response(200, '''name\nCode#America\nCode?America\nCode/America\nCode for America''')
+            return response(200, '''[{"name": "Code#America"}, {"name": "Code?America"}, {"name": "Code/America"}, {"name": "Code for America"}]''', {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(overwrite_response_content):
@@ -461,8 +475,8 @@ class RunUpdateTestCase(unittest.TestCase):
         self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
-            if "docs.google.com" in url:
-                return response(200, '''name,events_url\nCode for America,http://www.meetup.com/events/foo-%%%''')
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, '''[{"name": "Code for America", "events_url": "http://www.meetup.com/events/foo-%%%"}]''', {'content-type': 'text/csv; charset=UTF-8'})
 
         logging.error = Mock()
 
@@ -486,9 +500,8 @@ class RunUpdateTestCase(unittest.TestCase):
         self.setup_mock_rss_response()
 
         def overwrite_response_content(url, request):
-            if "docs.google.com" in url:
-                return response(200, '''name,events_url\nCode for America,http://www.meetup.com/events/Code-For-Charlotte''')
-
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, '''[{"name": "Code for America", "events_url": "http://www.meetup.com/events/Code-For-Charlotte"}]''', {'content-type': 'text/csv; charset=UTF-8'})
             if 'api.meetup.com' in url:
                 return response(404, '''Not Found!''')
 
@@ -804,11 +817,11 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Project
         import run_update
 
-        org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://organization.org/projects.csv'''
+        org_json = '''[{"name": "Organization Name", "website": "", "events_url": "", "rss": "", "projects_list_url": "http://organization.org/projects.csv"}]'''
 
         def status_one_response_content(url, request):
-            if "docs.google.com" in url.geturl():
-                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, org_json, {'content-type': 'text/csv; charset=UTF-8'})
             # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
             elif "/contents/civic.json" in url.geturl():
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
@@ -835,8 +848,8 @@ class RunUpdateTestCase(unittest.TestCase):
             cv_headers_dict = got.headers
 
         def status_two_response_content(url, request):
-            if "docs.google.com" in url.geturl():
-                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, org_json, {'content-type': 'text/csv; charset=UTF-8'})
             # return an empty civic.json so the value of status there won't overwrite the one from the spreadsheet
             elif "/contents/civic.json" in url.geturl():
                 return response(200, '''{}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
@@ -1291,9 +1304,8 @@ class RunUpdateTestCase(unittest.TestCase):
         # alter responses to return only one organization, with one project that
         # has a 2nd-level GitHub URL (with /issues at the end)
         def overwrite_response_content(url, request):
-            if "docs.google.com" in url:
-                org_lines = [u'''name,website,events_url,rss,projects_list_url'''.encode('utf8'), u'''Cöde for Ameriça,http://codeforamerica.org,http://www.meetup.com/events/Code-For-Charlotte/,http://www.codeforamerica.org/blog/feed/,http://example.com/cfa-projects.csv'''.encode('utf8')]
-                return response(200, '''\n'''.join(org_lines), {'content-type': 'text/csv; charset=UTF-8'})
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, '''[{"name": "Cöde for Ameriça", "website": "http://codeforamerica.org", "events_url": "http://www.meetup.com/events/Code-For-Charlotte/", "rss": "http://www.codeforamerica.org/blog/feed/", "projects_list_url": "http://example.com/cfa-projects.csv"}]''', {'content-type': 'text/csv; charset=UTF-8'})
             elif url.geturl() == 'http://example.com/cfa-projects.csv':
                 project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status'''.encode('utf8'), ''',,,https://github.com/codeforamerica/cityvoice/issues,,,"safety, police, poverty",Shuttered'''.encode('utf8')]
                 return response(200, '''\n'''.join(project_lines), {'content-type': 'text/csv; charset=UTF-8'})
@@ -1329,9 +1341,8 @@ class RunUpdateTestCase(unittest.TestCase):
         # alter responses to return only one organization, with one project that
         # has a GitHub URL with .git at the end
         def overwrite_response_content(url, request):
-            if "docs.google.com" in url:
-                org_lines = [u'''name,website,events_url,rss,projects_list_url'''.encode('utf8'), u'''Cöde for Ameriça,http://codeforamerica.org,http://www.meetup.com/events/Code-For-Charlotte/,http://www.codeforamerica.org/blog/feed/,http://example.com/cfa-projects.csv'''.encode('utf8')]
-                return response(200, '''\n'''.join(org_lines), {'content-type': 'text/csv; charset=UTF-8'})
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, '''[{"name": "Cöde for Ameriça", "website": "http://codeforamerica.org", "events_url": "http://www.meetup.com/events/Code-For-Charlotte/", "rss": "http://www.codeforamerica.org/blog/feed/", "projects_list_url": "http://example.com/cfa-projects.csv"}]''', {'content-type': 'text/csv; charset=UTF-8'})
             elif url.geturl() == 'http://example.com/cfa-projects.csv':
                 project_lines = ['''Name,description,link_url,code_url,type,categories,tags,status'''.encode('utf8'), ''',,,https://github.com/codeforamerica/cityvoice.git,,,"safety, police, poverty",Shuttered'''.encode('utf8')]
                 return response(200, '''\n'''.join(project_lines), {'content-type': 'text/csv; charset=UTF-8'})
@@ -1418,7 +1429,7 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'Beta')
-        self.assertEqual(project.tags, [u'mapping',u'transportation',u'community organizing'])
+        self.assertEqual(project.tags, [u'mapping', u'transportation', u'community organizing'])
 
     def test_new_values_in_civic_json(self):
         ''' A value that has changed in civic.json should be saved, even if the
@@ -1429,14 +1440,14 @@ class RunUpdateTestCase(unittest.TestCase):
         from app import Project
         import run_update
 
-        org_csv = '''name,website,events_url,rss,projects_list_url\nOrganization Name,,,,http://example.com/cfa-projects.csv'''
+        org_json = '''[{"name": "Organization Name", "website": "", "events_url": "", "rss": "", "projects_list_url": "http://example.com/cfa-projects.csv"}]'''
 
         # set results_state to 'after' so we'll only get one project
         self.results_state = 'after'
 
         def status_one_response_content(url, request):
-            if "docs.google.com" in url.geturl():
-                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, org_json, {'content-type': 'text/csv; charset=UTF-8'})
 
         with HTTMock(self.response_content):
             with HTTMock(status_one_response_content):
@@ -1446,7 +1457,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # the project status was correctly set
         self.assertEqual(project_v1.status, u'Beta')
         # the project tags were correctly set
-        self.assertEqual(project_v1.tags, [u'mapping',u'transportation',u'community organizing'])
+        self.assertEqual(project_v1.tags, [u'mapping', u'transportation', u'community organizing'])
         v1_github_details = project_v1.github_details
 
         # save the default github response so we can send it with a 304 status below
@@ -1459,8 +1470,8 @@ class RunUpdateTestCase(unittest.TestCase):
             cv_headers_dict = got.headers
 
         def status_two_response_content(url, request):
-            if "docs.google.com" in url.geturl():
-                return response(200, org_csv, {'content-type': 'text/csv; charset=UTF-8'})
+            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
+                return response(200, org_json, {'content-type': 'text/csv; charset=UTF-8'})
             # return a civic.json with a new status value
             elif "/contents/civic.json" in url.geturl():
                 return response(200, '''{"status": "Cromulent", "tags": ["community organizing", "safety and justice"]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
@@ -1476,7 +1487,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # the new project status was correctly set
         self.assertEqual(project_v2.status, u'Cromulent')
         # the new tags were correctly set
-        self.assertEqual(project_v2.tags, [u'community organizing',u'safety and justice'])
+        self.assertEqual(project_v2.tags, [u'community organizing', u'safety and justice'])
         # the untouched details from the GitHub project weren't changed
         self.assertEqual(project_v2.github_details, v1_github_details)
 
@@ -1503,10 +1514,10 @@ class RunUpdateTestCase(unittest.TestCase):
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
         self.assertEqual(project.status, u'汉语 漢語')
-        self.assertEqual(project.tags, [u'한국어 조선말',u'ру́сский язы́к',u'†≈ç®åz¥≈†'])
+        self.assertEqual(project.tags, [u'한국어 조선말', u'ру́сский язы́к', u'†≈ç®åz¥≈†'])
         # testing for the roman text representations as well, just for reference
         self.assertEqual(project.status, u'\u6c49\u8bed \u6f22\u8a9e')
-        self.assertEqual(project.tags, [u'\ud55c\uad6d\uc5b4 \uc870\uc120\ub9d0',u'\u0440\u0443\u0301\u0441\u0441\u043a\u0438\u0439 \u044f\u0437\u044b\u0301\u043a',u'\u2020\u2248\xe7\xae\xe5z\xa5\u2248\u2020'])
+        self.assertEqual(project.tags, [u'\ud55c\uad6d\uc5b4 \uc870\uc120\ub9d0', u'\u0440\u0443\u0301\u0441\u0441\u043a\u0438\u0439 \u044f\u0437\u044b\u0301\u043a', u'\u2020\u2248\xe7\xae\xe5z\xa5\u2248\u2020'])
 
     def test_alt_tag_format_in_civic_json(self):
         ''' Tags represented as objects rather than strings are read correctly.

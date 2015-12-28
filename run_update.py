@@ -16,6 +16,7 @@ from psycopg2 import connect, extras
 from requests import get, exceptions
 from dateutil.tz import tzoffset
 import feedparser
+import json
 
 from feeds import get_first_working_feed_link
 
@@ -188,12 +189,26 @@ def get_organizations(org_sources):
     with open(org_sources) as file:
         for org_source in file.read().splitlines():
             scheme, netloc, path, _, _, _ = urlparse(org_source)
-            if 'docs.google.com' in org_source:
+            is_json = os.path.splitext(path)[1] == '.json'
+            # if it's a local file...
+            if not scheme and not netloc:
+                if is_json:
+                    organizations.extend(get_organizations_from_local_json(org_source))
+                else:
+                    organizations.extend(get_organizations_from_local_csv(org_source))
+            elif is_json:
+                organizations.extend(get_organizations_from_json(org_source))
+            elif 'docs.google.com' in org_source:
                 organizations.extend(get_organizations_from_spreadsheet(org_source))
-            elif not scheme and not netloc:
-                organizations.extend(get_organizations_from_local_file(org_source))
 
     return organizations
+
+
+def get_organizations_from_json(org_source):
+    ''' Get a row for each organization from a remote JSON file.
+    '''
+    got = get(org_source)
+    return got.json()
 
 
 def get_organizations_from_spreadsheet(org_source):
@@ -211,14 +226,21 @@ def get_organizations_from_spreadsheet(org_source):
     return decode_organizations_list(organizations)
 
 
-def get_organizations_from_local_file(org_source):
-    '''
-        Get a row for each organization from a local file.
+def get_organizations_from_local_csv(org_source):
+    ''' Get a row for each organization from a local CSV file.
         Return a list of dictionaries, one for each row past the header.
     '''
     organizations = list(DictReader(open(org_source, 'rb')))
     return decode_organizations_list(organizations)
 
+
+def get_organizations_from_local_json(org_source):
+    ''' Get a row for each organization from a local JSON file.
+        Return a list of dictionaries, one for each row past the header.
+    '''
+    with open(org_source, 'rb') as org_data:
+        organizations = json.load(org_data)
+    return organizations
 
 def decode_organizations_list(organizations):
     '''
@@ -1337,7 +1359,7 @@ def main(org_name=None, org_sources=None):
 
 parser = ArgumentParser(description='''Update database from CSV source URL.''')
 parser.add_argument('--name', dest='name', help='Single organization name to update.')
-parser.add_argument('--sources', dest='sources', help='URL of an organization sources CSV file.')
+parser.add_argument('--sources', dest='sources', help='URL of an organization sources JSON file.')
 parser.add_argument('--test', action='store_const', dest='test_sources', const=TEST_ORG_SOURCES_FILENAME, help='Use the testing list of organizations.')
 
 if __name__ == "__main__":

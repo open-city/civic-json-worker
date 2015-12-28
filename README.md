@@ -121,45 +121,7 @@ We also want to add support for many more services to be included, such as event
 
 ### How to add your Brigade to the API
 
-##### Brigade Information
-The new site will be powered by this [Brigade Information](https://docs.google.com/spreadsheet/ccc?key=0ArHmv-6U1drqdGNCLWV5Q0d5YmllUzE5WGlUY3hhT2c&usp=sharing) Google Spreadsheet. This way you don't need yet another account for our Brigade site. Just keep your Brigade's info up to date and you're good. Email andrewh@codeforamerica.org if you want permission to add and edit groups.
-
-The columns are:
-* Name
-* Website
-* Events Url - Point us to where ever you schedule your events. Only Meetup.com events are working right now.
-* RSS - If you have a blog, point us to it. It's pretty smart and can find the feed on its own. To show off your Google Group discussions, use a link like `https://groups.google.com/forum/feed/code-for-san-francisco/msgs/rss.xml?num=15`
-* Projects list URL - Can either be a GitHub organization url like `https://github.com/sfbrigade` or a link to a list of project URLs, described below.
-
-
-##### Projects List
-This projects list you point us to will need the following columns:
-* `name` - filled in by GitHub if left blank
-* `description` - filled in by GitHub if left blank
-* `link_url` - filled in by GitHub if left blank
-* `code_url` - Only GitHub links work for now. Others will be added as needed later.
-* `tags` - Catch-all project tagging, terms separated by commas. "Education, digital literacy, iOS, Kansas City"
-* `status` - Whatever status names you use, e.g., "Alpha, Beta, Launched, In Progress"
-
-An example:
-```
-name, description, link_url, code_url, type, categories, tags, status
-South Bend Voices, "A redeploy of CityVoice for South Bend, IN.", http://www.southbendvoices.com/, https://github.com/codeforamerica/cityvoice,,, "community engagement, housing, mapping, ruby" "In progress"
-```
-
-That projects list URL can be any flavor of csv. The easiest way is to make a Google Spreadsheet like [my example](https://docs.google.com/spreadsheet/ccc?key=0ArHmv-6U1drqdDBzNXpSZkVzRDJUQnpOS0RJM0FDWGc&usp=sharing) and then select **File > Publish it to the web**.
-
-If you are using the new Google Spreadsheets, add `/export?format=csv` to the end.
-`https://docs.google.com/spreadsheets/d/<key>/export?format=csv`
-
-If you have the older Google Drive version change `?output=html` to `?output=csv`.
-`https://docs.google.com/spreadsheet/pub?key=<key>?output=csv`
-
-Put that in the Brigade Information sheet and you're done.
-
-The projects list URL can also be a JSON file, with a list of strings containing GitHub project URLs.
-
-Lastly, the projects list URL can be a GitHub organization URL, like http://github.com/codeforamerica.
+Submit a Pull Request with your brigade's information to the [Brigade Information repository](https://github.com/codeforamerica/brigade-information). Instructions are included in that repo's [README](https://github.com/codeforamerica/brigade-information/blob/master/README.md).
 
 ### Civic.json
 To add extra data about your projects to the CfAPI, include a `civic.json` file in the top level of your repo.
