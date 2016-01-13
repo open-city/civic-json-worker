@@ -535,6 +535,7 @@ def update_project_info(project):
                 existing_value = existing_project.__dict__[project_key]
                 if check_value and check_value != existing_value:
                     spreadsheet_is_updated = True
+                    project[project_key] = check_value
                 elif not check_value and existing_value:
                     project[project_key] = existing_value
 
@@ -579,13 +580,9 @@ def update_project_info(project):
         elif got.status_code == 304:
             logging.info(u'Project {} has not been modified since last update'.format(repo_url))
 
-            # Populate values from the civic.json if it exists/is updated
-            project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
-
             # if values have changed, copy untouched values from the existing project object and return it
-            if spreadsheet_is_updated or civic_json_is_updated:
-                logging.info('Project %s has been modified via spreadsheet or civic.json.', repo_url)
-                project['last_updated'] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z")
+            if spreadsheet_is_updated:
+                logging.info('Project %s has been modified via spreadsheet.', repo_url)
                 project['github_details'] = existing_project.github_details
                 return project
 
