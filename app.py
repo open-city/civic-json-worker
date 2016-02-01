@@ -556,6 +556,7 @@ def get_projects(id=None):
     ordering_filter_name = 'last_updated'
     ordering_filter = last_updated_ordering_filter
     ordering_dir = 'desc'
+    include_issues = False
     ordering = None
 
     for attr, value in filters.iteritems():
@@ -587,6 +588,10 @@ def get_projects(id=None):
                 ordering_dir = 'asc'
             else:
                 ordering_dir = 'desc'
+        elif 'include_issues' in attr:
+            if value in ['True','true','t']:
+                include_issues = True
+
         else:
             query = query.filter(getattr(Project, attr).ilike(format_ilike_term(value)))
 
@@ -601,7 +606,23 @@ def get_projects(id=None):
         ordering = ordering_filter.asc()
     query = query.order_by(ordering)
 
-    response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=include_issues), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    if include_issues == False:
+        issues_placeholder = [
+            {
+                "api_url": "http://codeforamerica.org/api/projects?include_issues=true",
+                "body": "This is a placeholder. To include Github issues from projects in the API response, add include_issues=true as a parameter. Including issues significantly increases API response time.",
+                "created_at": "",
+                "html_url": "",
+                "id": None,
+                "labels": [],
+                "project_id": None,
+                "title": "CFAPI Did Not Return Github Issues",
+                "updated_at": ""
+            }
+        ]
+        for project in response['objects']:
+            project['issues'] = issues_placeholder
     return jsonify(response)
 
 
