@@ -626,12 +626,14 @@ class TestProjects(IntegrationTest):
         db.session.commit()
 
         got = self.app.get("/api/projects?include_issues=True")
-        projects = json.loads(got.data)['objects']
-        self.assertTrue("issues" in projects[0].keys())
+        project = json.loads(got.data)['objects'][0]
+        self.assertTrue(isinstance(project['issues'], list))
         got = self.app.get("/api/projects?include_issues=False")
-        projects = json.loads(got.data)['objects']
-        self.assertTrue("issues" not in projects[0].keys())
+        project = json.loads(got.data)['objects'][0]
+        self.assertFalse(isinstance(project['issues'], list))
+        self.assertEqual("http://localhost/api/projects/1/issues", project["issues"])
         got = self.app.get("/api/projects")
-        projects = json.loads(got.data)['objects']
-        self.assertTrue("issues" not in projects[0].keys())
+        project = json.loads(got.data)['objects'][0]
+        self.assertFalse(isinstance(project['issues'], list))
+        self.assertEqual("http://localhost/api/projects/1/issues", project["issues"])
 

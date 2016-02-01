@@ -607,28 +607,13 @@ def get_projects(id=None):
     query = query.order_by(ordering)
 
     response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=include_issues), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
-    if include_issues == False:
-        issues_placeholder = [
-            {
-                "api_url": "http://codeforamerica.org/api/projects?include_issues=true",
-                "body": "This is a placeholder. To include Github issues from projects in the API response, add include_issues=true as a parameter. Including issues significantly increases API response time.",
-                "created_at": "",
-                "html_url": "",
-                "id": None,
-                "labels": [],
-                "project_id": None,
-                "title": "CFAPI Did Not Return Github Issues",
-                "updated_at": ""
-            }
-        ]
-        for project in response['objects']:
-            project['issues'] = issues_placeholder
     return jsonify(response)
 
 
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
-def get_issues(id=None):
+@app.route('/api/projects/<projectid>/issues')
+def get_issues(id=None, projectid=None):
     '''Regular response option for issues.
     '''
     filters, querystring = get_query_params(request.args)
@@ -642,6 +627,16 @@ def get_issues(id=None):
         else:
             # If no issue found
             return jsonify({"status": "Resource Not Found"}), 404
+
+    # Get one project's issues
+    if projectid:
+        filter = Project.id == projectid
+        project = db.session.query(Project).filter(filter).first()
+        print project
+        filter = Issue.project_id == project.id
+        single_project_issues_query = db.session.query(Issue).filter(filter)
+        response = paged_results(query=single_project_issues_query, include_args=dict(include_project=False, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+        return jsonify(response)
 
     # Get a bunch of issues
     query = db.session.query(Issue).order_by(func.random())
