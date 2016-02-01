@@ -1431,68 +1431,6 @@ class RunUpdateTestCase(unittest.TestCase):
         self.assertEqual(project.status, u'Beta')
         self.assertEqual(project.tags, [u'mapping', u'transportation', u'community organizing'])
 
-    def test_new_values_in_civic_json(self):
-        ''' A value that has changed in civic.json should be saved, even if the
-            related GitHub project reports that it hasn't been updated
-        '''
-        self.setup_mock_rss_response()
-
-        from app import Project
-        import run_update
-
-        org_json = '''[{"name": "Organization Name", "website": "", "events_url": "", "rss": "", "projects_list_url": "http://example.com/cfa-projects.csv"}]'''
-
-        # set results_state to 'after' so we'll only get one project
-        self.results_state = 'after'
-
-        def status_one_response_content(url, request):
-            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
-                return response(200, org_json, {'content-type': 'text/csv; charset=UTF-8'})
-
-        with HTTMock(self.response_content):
-            with HTTMock(status_one_response_content):
-                run_update.main(org_name=u"Organization Name", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
-
-        project_v1 = self.db.session.query(Project).first()
-        # the project status was correctly set
-        self.assertEqual(project_v1.status, u'Beta')
-        # the project tags were correctly set
-        self.assertEqual(project_v1.tags, [u'mapping', u'transportation', u'community organizing'])
-        v1_github_details = project_v1.github_details
-
-        # save the default github response so we can send it with a 304 status below
-        cv_body_text = None
-        cv_headers_dict = None
-        with HTTMock(self.response_content):
-            from requests import get
-            got = get('https://api.github.com/repos/codeforamerica/cityvoice')
-            cv_body_text = str(got.text)
-            cv_headers_dict = got.headers
-
-        def status_two_response_content(url, request):
-            if url.geturl() == 'https://raw.githubusercontent.com/codeforamerica/brigade-information/master/test/test_organizations.json':
-                return response(200, org_json, {'content-type': 'text/csv; charset=UTF-8'})
-            # return a civic.json with a new status value
-            elif "/contents/civic.json" in url.geturl():
-                return response(200, '''{"status": "Cromulent", "tags": ["community organizing", "safety and justice"]}''', {'Etag': '8456bc53d4cf6b78779ded3408886f82'})
-            # return a 304 (not modified) instead of a 200 for the project
-            elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
-                return response(304, cv_body_text, cv_headers_dict)
-
-        with HTTMock(self.response_content):
-            with HTTMock(status_two_response_content):
-                run_update.main(org_name=u"Organization Name", org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
-
-        project_v2 = self.db.session.query(Project).first()
-        # the new project status was correctly set
-        self.assertEqual(project_v2.status, u'Cromulent')
-        # the new tags were correctly set
-        self.assertEqual(project_v2.tags, [u'community organizing', u'safety and justice'])
-        # the untouched details from the GitHub project weren't changed
-        self.assertEqual(project_v2.github_details, v1_github_details)
-
-        self.results_state = 'before'
-
     def test_unicode_values_in_civic_json(self):
         ''' Unicode values in the civic.json file are handled correctly
         '''
@@ -1545,9 +1483,8 @@ class RunUpdateTestCase(unittest.TestCase):
         # testing for the roman text representations as well, just for reference
         self.assertEqual(project.tags, [u'economic development',u'twitter',u'ng\u01b0\u1eddi m\xe1y',u'python'])
 
-    def test_civic_json_values_preferred(self):
-        ''' Values set in civic.json are preferred over values set in spreadsheets,
-            even after multiple updates.
+    def test_spreadsheet_values_preferred(self):
+        ''' Values set in spreadsheet are preferred over values set in civic.json
         '''
         self.setup_mock_rss_response()
 
@@ -1588,8 +1525,8 @@ class RunUpdateTestCase(unittest.TestCase):
         # check a project for the status and tags from the mock civic.json
         project = self.db.session.query(Project).first()
         self.assertIsNotNone(project)
-        self.assertEqual(project.status, u'Beta')
-        self.assertEqual(project.tags, [u'mapping',u'transportation',u'community organizing'])
+        self.assertEqual(project.status, u'Shuttered')
+        self.assertEqual(project.tags, [u'safety', u'police', u'poverty'])
 
         self.results_state = 'before'
 
