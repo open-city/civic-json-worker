@@ -138,7 +138,7 @@ class RunUpdateTestCase(unittest.TestCase):
 
         # json of project description (cityvoice)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice':
-            return response(200, '''{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "languages_url": "https://api.github.com/repos/codeforamerica/cityvoice/languages", "forks_count": 12, "open_issues": 37, "subscribers_count": 40 }''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
+            return response(200, '''{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "languages_url": "https://api.github.com/repos/codeforamerica/cityvoice/languages", "forks_count": 12, "open_issues": 37, "subscribers_count": 40, "default_branch" : "master" }''', {'last-modified': datetime.datetime.strptime('Fri, 15 Nov 2013 00:08:07 GMT', "%a, %d %b %Y %H:%M:%S GMT")})
 
         # json of project description (bizfriendly-web)
         elif url.geturl() == 'https://api.github.com/repos/codeforamerica/bizfriendly-web':
@@ -173,6 +173,10 @@ class RunUpdateTestCase(unittest.TestCase):
         # json of page two of project descriptions (empty)
         elif url.geturl() == 'https://api.github.com/user/337792/repos?page=2':
             return response(200, '''[ ]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=1>; rel="prev", <https://api.github.com/user/337792/repos?page=1>; rel="first"'))
+
+        # mock commit status
+        elif url.geturl() == 'https://api.github.com/repos/codeforamerica/cityvoice/commits/master/status':
+            return response(200, '''{ "state" : "success" } ''')
 
         # elif meetup member count
         elif 'https://api.meetup.com/2/groups?group_urlname=' in url.geturl():
@@ -1683,6 +1687,17 @@ class RunUpdateTestCase(unittest.TestCase):
         filter = Project.name == u'cityvoice'
         projects = self.db.session.query(Project).filter(filter).all()
         self.assertEqual(len(projects), 0)
+
+    def test_commit_status(self):
+        """ Test grabbing the last commit status """
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        from app import Project
+        filter = Project.name == u'cityvoice'
+        cityvoice = self.db.session.query(Project).filter(filter).first()
+        self.assertEqual("success", cityvoice.commit_status)
 
 
 if __name__ == '__main__':

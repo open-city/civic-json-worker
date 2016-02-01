@@ -302,6 +302,7 @@ class Project(db.Model):
     tsv_body = db.Column(TSVectorType())
     status = db.Column(db.Unicode())
     languages = db.Column(JsonType())
+    commit_status = db.Column(db.Unicode())
 
     # Relationships
     # child
@@ -314,7 +315,7 @@ class Project(db.Model):
                  description=None, type=None, categories=None, tags=None,
                  github_details=None, last_updated=None, last_updated_issues=None,
                  last_updated_civic_json=None, last_updated_root_files=None, organization_name=None,
-                 keep=None, status=None, languages=None):
+                 keep=None, status=None, languages=None, commit_status=None):
         self.name = name
         self.code_url = code_url
         self.link_url = link_url
@@ -331,6 +332,7 @@ class Project(db.Model):
         self.keep = True
         self.status = status
         self.languages = languages
+        self.commit_status = commit_status
 
     def api_url(self):
         ''' API link to itself
