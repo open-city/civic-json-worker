@@ -556,6 +556,7 @@ def get_projects(id=None):
     ordering_filter_name = 'last_updated'
     ordering_filter = last_updated_ordering_filter
     ordering_dir = 'desc'
+    include_issues = False
     ordering = None
 
     for attr, value in filters.iteritems():
@@ -587,6 +588,10 @@ def get_projects(id=None):
                 ordering_dir = 'asc'
             else:
                 ordering_dir = 'desc'
+        elif 'include_issues' in attr:
+            if value in ['True','true','t']:
+                include_issues = True
+
         else:
             query = query.filter(getattr(Project, attr).ilike(format_ilike_term(value)))
 
@@ -601,13 +606,14 @@ def get_projects(id=None):
         ordering = ordering_filter.asc()
     query = query.order_by(ordering)
 
-    response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+    response = paged_results(query=query, include_args=dict(include_organization=True, include_issues=include_issues), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
     return jsonify(response)
 
 
 @app.route('/api/issues')
 @app.route('/api/issues/<int:id>')
-def get_issues(id=None):
+@app.route('/api/projects/<projectid>/issues')
+def get_issues(id=None, projectid=None):
     '''Regular response option for issues.
     '''
     filters, querystring = get_query_params(request.args)
@@ -621,6 +627,16 @@ def get_issues(id=None):
         else:
             # If no issue found
             return jsonify({"status": "Resource Not Found"}), 404
+
+    # Get one project's issues
+    if projectid:
+        filter = Project.id == projectid
+        project = db.session.query(Project).filter(filter).first()
+        print project
+        filter = Issue.project_id == project.id
+        single_project_issues_query = db.session.query(Issue).filter(filter)
+        response = paged_results(query=single_project_issues_query, include_args=dict(include_project=False, include_labels=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 10)), querystring=querystring)
+        return jsonify(response)
 
     # Get a bunch of issues
     query = db.session.query(Issue).order_by(func.random())

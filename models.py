@@ -339,10 +339,10 @@ class Project(db.Model):
         '''
         return u'{}://{}/api/projects/{}'.format(request.scheme, request.host, str(self.id))
 
-    def asdict(self, include_organization=False, include_issues=True):
+    def asdict(self, include_organization=False, include_issues=False):
         ''' Return Project as a dictionary, with some properties tweaked.
 
-            Optionally include linked organization.
+            Optionally include linked organization and issues.
         '''
         project_dict = db.Model.asdict(self)
 
@@ -360,6 +360,8 @@ class Project(db.Model):
 
         if include_issues:
             project_dict['issues'] = [o.asdict(include_project=False, include_labels=True) for o in db.session.query(Issue).filter(Issue.project_id == project_dict['id']).all()]
+        else:
+            project_dict['issues'] = self.api_url() + "/issues"
 
         return project_dict
 
