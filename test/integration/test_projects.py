@@ -617,3 +617,21 @@ class TestProjects(IntegrationTest):
         db.session.commit()
         issues = db.session.query(Issue).all()
         self.assertFalse(len(issues))
+
+    def test_include_issues(self):
+        """ Test the include_issues flag """
+        project = ProjectFactory()
+        db.session.commit()
+        IssueFactory(project_id=project.id)
+        db.session.commit()
+
+        got = self.app.get("/api/projects?include_issues=True")
+        projects = json.loads(got.data)['objects']
+        self.assertTrue("issues" in projects[0].keys())
+        got = self.app.get("/api/projects?include_issues=False")
+        projects = json.loads(got.data)['objects']
+        self.assertTrue("issues" not in projects[0].keys())
+        got = self.app.get("/api/projects")
+        projects = json.loads(got.data)['objects']
+        self.assertTrue("issues" not in projects[0].keys())
+

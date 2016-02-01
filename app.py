@@ -589,7 +589,8 @@ def get_projects(id=None):
             else:
                 ordering_dir = 'desc'
         elif 'include_issues' in attr:
-            include_issues = True
+            if value in ['True','true','t']:
+                include_issues = True
 
         else:
             query = query.filter(getattr(Project, attr).ilike(format_ilike_term(value)))

@@ -337,10 +337,10 @@ class Project(db.Model):
         '''
         return u'{}://{}/api/projects/{}'.format(request.scheme, request.host, str(self.id))
 
-    def asdict(self, include_organization=False, include_issues=True):
+    def asdict(self, include_organization=False, include_issues=False):
         ''' Return Project as a dictionary, with some properties tweaked.
 
-            Optionally include linked organization.
+            Optionally include linked organization and issues.
         '''
         project_dict = db.Model.asdict(self)
 
