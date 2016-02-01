@@ -673,7 +673,7 @@ def update_project_info(project):
         if "default_branch" in all_github_attributes:
             commit_status_url = GITHUB_COMMIT_STATUS_URL.format(repo_path=path, default_branch=all_github_attributes['default_branch'])
             got = get_github_api(commit_status_url)
-            project["commit_status"] = got.json()['state']
+            project["commit_status"] = got.json().get('state', None)
 
     return project
 
