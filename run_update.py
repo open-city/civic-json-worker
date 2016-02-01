@@ -45,6 +45,7 @@ GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
 GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
 GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{repo_path}/issues'
 GITHUB_CONTENT_API_URL = 'https://api.github.com/repos{repo_path}/contents/{file_path}'
+GITHUB_COMMIT_STATUS_URL = 'https://api.github.com/repos{repo_path}/commits/{default_branch}/status'
 
 GITHUB_AUTH = None
 if 'GITHUB_TOKEN' in os.environ:
@@ -666,6 +667,13 @@ def update_project_info(project):
         # Populate values from the civic.json if it exists/is updated
         #
         project, civic_json_is_updated = update_project_from_civic_json(project_dict=project, force=spreadsheet_is_updated)
+
+        # Get the lastest commit status
+        # First build up the url to use
+        if "default_branch" in all_github_attributes:
+            commit_status_url = GITHUB_COMMIT_STATUS_URL.format(repo_path=path, default_branch=all_github_attributes['default_branch'])
+            got = get_github_api(commit_status_url)
+            project["commit_status"] = got.json()['state']
 
     return project
 

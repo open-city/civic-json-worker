@@ -71,6 +71,7 @@ Response for `http://codeforamerica.org/api/organizations/Code-for-San-Francisco
       tags: ["digital access","bus stops"],
       type: null,
       status: "Official"
+      commit_status: "success"
     },
     ...
   ],
