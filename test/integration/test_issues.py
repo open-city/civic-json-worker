@@ -44,7 +44,6 @@ class TestIssues(IntegrationTest):
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertTrue('project' in response)
-        self.assertTrue('issues' not in response['project'])
 
     def test_issues_with_labels(self):
         '''

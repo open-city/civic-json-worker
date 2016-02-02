@@ -620,7 +620,7 @@ class TestOrganizations(IntegrationTest):
         response = json.loads(response.data)
         for org in response['objects']:
             if org['current_projects']:
-                self.assertFalse('issues' in org['current_projects'][0])
+                self.assertFalse(isinstance(org['current_projects'][0]["issues"], list))
                 break
 
     def test_geojson(self):
