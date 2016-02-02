@@ -5,6 +5,7 @@ before_script:
 - psql -c 'create database civic_json_worker_test;' -U postgres
 - psql -c 'create database peopledbtest;' -U postgres
 - psql -c '\i test/peopledbtest.pgsql' -U postgres
+- pip list
 script:
 - green test/ -vvv --run-coverage
 - flake8 . --exclude=migrations,test --ignore=E501,E711,E712 --exit-zero
