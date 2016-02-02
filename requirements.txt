@@ -32,4 +32,5 @@ SQLAlchemy==0.9.3
 Unidecode==0.4.14
 Werkzeug==0.9.4
 wheel==0.24.0
+git+git://github.com/pyca/cryptography.git@d0237e6dcdbbedaa50f88b6cf821f9944b734678
 freezegun==0.3.5
