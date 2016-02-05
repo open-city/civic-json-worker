@@ -9,7 +9,7 @@ Code for America has developed this API to track all the activity across the civ
 The tools that the Brigades and other groups use to do their fine deeds are all different. The CFAPI does the difficult job of being able to track these activities no matter what tools an organization is using. The participants don't need to change their activities to be included.
 
 ### How it works
-To get the information for the CfAPI, Code for America maintains a [list of civic tech organizations](https://docs.google.com/a/codeforamerica.org/spreadsheet/ccc?key=0ArHmv-6U1drqdGNCLWV5Q0d5YmllUzE5WGlUY3hhT2c&usp=drive_web#gid=0) and once an hour checks their activity on Meetup.com, their blog, and their GitHub projects. Other services and support for noncode projects are slowly being added. More technical details [below](https://github.com/codeforamerica/cfapi#installation).
+To get the information for the CfAPI, Code for America maintains a [list of civic tech organizations](https://github.com/codeforamerica/brigade-information/blob/master/organizations.json) and once an hour checks their activity on Meetup.com, their blog, and their GitHub projects. Other services and support for noncode projects are slowly being added. More technical details [below](https://github.com/codeforamerica/cfapi#installation).
 
 ### Projects powered by the CFAPI
 * The Code for America <a href="http://codeforamerica.org/brigade">Brigade</a> website
