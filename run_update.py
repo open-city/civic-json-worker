@@ -178,7 +178,8 @@ def get_meetup_count(organization, identifier):
     if got and got.status_code // 100 == 2:
         response = got.json()
         if response:
-            members = response["results"][0]["members"]
+            if response["results"]:
+                members = response["results"][0]["members"]
 
     return members
 
