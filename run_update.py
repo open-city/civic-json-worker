@@ -1086,6 +1086,9 @@ def save_labels_info(session, issue_dict):
         if label_dict['name'] in add_label_names:
             # add the issue id to the labels
             label_dict["issue_id"] = existing_issue.id
+            # remove id and default from some labels
+            label_dict.pop("default", None)
+            label_dict.pop("id", None)
             new_label = Label(**label_dict)
             session.add(new_label)
 
