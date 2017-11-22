@@ -92,6 +92,7 @@ class Organization(db.Model):
     latitude = db.Column(db.Float())
     longitude = db.Column(db.Float())
     last_updated = db.Column(db.Integer())
+    social_profiles = db.Column(JSONB())
     started_on = db.Column(db.Unicode())
     member_count = db.Column(db.Integer())
     keep = db.Column(db.Boolean())
@@ -104,7 +105,7 @@ class Organization(db.Model):
     def __init__(self, name, website=None, events_url=None, members_count=None,
                  rss=None, projects_list_url=None, type=None, city=None,
                  latitude=None, longitude=None, last_updated=time.time(),
-                 tags=[]):
+                 tags=[], social_profiles={}):
         self.name = name
         self.website = website
         self.events_url = events_url
@@ -117,6 +118,7 @@ class Organization(db.Model):
         self.longitude = longitude
         self.keep = True
         self.last_updated = last_updated
+        self.social_profiles = social_profiles
         self.started_on = unicode(date.today())
         self.id = safe_name(raw_name(name))
         self.members_count = members_count
