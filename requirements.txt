@@ -28,7 +28,7 @@ python-dateutil==2.2
 python-termstyle==0.1.10
 requests[security]==2.9.0
 six==1.5.2
-SQLAlchemy==0.9.3
+SQLAlchemy==1.1.15
 Unidecode==0.4.14
 Werkzeug==0.9.4
 wheel==0.24.0
