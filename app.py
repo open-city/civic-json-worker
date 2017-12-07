@@ -196,6 +196,11 @@ def get_organizations(name=None):
     # Default ordering of results
     ordering = desc(Organization.last_updated)
 
+    if 'tags[]' in filters:
+        tags = request.args.getlist('tags[]')
+        query = query.filter('organization.tags ?& :tags').params(tags=tags)
+        del filters['tags[]']
+
     for attr, value in filters.iteritems():
         if 'q' in attr:
             query = query.filter('organization.tsv_body @@ plainto_tsquery(:search_query)').params(search_query=value)

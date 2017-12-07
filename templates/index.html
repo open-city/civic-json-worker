@@ -73,6 +73,9 @@
               <dt>per_page <i>(integer)</i></dt>
               <dd>The number of results to return per page:<br><br>
               /api/organizations?per_page=5<br><br></dd>
+              <dt>tags<i>(array of strings)</i></dt>
+              <dd>An array of tags to filter the results by. For example, to select only the Code for America Brigades:<br><br>
+              /api/organizations?tags[]=Code%20For%20America&amp;tags[]=Brigade<br><br></dd>
               <dt>Organization properties</dt>
               <dd>You can add any of the <a href="#organization-properties">Organization properties</a> as a parameter and the API will filter by organizations that have that property.</dd>
             </dl>

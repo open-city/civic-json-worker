@@ -339,8 +339,8 @@ class TestOrganizations(IntegrationTest):
         '''
         Test that organization query params work as expected.
         '''
-        OrganizationFactory(name=u'Brigade Organization', type=u'Brigade')
-        OrganizationFactory(name=u'Bayamon Organization', type=u'Brigade', city=u'Bayamon, PR')
+        OrganizationFactory(name=u'Brigade Organization', type=u'Brigade', tags=['Brigade', 'Official'])
+        OrganizationFactory(name=u'Bayamon Organization', type=u'Brigade', city=u'Bayamon, PR', tags=['Brigade'])
         OrganizationFactory(name=u'Meetup Organization', type=u'Meetup')
 
         db.session.commit()
@@ -362,6 +362,21 @@ class TestOrganizations(IntegrationTest):
         self.assertEqual(response.status_code, 200)
         response = json.loads(response.data)
         self.assertEqual(response['total'], 0)
+
+        # Test tag-based filtering:
+        response = self.app.get('/api/organizations?tags[]=Brigade')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 2)
+        self.assertEqual(response['objects'][0]['name'], u'Brigade Organization')
+        self.assertEqual(response['objects'][1]['name'], u'Bayamon Organization')
+
+        response = self.app.get('/api/organizations?tags[]=Brigade&tags[]=Official')
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.data)
+        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['objects'][0]['name'], u'Brigade Organization')
+
 
     def test_organization_query_filter_with_unescaped_characters(self):
         ''' Test that organization query params with unescaped characters work as expected.

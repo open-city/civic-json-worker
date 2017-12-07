@@ -5,6 +5,7 @@ import json
 import time
 
 from flask import request
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
@@ -85,11 +86,13 @@ class Organization(db.Model):
     events_url = db.Column(db.Unicode())
     rss = db.Column(db.Unicode())
     projects_list_url = db.Column(db.Unicode())
+    tags = db.Column(JSONB())
     type = db.Column(db.Unicode())
     city = db.Column(db.Unicode())
     latitude = db.Column(db.Float())
     longitude = db.Column(db.Float())
     last_updated = db.Column(db.Integer())
+    social_profiles = db.Column(JSONB())
     started_on = db.Column(db.Unicode())
     member_count = db.Column(db.Integer())
     keep = db.Column(db.Boolean())
@@ -100,18 +103,22 @@ class Organization(db.Model):
     # can contain events, stories, projects (these relationships are defined in the child objects)
 
     def __init__(self, name, website=None, events_url=None, members_count=None,
-                 rss=None, projects_list_url=None, type=None, city=None, latitude=None, longitude=None, last_updated=time.time()):
+                 rss=None, projects_list_url=None, type=None, city=None,
+                 latitude=None, longitude=None, last_updated=time.time(),
+                 tags=[], social_profiles={}):
         self.name = name
         self.website = website
         self.events_url = events_url
         self.rss = rss
         self.projects_list_url = projects_list_url
+        self.tags = tags
         self.type = type
         self.city = city
         self.latitude = latitude
         self.longitude = longitude
         self.keep = True
         self.last_updated = last_updated
+        self.social_profiles = social_profiles
         self.started_on = unicode(date.today())
         self.id = safe_name(raw_name(name))
         self.members_count = members_count

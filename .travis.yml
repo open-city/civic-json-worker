@@ -1,6 +1,8 @@
 language: python
-install: pip install -r requirements.txt --use-mirrors
+install: pip install -r requirements.txt
 sudo: false
+services:
+  - postgresql
 before_script:
 - psql -c 'create database civic_json_worker_test;' -U postgres
 - psql -c 'create database peopledbtest;' -U postgres
@@ -11,3 +13,5 @@ script:
 notifications:
   webhooks: http://project-monitor.codeforamerica.org/projects/72d031cc-8f21-4968-8db6-ff7370f5e98b/status
   slack: cfa:IjK8dNdwBJHL0Xc9FqvROliV
+addons:
+  postgresql: "9.4"
