@@ -1534,6 +1534,21 @@ class RunUpdateTestCase(unittest.TestCase):
 
         self.assertEqual(org.member_count, 100)
 
+
+    def test_meetup_count_with_empty_response(self):
+        from test.factories import OrganizationFactory
+        org = OrganizationFactory(name="TEST ORG")
+        response = {
+            "status_code": 200,
+            "content": "application/json;charset=utf-8"
+        }
+        with HTTMock(lambda _url, _request: response):
+            import run_update
+            org.member_count = run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
+
+        self.assertEqual(org.member_count, None)
+
+
     def test_languages(self):
         ''' Test pulling languages from Github '''
         from app import Project

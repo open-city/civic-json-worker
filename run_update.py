@@ -180,10 +180,13 @@ def get_meetup_count(organization, identifier):
     got = get(meetup_url)
     members = None
     if got and got.status_code // 100 == 2:
-        response = got.json()
-        if response:
-            if response["results"]:
-                members = response["results"][0]["members"]
+        try:
+            response = got.json()
+            if response:
+                if response["results"]:
+                    members = response["results"][0]["members"]
+        except ValueError:  # meetup API returned non-JSON response
+            return None
 
     return members
 
