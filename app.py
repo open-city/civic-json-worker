@@ -16,6 +16,7 @@ from urllib import urlencode, unquote_plus
 from flask import Flask, make_response, request, jsonify, render_template
 import requests
 from flask.ext.heroku import Heroku
+from raven.contrib.flask import Sentry
 from sqlalchemy import desc, or_
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
@@ -42,6 +43,14 @@ migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 manager.add_command('runserver', Server(use_debugger=True))
+
+
+# Provide SENTRY_DSN environment variable to automatically report all
+# exceptions to Sentry.
+if 'SENTRY_DSN' in os.environ:
+    sentry = Sentry(dsn=os.environ['SENTRY_DSN'])
+    sentry.init_app(app)
+
 
 @manager.command
 def dropdb():
@@ -142,12 +151,14 @@ def get_query_params(args):
             filters[key] = unquote_plus(value).encode('utf8')
     return filters, urlencode(filters)
 
+
 def format_ilike_term(term):
     ''' Format the passed term for use in an ilike query.
     '''
     # strip pattern-matching metacharacters from the term
     stripped_term = re.sub(ur'\||_|%|\*|\+|\?|\{|\}|\(|\)|\[|\]', '', term)
     return u'%{}%'.format(stripped_term)
+
 
 def build_rsvps_response(events):
     ''' Arrange and organize rsvps from a list of event objects '''

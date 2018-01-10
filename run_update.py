@@ -11,16 +11,18 @@ from random import shuffle
 from argparse import ArgumentParser
 from time import time
 from re import match, sub
-from psycopg2 import connect, extras
 
-from requests import get, exceptions
+
 from dateutil.tz import tzoffset
 import feedparser
 import json
+from psycopg2 import connect, extras
+from raven import Client as SentryClient
+from requests import get, exceptions
 
-from feeds import get_first_working_feed_link
 
 from app import db, Project, Organization, Story, Event, Error, Issue, Label, Attendance
+from feeds import get_first_working_feed_link
 from utils import is_safe_name, safe_name, raw_name
 
 
@@ -59,6 +61,11 @@ if 'MEETUP_KEY' in os.environ:
 PEOPLEDB = None
 if 'PEOPLEDB' in os.environ:
     PEOPLEDB = os.environ["PEOPLEDB"]
+
+SENTRY = None
+if 'SENTRY_DSN' in os.environ:
+    SENTRY = SentryClient(os.environ['SENTRY_DSN'])
+
 
 GITHUB_THROTTLING = False
 
@@ -1367,6 +1374,7 @@ def main(org_name=None, org_sources=None):
             # commit for deleting orphaned organizations
             db.session.commit()
 
+
 parser = ArgumentParser(description='''Update database from CSV source URL.''')
 parser.add_argument('--name', dest='name', help='Single organization name to update.')
 parser.add_argument('--sources', dest='sources', help='URL of an organization sources JSON file.')
@@ -1378,4 +1386,10 @@ if __name__ == "__main__":
     org_sources = args.sources and args.sources.decode('utf8') or ''
     if args.test_sources and not org_sources:
         org_sources = args.test_sources
-    main(org_name=org_name, org_sources=org_sources)
+
+    try:
+        main(org_name=org_name, org_sources=org_sources)
+    except:
+        if SENTRY:
+            SENTRY.captureException()
+        raise
