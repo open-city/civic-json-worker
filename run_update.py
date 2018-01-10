@@ -39,7 +39,8 @@ ORG_SOURCES_FILENAME = 'org_sources.csv'
 TEST_ORG_SOURCES_FILENAME = 'test_org_sources.csv'
 
 # API URL templates
-MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}"
+# TODO: use a Meetup client library with pagination
+MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}&desc=true&page=200"
 MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
 GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
 GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
