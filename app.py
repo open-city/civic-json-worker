@@ -16,6 +16,7 @@ from urllib import urlencode, unquote_plus
 from flask import Flask, make_response, request, jsonify, render_template
 import requests
 from flask.ext.heroku import Heroku
+from raven.contrib.flask import Sentry
 from sqlalchemy import desc, or_
 from sqlalchemy.sql.expression import func
 from sqlalchemy.orm import defer
@@ -42,6 +43,14 @@ migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 manager.add_command('runserver', Server(use_debugger=True))
+
+
+# Provide SENTRY_DSN environment variable to automatically report all
+# exceptions to Sentry.
+if 'SENTRY_DSN' in os.environ:
+    sentry = Sentry(dsn=os.environ['SENTRY_DSN'])
+    sentry.init_app(app)
+
 
 @manager.command
 def dropdb():
