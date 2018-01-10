@@ -37,7 +37,6 @@ class RunUpdateTestCase(unittest.TestCase):
         os.environ['DATABASE_URL'] = 'postgres:///civic_json_worker_test'
         os.environ['SECRET_KEY'] = '123456'
         os.environ['MEETUP_KEY'] = 'abcdef'
-        os.environ["PEOPLEDB"] = 'postgres:///peopledbtest'
 
         from app import db
 
@@ -47,22 +46,11 @@ class RunUpdateTestCase(unittest.TestCase):
         import run_update
         run_update.GITHUB_THROTTLING = False
 
-        # FAKE PEOPLEDB
-        with connect(os.environ["PEOPLEDB"]) as conn:
-            with conn.cursor() as db:
-                with open('test/peopledbtest-destroy.pgsql') as filename:
-                    db.execute(filename.read())
-                with open('test/peopledbtest.pgsql') as filename:
-                    db.execute(filename.read())
 
     def tearDown(self):
         self.db.session.close()
         self.db.drop_all()
 
-        with connect('postgres:///peopledbtest') as conn:
-            with conn.cursor() as db:
-                with open('test/peopledbtest-destroy.pgsql') as filename:
-                    db.execute(filename.read())
 
     def setup_mock_rss_response(self):
         ''' This overwrites urllib2.urlopen to return a mock response, which stops
@@ -1534,56 +1522,6 @@ class RunUpdateTestCase(unittest.TestCase):
 
         self.results_state = 'before'
 
-    def test_attendance(self):
-        ''' Test gathering attendance from the peopledb '''
-        # Mock attendance data
-        cfsf_url = u"https://www.codeforamerica.org/api/organizations/Code-for-San-Francisco"
-        cfsf_name = u"Code for San Francisco"
-        oakland_url = u"https://www.codeforamerica.org/api/organizations/Open-Oakland"
-        oakland_name = u"Open Oakland"
-        cfsf_checkin1 = datetime.datetime.strptime("2015-01-01", "%Y-%m-%d")
-        cfsf_checkin2 = datetime.datetime.strptime("2015-01-08", "%Y-%m-%d")
-        oakland_checkin1 = datetime.datetime.strptime("2015-01-16", "%Y-%m-%d")
-        oakland_checkin2 = datetime.datetime.strptime("2015-01-24", "%Y-%m-%d")
-
-        # Access the peopledb
-        PEOPLEDB = 'postgres:///peopledbtest'
-
-        with connect(PEOPLEDB) as conn:
-            with conn.cursor() as db:
-                # Put some fake attendance data in it
-                q = '''INSERT INTO attendance
-                       ( datetime, organization_url)
-                       VALUES ( %s, %s )'''
-                db.execute(q, (cfsf_checkin1, cfsf_url))
-                db.execute(q, (cfsf_checkin2, cfsf_url))
-                db.execute(q, (oakland_checkin1, oakland_url))
-                db.execute(q, (oakland_checkin2, oakland_url))
-
-        # Call a function to pull data out of it
-        with connect(PEOPLEDB) as conn:
-            with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
-                import run_update
-                from app import Attendance
-                from test.factories import OrganizationFactory
-                cfsf = OrganizationFactory(name=u'Code for San Francisco')
-                oakland = OrganizationFactory(name=u'Open Oakland')
-
-                cfsf_attendance = run_update.get_attendance(peopledb_cursor, cfsf_url, cfsf.name)
-                self.assertEqual(cfsf_attendance["organization_name"], cfsf_name)
-                self.assertTrue("2015 01" in cfsf_attendance["weekly"].keys())
-
-                oakland_attendance = run_update.get_attendance(peopledb_cursor, oakland_url, oakland.name)
-                self.assertEqual(oakland_attendance["organization_name"], oakland_name)
-                self.assertTrue("2015 03" in oakland_attendance["weekly"].keys())
-
-        run_update.update_attendance(self.db.session, cfsf.name, cfsf_attendance)
-        run_update.update_attendance(self.db.session, oakland.name, oakland_attendance)
-        self.db.session.commit()
-        attendance = self.db.session.query(Attendance).all()
-        self.assertEqual(attendance[0].organization_name, cfsf_name)
-        self.assertEqual(attendance[1].organization_name, oakland_name)
-        self.assertTrue("2015 03" in attendance[1].weekly.keys())
 
     def test_meetup_count(self):
         ''' Test getting membership count from Meetup
