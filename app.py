@@ -151,12 +151,14 @@ def get_query_params(args):
             filters[key] = unquote_plus(value).encode('utf8')
     return filters, urlencode(filters)
 
+
 def format_ilike_term(term):
     ''' Format the passed term for use in an ilike query.
     '''
     # strip pattern-matching metacharacters from the term
     stripped_term = re.sub(ur'\||_|%|\*|\+|\?|\{|\}|\(|\)|\[|\]', '', term)
     return u'%{}%'.format(stripped_term)
+
 
 def build_rsvps_response(events):
     ''' Arrange and organize rsvps from a list of event objects '''
