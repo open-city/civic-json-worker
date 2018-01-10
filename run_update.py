@@ -58,10 +58,6 @@ MEETUP_KEY = None
 if 'MEETUP_KEY' in os.environ:
     MEETUP_KEY = os.environ['MEETUP_KEY']
 
-PEOPLEDB = None
-if 'PEOPLEDB' in os.environ:
-    PEOPLEDB = os.environ["PEOPLEDB"]
-
 SENTRY = None
 if 'SENTRY_DSN' in os.environ:
     SENTRY = SentryClient(os.environ['SENTRY_DSN'])
@@ -1177,38 +1173,6 @@ def get_event_group_identifier(events_url):
         return None
 
 
-def get_attendance(peopledb_cursor, organization_url, organization_name):
-    ''' Get the attendance of an org from the peopledb '''
-
-    # Total attendance
-    q = ''' SELECT COUNT(*) AS total FROM attendance
-            WHERE organization_url = %s '''
-    peopledb_cursor.execute(q, (organization_url,))
-    total = int(peopledb_cursor.fetchone()["total"])
-
-    # weekly attendance
-    q = ''' SELECT COUNT(*) AS total,
-            to_char(datetime, 'YYYY WW') AS week
-            FROM attendance
-            WHERE organization_url = %s
-            GROUP BY week '''
-    peopledb_cursor.execute(q, (organization_url,))
-    weekly = peopledb_cursor.fetchall()
-    weekly = {week["week"]: int(week["total"]) for week in weekly}
-
-    this_week = datetime.strftime(datetime.now(), "%Y %U")
-    if this_week not in weekly.keys():
-        weekly[this_week] = 0
-
-    attendance = {
-        "organization_name": organization_name,
-        "organization_url": organization_url,
-        "total": total,
-        "weekly": weekly
-    }
-
-    return attendance
-
 
 def update_attendance(session, organization_name, attendance_dict):
     ''' Update exisiting attendance
@@ -1327,19 +1291,6 @@ def main(org_name=None, org_sources=None):
 
                 else:
                     logging.error(u'{} does not have a valid events url'.format(organization.name))
-
-            # ATTENDANCE
-            attendance = None
-            if PEOPLEDB:
-                with connect(PEOPLEDB) as conn:
-                    with conn.cursor(cursor_factory=extras.RealDictCursor) as peopledb_cursor:
-                        cfapi_url = "https://www.codeforamerica.org/api/organizations/"
-                        organization_url = cfapi_url + organization.api_id()
-                        attendance = get_attendance(peopledb_cursor, organization_url, organization.name)
-
-            if attendance:
-                update_attendance(db.session, organization.name, attendance)
-                db.session.commit()
 
             # Remove everything marked for deletion.
             # :::here (event/delete, story/delete, project/delete, issue/delete, organization/delete)
