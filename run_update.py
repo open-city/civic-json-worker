@@ -155,19 +155,20 @@ def get_meetup_events(organization, group_urlname):
         try:
             results = got.json()['results']
             for event in results:
-                event = dict(organization_name=organization.name,
-                             name=event['name'],
-                             event_url=event['event_url'],
-                             start_time_notz=format_date(event['time'], event['utc_offset']),
-                             created_at=format_date(event['created'], event['utc_offset']),
-                             utc_offset=event['utc_offset'] / 1000.0,
-                             rsvps=event['yes_rsvp_count'])
+                eventdict = dict(
+                    organization_name=organization.name,
+                    name=event['name'],
+                    event_url=event['event_url'],
+                    start_time_notz=format_date(event['time'], event['utc_offset']),
+                    created_at=format_date(event['created'], event['utc_offset']),
+                    utc_offset=event['utc_offset'] / 1000.0,
+                    rsvps=event['yes_rsvp_count'])
 
                 # Some events don't have locations.
                 if 'venue' in event:
-                    event['location'] = format_location(event['venue'])
+                    eventdict['location'] = format_location(event['venue'])
 
-                events.append(event)
+                events.append(eventdict)
             return events
         except (TypeError, ValueError):
             return events
