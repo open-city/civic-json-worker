@@ -1082,8 +1082,10 @@ class RunUpdateTestCase(unittest.TestCase):
             self.assertEqual(len(check_events[organization.name]), len(db_events[organization.name]))
             for event_dict in check_events[organization.name]:
                 event = self.db.session.query(Event).filter(Event.event_url == event_dict['event_url'], Event.organization_name == event_dict['organization_name']).first()
-                self.assertIsNotNone(event.location)
                 self.assertIsNotNone(event)
+                self.assertIsNotNone(event.location)
+                self.assertIsNotNone(event.lat)
+                self.assertIsNotNone(event.lon)
                 self.assertTrue(event.keep)
 
             # get the matching STORIES for this organization from the database

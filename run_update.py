@@ -167,6 +167,8 @@ def get_meetup_events(organization, group_urlname):
                 # Some events don't have locations.
                 if 'venue' in event:
                     eventdict['location'] = format_location(event['venue'])
+                    eventdict['lat'] = event['venue']['lat']
+                    eventdict['lon'] = event['venue']['lon']
 
                 events.append(eventdict)
             return events
