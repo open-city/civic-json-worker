@@ -130,7 +130,7 @@ def format_location(venue):
     if 'address_2' in venue and venue['address_2'] != '':
         address = address + ', ' + venue['address_2']
 
-    return u'{name}, {address}'.format(name=venue['name'], address=address)
+    return u'{name}\n{address}'.format(name=venue['name'], address=address)
 
 
 def get_meetup_events(organization, group_urlname):
