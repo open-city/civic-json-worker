@@ -56,6 +56,8 @@ class EventFactory(SQLAlchemyModelFactory):
     utc_offset = -28800
     created_at = factory.LazyAttribute(lambda o: o.now)
     organization_name = factory.LazyAttribute(lambda e: OrganizationFactory().name)
+    lat = 37.7749
+    lon = -122.4194
 
     rsvps = 1234
 
