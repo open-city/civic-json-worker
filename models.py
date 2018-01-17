@@ -502,6 +502,8 @@ class Event(db.Model):
     description = db.Column(db.Unicode())
     event_url = db.Column(db.Unicode())
     location = db.Column(db.Unicode())
+    lat = db.Column(db.DECIMAL(20, 17))
+    lon = db.Column(db.DECIMAL(20, 17))
     created_at = db.Column(db.Unicode())
     start_time_notz = db.Column(db.DateTime(False))
     end_time_notz = db.Column(db.DateTime(False))
@@ -515,10 +517,13 @@ class Event(db.Model):
     organization_name = db.Column(db.Unicode(), db.ForeignKey('organization.name', ondelete='CASCADE'), nullable=False)
 
     def __init__(self, name, event_url, start_time_notz, created_at, utc_offset,
-                 organization_name, location=None, end_time_notz=None, description=None, rsvps=None):
+                 organization_name, location=None, end_time_notz=None, description=None,
+                 rsvps=None, lat=None, lon=None):
         self.name = name
         self.description = description
         self.location = location
+        self.lat = lat
+        self.lon = lon
         self.event_url = event_url
         self.start_time_notz = start_time_notz
         self.utc_offset = utc_offset

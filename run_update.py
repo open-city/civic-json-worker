@@ -130,10 +130,7 @@ def format_location(venue):
     if 'address_2' in venue and venue['address_2'] != '':
         address = address + ', ' + venue['address_2']
 
-    if 'state' in venue:
-        return u'{address}, {city}, {state}, {country}'.format(address=address, city=venue['city'], state=venue['state'], country=venue['country'])
-    else:
-        return u'{address}, {city}, {country}'.format(address=address, city=venue['city'], country=venue['country'])
+    return u'{name}\n{address}'.format(name=venue['name'], address=address)
 
 
 def get_meetup_events(organization, group_urlname):
@@ -155,19 +152,22 @@ def get_meetup_events(organization, group_urlname):
         try:
             results = got.json()['results']
             for event in results:
-                event = dict(organization_name=organization.name,
-                             name=event['name'],
-                             event_url=event['event_url'],
-                             start_time_notz=format_date(event['time'], event['utc_offset']),
-                             created_at=format_date(event['created'], event['utc_offset']),
-                             utc_offset=event['utc_offset'] / 1000.0,
-                             rsvps=event['yes_rsvp_count'])
+                eventdict = dict(
+                    organization_name=organization.name,
+                    name=event['name'],
+                    event_url=event['event_url'],
+                    start_time_notz=format_date(event['time'], event['utc_offset']),
+                    created_at=format_date(event['created'], event['utc_offset']),
+                    utc_offset=event['utc_offset'] / 1000.0,
+                    rsvps=event['yes_rsvp_count'])
 
                 # Some events don't have locations.
                 if 'venue' in event:
-                    event['location'] = format_location(event['venue'])
+                    eventdict['location'] = format_location(event['venue'])
+                    eventdict['lat'] = event['venue']['lat']
+                    eventdict['lon'] = event['venue']['lon']
 
-                events.append(event)
+                events.append(eventdict)
             return events
         except (TypeError, ValueError):
             return events
@@ -180,10 +180,13 @@ def get_meetup_count(organization, identifier):
     got = get(meetup_url)
     members = None
     if got and got.status_code // 100 == 2:
-        response = got.json()
-        if response:
-            if response["results"]:
-                members = response["results"][0]["members"]
+        try:
+            response = got.json()
+            if response:
+                if response["results"]:
+                    members = response["results"][0]["members"]
+        except ValueError:  # meetup API returned non-JSON response
+            return None
 
     return members
 

@@ -1083,6 +1083,9 @@ class RunUpdateTestCase(unittest.TestCase):
             for event_dict in check_events[organization.name]:
                 event = self.db.session.query(Event).filter(Event.event_url == event_dict['event_url'], Event.organization_name == event_dict['organization_name']).first()
                 self.assertIsNotNone(event)
+                self.assertIsNotNone(event.location)
+                self.assertIsNotNone(event.lat)
+                self.assertIsNotNone(event.lon)
                 self.assertTrue(event.keep)
 
             # get the matching STORIES for this organization from the database
@@ -1533,6 +1536,21 @@ class RunUpdateTestCase(unittest.TestCase):
             org.member_count = run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
 
         self.assertEqual(org.member_count, 100)
+
+
+    def test_meetup_count_with_empty_response(self):
+        from test.factories import OrganizationFactory
+        org = OrganizationFactory(name="TEST ORG")
+        response = {
+            "status_code": 200,
+            "content": "application/json;charset=utf-8"
+        }
+        with HTTMock(lambda _url, _request: response):
+            import run_update
+            org.member_count = run_update.get_meetup_count(organization=org, identifier="TEST-MEETUP")
+
+        self.assertEqual(org.member_count, None)
+
 
     def test_languages(self):
         ''' Test pulling languages from Github '''
