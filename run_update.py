@@ -1210,12 +1210,19 @@ def get_logo(org_info):
     if 'logo_url' in org_info:
         return org_info['logo_url']
 
+    if 'projects_list_url' not in org_info:
+        return None
+
     github_username = parse_github_user(org_info['projects_list_url'])
     if github_username:
         request_url = GITHUB_USER_API_URL.format(username=github_username)
         got = get_github_api(request_url)
-        github_response = got.json()
-        return github_response['avatar_url']
+        try:
+            github_response = got.json()
+            return github_response['avatar_url']
+        except ValueError:
+            logger.error("Malformed GitHub JSON fetching organization URL for " + github_username)
+            return
 
 
 def main(org_name=None, org_sources=None):
