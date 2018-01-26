@@ -16,7 +16,6 @@ from re import match, sub
 from dateutil.tz import tzoffset
 import feedparser
 import json
-from psycopg2 import connect, extras
 from raven import Client as SentryClient
 from requests import get, exceptions
 
@@ -44,6 +43,7 @@ TEST_ORG_SOURCES_FILENAME = 'test_org_sources.csv'
 # TODO: use a Meetup client library with pagination
 MEETUP_API_URL = "https://api.meetup.com/2/events?status=past,upcoming&format=json&group_urlname={group_urlname}&key={key}&desc=true&page=200"
 MEETUP_COUNT_API_URL = "https://api.meetup.com/2/groups?group_urlname={group_urlname}&key={key}"
+GITHUB_USER_API_URL = 'https://api.github.com/users/{username}'
 GITHUB_USER_REPOS_API_URL = 'https://api.github.com/users/{username}/repos'
 GITHUB_REPOS_API_URL = 'https://api.github.com/repos{repo_path}'
 GITHUB_ISSUES_API_URL = 'https://api.github.com/repos{repo_path}/issues'
@@ -321,6 +321,14 @@ def get_adjoined_json_lists(response, headers=None):
     return result, status_code
 
 
+def parse_github_user(url):
+    ''' given a URL, returns the github username or None if it is not a Github URL '''
+    _, host, path, _, _, _ = urlparse(url)
+    matched = match(r'(/orgs)?/(?P<name>[^/]+)/?$', path)
+    if host in ('www.github.com', 'github.com') and matched:
+        return matched.group('name')
+
+
 def get_projects(organization):
     '''
         Get a list of projects from CSV, TSV, JSON, or Github URL.
@@ -334,10 +342,9 @@ def get_projects(organization):
     # If projects_list is a GitHub organization
     # Use the GitHub auth to request all the included repos.
     # Follow next page links
-    _, host, path, _, _, _ = urlparse(organization.projects_list_url)
-    matched = match(r'(/orgs)?/(?P<name>[^/]+)/?$', path)
-    if host in ('www.github.com', 'github.com') and matched:
-        projects_url = GITHUB_USER_REPOS_API_URL.format(username=matched.group('name'))
+    github_username = parse_github_user(organization.projects_list_url)
+    if github_username:
+        projects_url = GITHUB_USER_REPOS_API_URL.format(username=github_username)
 
         try:
             got = get_github_api(projects_url)
@@ -1199,6 +1206,33 @@ def update_attendance(session, organization_name, attendance_dict):
     return existing_attendance
 
 
+def get_logo(org_info):
+    '''
+    get an organization's logo, looking first at 'logo_url' in the JSON and
+    then Github (project lists url)
+    '''
+    # allow specifying a logo_url in the json file
+    if 'logo_url' in org_info:
+        return org_info['logo_url']
+
+    if 'projects_list_url' not in org_info:
+        return None
+
+    github_username = parse_github_user(org_info['projects_list_url'])
+    if github_username:
+        # NOTE: This uses the /users/:id API endpoint to handle both cases
+        # where the brigade's profile is a single user account or an
+        # organizational account.
+        request_url = GITHUB_USER_API_URL.format(username=github_username)
+        got = get_github_api(request_url)
+        try:
+            github_response = got.json()
+            return github_response['avatar_url']
+        except ValueError:
+            logger.error("Malformed GitHub JSON fetching organization URL for " + github_username)
+            return
+
+
 def main(org_name=None, org_sources=None):
     ''' Update the API's database
     '''
@@ -1243,12 +1277,16 @@ def main(org_name=None, org_sources=None):
             db.session.execute(db.update(Project, values={'keep': False}).where(Project.organization_name == org_info['name']))
             db.session.execute(db.update(Organization, values={'keep': False}).where(Organization.name == org_info['name']))
 
+            # ORGANIZATION INFO
             # Save or update the organization
+            org_info.update({'logo_url': get_logo(org_info)})
+
             organization = save_organization_info(db.session, org_info)
             organization_names.add(organization.name)
 
             # commit the organization and the false keeps
             db.session.commit()
+
 
             # STORIES
             if organization.rss or organization.website:

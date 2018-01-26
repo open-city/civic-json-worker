@@ -91,6 +91,9 @@ class RunUpdateTestCase(unittest.TestCase):
             elif self.results_state == 'after':
                 return response(200, '''\n'''.join(project_lines[0:2]), {'content-type': 'text/csv; charset=UTF-8'})
 
+        # json of user description
+        elif url.geturl() == 'https://api.github.com/users/codeforamerica':
+            return response(200, '''{ "login": "codeforamerica", "id": 337792, "avatar_url": "https://avatars2.githubusercontent.com/u/337792?v=4", "gravatar_id": "", "url": "https://api.github.com/users/codeforamerica", "html_url": "https://github.com/codeforamerica", "followers_url": "https://api.github.com/users/codeforamerica/followers", "following_url": "https://api.github.com/users/codeforamerica/following{/other_user}", "gists_url": "https://api.github.com/users/codeforamerica/gists{/gist_id}", "starred_url": "https://api.github.com/users/codeforamerica/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/codeforamerica/subscriptions", "organizations_url": "https://api.github.com/users/codeforamerica/orgs", "repos_url": "https://api.github.com/users/codeforamerica/repos", "events_url": "https://api.github.com/users/codeforamerica/events{/privacy}", "received_events_url": "https://api.github.com/users/codeforamerica/received_events", "type": "Organization", "site_admin": false, "name": "Code for America", "company": null, "blog": "http://codeforamerica.org", "location": null, "email": "labs@codeforamerica.org", "hireable": null, "bio": null, "public_repos": 659, "public_gists": 0, "followers": 0, "following": 0, "created_at": "2010-07-19T19:41:04Z", "updated_at": "2017-09-05T10:22:41Z" }''')
         # json of project descriptions
         elif url.geturl() == 'https://api.github.com/users/codeforamerica/repos':
             return response(200, '''[{ "id": 10515516, "name": "cityvoice", "owner": { "login": "codeforamerica", "avatar_url": "https://avatars.githubusercontent.com/u/337792", "html_url": "https://github.com/codeforamerica", "type": "Organization"}, "html_url": "https://github.com/codeforamerica/cityvoice", "description": "A place-based call-in system for gathering and sharing community feedback",  "url": "https://api.github.com/repos/codeforamerica/cityvoice", "contributors_url": "https://api.github.com/repos/codeforamerica/cityvoice/contributors", "created_at": "2013-06-06T00:12:30Z", "updated_at": "2014-02-21T20:43:16Z", "pushed_at": "2014-02-21T20:43:16Z", "homepage": "http://www.cityvoiceapp.com/", "stargazers_count": 10, "watchers_count": 10, "language": "Ruby", "forks_count": 12, "open_issues": 37, "languages_url": "https://api.github.com/repos/codeforamerica/cityvoice/languages" }]''', headers=dict(Link='<https://api.github.com/user/337792/repos?page=2>; rel="next", <https://api.github.com/user/337792/repos?page=2>; rel="last"'))
@@ -1655,6 +1658,17 @@ class RunUpdateTestCase(unittest.TestCase):
         filter = Project.name == u'cityvoice'
         cityvoice = self.db.session.query(Project).filter(filter).first()
         self.assertEqual("success", cityvoice.commit_status)
+
+    def test_logo_fetching(self):
+        """ Test grabbing the organization logo """
+        with HTTMock(self.response_content):
+            import run_update
+            run_update.main(org_sources=run_update.TEST_ORG_SOURCES_FILENAME)
+
+        from app import Organization
+        filter = Organization.name == u'Code for America (2)'
+        cfa = self.db.session.query(Organization).filter(filter).first()
+        self.assertEqual("https://avatars2.githubusercontent.com/u/337792?v=4", cfa.logo_url)
 
 
 if __name__ == '__main__':
