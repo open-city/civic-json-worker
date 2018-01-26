@@ -98,6 +98,7 @@ class Organization(db.Model):
     keep = db.Column(db.Boolean())
     tsv_body = db.Column(TSVectorType())
     id = db.Column(db.Unicode())
+    logo_url = db.Column(db.Unicode())
 
     # Relationships
     # can contain events, stories, projects (these relationships are defined in the child objects)
@@ -105,7 +106,7 @@ class Organization(db.Model):
     def __init__(self, name, website=None, events_url=None, members_count=None,
                  rss=None, projects_list_url=None, type=None, city=None,
                  latitude=None, longitude=None, last_updated=time.time(),
-                 tags=[], social_profiles={}):
+                 tags=[], social_profiles={}, logo_url=None):
         self.name = name
         self.website = website
         self.events_url = events_url
@@ -122,6 +123,7 @@ class Organization(db.Model):
         self.started_on = unicode(date.today())
         self.id = safe_name(raw_name(name))
         self.members_count = members_count
+        self.logo_url = logo_url
 
     def current_events(self):
         '''
