@@ -1225,6 +1225,10 @@ def get_logo(org_info):
         # organizational account.
         request_url = GITHUB_USER_API_URL.format(username=github_username)
         got = get_github_api(request_url)
+        if got.status_code == 404:
+            logger.error("Got 404 for GitHub username " + github_username)
+            return
+
         try:
             github_response = got.json()
             return github_response['avatar_url']
