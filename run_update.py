@@ -1205,7 +1205,10 @@ def update_attendance(session, organization_name, attendance_dict):
 
 
 def get_logo(org_info):
-    ''' get an organization's logo, looking first at Github (project lists url) '''
+    '''
+    get an organization's logo, looking first at 'logo_url' in the JSON and
+    then Github (project lists url)
+    '''
     # allow specifying a logo_url in the json file
     if 'logo_url' in org_info:
         return org_info['logo_url']
