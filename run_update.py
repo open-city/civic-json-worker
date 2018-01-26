@@ -1218,6 +1218,9 @@ def get_logo(org_info):
 
     github_username = parse_github_user(org_info['projects_list_url'])
     if github_username:
+        # NOTE: This uses the /users/:id API endpoint to handle both cases
+        # where the brigade's profile is a single user account or an
+        # organizational account.
         request_url = GITHUB_USER_API_URL.format(username=github_username)
         got = get_github_api(request_url)
         try:
