@@ -1086,6 +1086,7 @@ class RunUpdateTestCase(unittest.TestCase):
                 self.assertIsNotNone(event.location)
                 self.assertIsNotNone(event.lat)
                 self.assertIsNotNone(event.lon)
+                self.assertIsNotNone(event.description)
                 self.assertTrue(event.keep)
 
             # get the matching STORIES for this organization from the database
