@@ -160,8 +160,8 @@ def get_meetup_events(organization, group_urlname):
                     created_at=format_date(event['created'], event['utc_offset']),
                     utc_offset=event['utc_offset'] / 1000.0,
                     rsvps=event['yes_rsvp_count'],
-                    description=event['description']
-                    )
+                    description=event.get('description')
+                )
 
                 # Some events don't have locations.
                 if 'venue' in event:
