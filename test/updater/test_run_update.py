@@ -364,6 +364,7 @@ class RunUpdateTestCase(unittest.TestCase):
         # Thu, 16 Jan 2014 19:00:00 -05:00
         self.assertEqual(first_event.utc_offset, -5 * 3600)
         self.assertEqual(first_event.start_time_notz, datetime.datetime(2014, 1, 16, 19, 0, 0))
+        self.assertEqual(first_event.end_time_notz, datetime.datetime(2014, 1, 16, 22, 0, 0))
         self.assertEqual(first_event.name, u'Organizational meeting')
 
         second_event = events.pop(0)

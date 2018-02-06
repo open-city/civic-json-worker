@@ -35,6 +35,8 @@ requests_log.setLevel(logging.WARNING)
 # import warnings
 # warnings.filterwarnings('error')
 
+THREE_HOURS_IN_MS = 3 * 60 * 60 * 1000
+
 # org sources filenames
 ORG_SOURCES_FILENAME = 'org_sources.csv'
 TEST_ORG_SOURCES_FILENAME = 'test_org_sources.csv'
@@ -152,11 +154,18 @@ def get_meetup_events(organization, group_urlname):
         try:
             results = got.json()['results']
             for event in results:
+                # "Scheduled event duration in milliseconds, if an end time is
+                # specified by the organizer. When not present, a default of 3
+                # hours may be assumed by applications"
+                # see: https://www.meetup.com/meetup_api/docs/:urlname/events/#list
+                duration = event.get('duration', THREE_HOURS_IN_MS)
+
                 eventdict = dict(
                     organization_name=organization.name,
                     name=event['name'],
                     event_url=event['event_url'],
                     start_time_notz=format_date(event['time'], event['utc_offset']),
+                    end_time_notz=format_date(event['time'] + duration, event['utc_offset']),
                     created_at=format_date(event['created'], event['utc_offset']),
                     utc_offset=event['utc_offset'] / 1000.0,
                     rsvps=event['yes_rsvp_count'],
