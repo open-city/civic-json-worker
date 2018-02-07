@@ -54,18 +54,20 @@ class TestOrganizations(IntegrationTest):
 
     def test_current_events(self):
         """
-        The three soonest upcoming events should be returned.
+        The two soonest upcoming events should be returned.
         If there are no events in the future, no events will be returned
         """
         # Assuming today is Christmas...
         organization = OrganizationFactory(name=u'Collective of Ericas')
         db.session.flush()
 
-        # Create multiple events, some in the future, one in the past
-        EventFactory(organization_name=organization.name, name=u'Christmas Eve', start_time_notz=datetime.now() - timedelta(1))
-        EventFactory(organization_name=organization.name, name=u'New Years', start_time_notz=datetime.now() + timedelta(7))
-        EventFactory(organization_name=organization.name, name=u'MLK Day', start_time_notz=datetime.now() + timedelta(25))
-        EventFactory(organization_name=organization.name, name=u'Cesar Chavez Day', start_time_notz=datetime.now() + timedelta(37))
+        now = datetime.now()
+
+        # Create multiple events, some in the very near future, one in the very recent past
+        EventFactory(organization_name=organization.name, name=u'Christmas Eve', start_time_notz=now - timedelta(hours=3), end_time_notz=now - timedelta(seconds=1))
+        EventFactory(organization_name=organization.name, name=u'New Years', start_time_notz=datetime.now() + timedelta(seconds=1))
+        EventFactory(organization_name=organization.name, name=u'MLK Day', start_time_notz=datetime.now() + timedelta(days=7))
+        EventFactory(organization_name=organization.name, name=u'Cesar Chavez Day', start_time_notz=datetime.now() + timedelta(days=30))
         db.session.commit()
 
         response = self.app.get('/api/organizations/Collective%20of%20Ericas')
