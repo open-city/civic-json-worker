@@ -446,25 +446,30 @@ def get_projects(organization):
 
 
 def github_latest_update_time(github_details):
-    ''' Issue 245 Choose most recent time for last_update from GitHub
-        * pushed_at: time of last commit
-        * updated_at: time of last repo object update
-        * If neither of the above exists log an error and use current time
+    '''
+    Use `pushed_at` date, if present, which is updated any time any
+    branch is pushed.  This tends to be more similar to the first
+    date visible when users click through to the project -- the
+    last commit's date. If there is no pushed_at date then fall back to `updated_at` date.
+
+    It's still not perfect, but this will be a quick improvement to avoid the
+    confusion of seeing a "last modified yesterday" project that actually
+    hasn't seen a commit in three years.
+
+    (See issue #245 for some context, but we ripped it out)
     '''
     import dateutil.parser
 
     datetime_format = '%a, %d %b %Y %H:%M:%S %Z'
 
-    pushed_at = github_details['pushed_at'] if 'pushed_at' in github_details else None
-    updated_at = github_details['updated_at'] if 'updated_at' in github_details else None
-
-    latest_date = max(pushed_at, updated_at)
-
-    if (latest_date):
-        return dateutil.parser.parse(latest_date).strftime(datetime_format)
+    if 'pushed_at' in github_details:
+        update_time = github_details['pushed_at']
+    elif 'updated_at' in github_details:
+        update_time = github_details['updated_at']
     else:
-        logger.error("GitHub Project details has neither pushed_at or updated_at, using current time.")
-        return datetime.now().strftime(datetime_format)
+        return datetime.now()
+
+    return dateutil.parser.parse(update_time).strftime(datetime_format)
 
 
 def non_github_project_update_time(project):
