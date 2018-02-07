@@ -721,17 +721,17 @@ class RunUpdateTestCase(unittest.TestCase):
         import run_update
         import dateutil.parser
         # Test that latest date is given
-        newer_time_from_github = u'2015-10-02T15:43:21Z'
-        older_time_from_github = u'2015-10-02T15:43:20Z'
-        github_details = {'pushed_at': newer_time_from_github, 'updated_at': older_time_from_github}
-        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(newer_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
+        pushed_at_time = u'2015-10-02T15:43:20Z'
+        updated_at_time = u'2015-10-02T15:43:22Z'
+        github_details = {'pushed_at': pushed_at_time, 'updated_at': updated_at_time}
+        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(pushed_at_time).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
         # Test handling of missing data
-        github_details = {'updated_at': older_time_from_github}
-        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(older_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
+        github_details = {'updated_at': updated_at_time}
+        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(updated_at_time).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
-        github_details = {'pushed_at': newer_time_from_github}
-        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(newer_time_from_github).strftime('%a, %d %b %Y %H:%M:%S %Z'))
+        github_details = {'pushed_at': pushed_at_time}
+        self.assertEqual(run_update.github_latest_update_time(github_details), dateutil.parser.parse(pushed_at_time).strftime('%a, %d %b %Y %H:%M:%S %Z'))
 
         github_details = {}
         self.assertIsNotNone(run_update.github_latest_update_time(github_details))
