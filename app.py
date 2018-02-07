@@ -278,7 +278,7 @@ def get_upcoming_events(organization_name):
     if not organization:
         return "Organization not found", 404
     # Get upcoming event objects
-    query = Event.query.filter(Event.organization_name == organization.name, Event.start_time_notz >= datetime.utcnow())
+    query = Event.query.filter(Event.organization_name == organization.name, Event.end_time_notz >= datetime.utcnow())
     response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
@@ -293,8 +293,8 @@ def get_past_events(organization_name):
     if not organization:
         return "Organization not found", 404
     # Get past event objects
-    query = Event.query.filter(Event.organization_name == organization.name, Event.start_time_notz < datetime.utcnow()).\
-        order_by(desc(Event.start_time_notz))
+    query = Event.query.filter(Event.organization_name == organization.name, Event.end_time_notz < datetime.utcnow()).\
+        order_by(desc(Event.end_time_notz))
     response = paged_results(query=query, include_args=dict(include_organization=True), page=int(request.args.get('page', 1)), per_page=int(request.args.get('per_page', 25)))
     return jsonify(response)
 
@@ -751,7 +751,7 @@ def get_all_upcoming_events():
     '''
     filters, querystring = get_query_params(request.args)
 
-    query = db.session.query(Event).filter(Event.start_time_notz >= datetime.utcnow()).order_by(Event.start_time_notz)
+    query = db.session.query(Event).filter(Event.end_time_notz >= datetime.utcnow()).order_by(Event.end_time_notz)
 
     for attr, value in filters.iteritems():
         if 'organization' in attr:
@@ -771,7 +771,7 @@ def get_all_past_events():
     '''
     filters, querystring = get_query_params(request.args)
 
-    query = db.session.query(Event).filter(Event.start_time_notz <= datetime.utcnow()).order_by(desc(Event.start_time_notz))
+    query = db.session.query(Event).filter(Event.end_time_notz <= datetime.utcnow()).order_by(desc(Event.end_time_notz))
 
     for attr, value in filters.iteritems():
         if 'organization' in attr:
