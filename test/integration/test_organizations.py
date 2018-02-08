@@ -61,13 +61,26 @@ class TestOrganizations(IntegrationTest):
         organization = OrganizationFactory(name=u'Collective of Ericas')
         db.session.flush()
 
-        now = datetime.now()
+        event_utc_offset = EventFactory.attributes()['utc_offset']
+        now = datetime.utcnow()
+        now_notz = now + timedelta(seconds=event_utc_offset)
 
         # Create multiple events, some in the very near future, one in the very recent past
-        EventFactory(organization_name=organization.name, name=u'Christmas Eve', start_time_notz=now - timedelta(hours=3), end_time_notz=now - timedelta(seconds=1))
-        EventFactory(organization_name=organization.name, name=u'New Years', start_time_notz=datetime.now() + timedelta(seconds=1))
-        EventFactory(organization_name=organization.name, name=u'MLK Day', start_time_notz=datetime.now() + timedelta(days=7))
-        EventFactory(organization_name=organization.name, name=u'Cesar Chavez Day', start_time_notz=datetime.now() + timedelta(days=30))
+        EventFactory(organization_name=organization.name,
+                     name=u'Christmas Eve',
+                     start_time_notz=now_notz - timedelta(hours=3),
+                     end_time_notz=now_notz - timedelta(seconds=1))
+        EventFactory(organization_name=organization.name,
+                     name=u'New Years',
+                     start_time_notz=now_notz - timedelta(hours=2),
+                     end_time_notz=now_notz + timedelta(seconds=1))
+        EventFactory(organization_name=organization.name,
+                     name=u'MLK Day',
+                     start_time_notz=now_notz + timedelta(days=7))
+        EventFactory(organization_name=organization.name,
+                     name=u'Cesar Chavez Day',
+                     start_time_notz=now_notz + timedelta(days=30))
+
         db.session.commit()
 
         response = self.app.get('/api/organizations/Collective%20of%20Ericas')
