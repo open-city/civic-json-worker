@@ -10,7 +10,7 @@ from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import types, desc
 from sqlalchemy.orm import backref
-from sqlalchemy import event, DDL
+from sqlalchemy import event, DDL, text
 from dateutil.tz import tzoffset
 
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -127,11 +127,18 @@ class Organization(db.Model):
 
     def current_events(self):
         '''
-            Return the two soonest upcoming events
+        Return the next two upcoming events
         '''
-        filter_old = Event.start_time_notz >= datetime.utcnow()
-        current_events = Event.query.filter_by(organization_name=self.name)\
-            .filter(filter_old).order_by(Event.start_time_notz.asc()).limit(2).all()
+        event_not_ended = Event.end_time_notz - \
+            (Event.utc_offset * text("interval '1 second'")) >= datetime.utcnow()
+
+        current_events = Event.query.\
+            filter_by(organization_name=self.name).\
+            filter(event_not_ended).\
+            order_by(Event.start_time_notz.asc()).\
+            limit(2).\
+            all()
+
         current_events_json = [row.asdict() for row in current_events]
         return current_events_json
 
