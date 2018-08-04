@@ -392,7 +392,6 @@ class TestOrganizations(IntegrationTest):
         self.assertEqual(response['total'], 1)
         self.assertEqual(response['objects'][0]['name'], u'Brigade Organization')
 
-
     def test_organization_query_filter_with_unescaped_characters(self):
         ''' Test that organization query params with unescaped characters work as expected.
         '''
