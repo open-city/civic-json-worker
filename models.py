@@ -482,11 +482,11 @@ class Label(db.Model):
     issue = db.relationship('Issue', single_parent=True, cascade='all, delete-orphan', backref=backref("labels", cascade="save-update, delete"))
     issue_id = db.Column(db.Integer, db.ForeignKey('issue.id', ondelete='CASCADE'), nullable=False, index=True)
 
-    def __init__(self, name, color, url, issue_id=None):
-        self.name = name
-        self.color = color
-        self.url = url
-        self.issue_id = issue_id
+    def __init__(self, **kwargs):
+        self.name = kwargs['name']
+        self.color = kwargs['color']
+        self.url = kwargs['url']
+        self.issue_id = kwargs.get('issue_id')
 
     def asdict(self):
         '''
