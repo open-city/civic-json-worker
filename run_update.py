@@ -338,6 +338,15 @@ def parse_github_user(url):
         return matched.group('name')
 
 
+def is_official_brigade(org_info):
+    '''
+    Given an entry in the org info source (e.g. brigade-information), returns
+    true if the org is an "official" CfA brigade
+    '''
+    tags = org_info.get('tags', [])
+    return 'Code for America' in tags and 'Official' in tags
+
+
 def get_projects(organization):
     '''
         Get a list of projects from CSV, TSV, JSON, or Github URL.
@@ -1263,6 +1272,9 @@ def main(org_name=None, org_sources=None):
     # Retrieve all organizations and shuffle the list in place.
     orgs_info = get_organizations(org_sources)
     shuffle(orgs_info)
+
+    # Prioritize updating official CfA brigades' organizations first.
+    orgs_info.sort(cmp=lambda b1, b2: -1 if is_official_brigade(b1) else 0)
 
     # If an organization name was passed, filter.
     if org_name:
