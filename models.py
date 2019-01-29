@@ -103,27 +103,24 @@ class Organization(db.Model):
     # Relationships
     # can contain events, stories, projects (these relationships are defined in the child objects)
 
-    def __init__(self, name, website=None, events_url=None, members_count=None,
-                 rss=None, projects_list_url=None, type=None, city=None,
-                 latitude=None, longitude=None, last_updated=time.time(),
-                 tags=[], social_profiles={}, logo_url=None):
+    def __init__(self, name, **kwargs):
         self.name = name
-        self.website = website
-        self.events_url = events_url
-        self.rss = rss
-        self.projects_list_url = projects_list_url
-        self.tags = tags
-        self.type = type
-        self.city = city
-        self.latitude = latitude
-        self.longitude = longitude
+        self.website = kwargs.get('website')
+        self.events_url = kwargs.get('events_url')
+        self.rss = kwargs.get('rss')
+        self.projects_list_url = kwargs.get('projects_list_url')
+        self.tags = kwargs.get('tags', [])
+        self.type = kwargs.get('type')
+        self.city = kwargs.get('city')
+        self.latitude = kwargs.get('latitude')
+        self.longitude = kwargs.get('longitude')
         self.keep = True
-        self.last_updated = last_updated
-        self.social_profiles = social_profiles
+        self.last_updated = kwargs.get('last_updated', time.time())
+        self.social_profiles = kwargs.get('social_profiles', {})
         self.started_on = unicode(date.today())
         self.id = safe_name(raw_name(name))
-        self.members_count = members_count
-        self.logo_url = logo_url
+        self.members_count = kwargs.get('members_count')
+        self.logo_url = kwargs.get('logo_url')
 
     def current_events(self):
         '''
